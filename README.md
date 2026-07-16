@@ -1,91 +1,376 @@
-# NYXOR
+<div align="center">
 
-> **Nyxor — grinds while you sleep.**
+# ⚡ NYXOR
 
-NYXOR is a terminal interface for managing timed drop campaigns on Android
-through Termux. It provides a queue, progress dashboard, history, journal,
-background execution, Android notifications, device telemetry, and Ukrainian
-and English localization.
+### **Nyxor — grinds while you sleep.**
 
-## Features
+Термінальний помічник для автоматизованого отримання **Twitch Drops**  
+на Android через **Termux**.
 
-- terminal-only Textual interface;
-- background worker;
-- automatic campaign and channel switching;
-- priority game queue;
-- drop progress and claim history;
-- Android notifications;
-- battery and Wi-Fi telemetry through Termux:API;
-- Ukrainian and English interface;
-- language selector in Settings.
+<br>
 
-## Requirements
+[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Termux-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://termux.dev/)
+[![Interface](https://img.shields.io/badge/Interface-Terminal-111827?style=for-the-badge&logo=gnubash&logoColor=white)](#interface)
+[![Languages](https://img.shields.io/badge/Language-UA%20%7C%20EN-2563EB?style=for-the-badge)](#languages)
+[![License](https://img.shields.io/badge/License-Custom-8B5CF6?style=for-the-badge)](LICENSE)
 
-- Android;
-- Termux;
-- Python 3.11 or newer;
-- internet connection.
+[![Last commit](https://img.shields.io/github/last-commit/nyxorbyte/NYXOR?style=flat-square&logo=github)](https://github.com/nyxorbyte/NYXOR/commits/main)
+[![Repo size](https://img.shields.io/github/repo-size/nyxorbyte/NYXOR?style=flat-square&logo=github)](https://github.com/nyxorbyte/NYXOR)
+[![Issues](https://img.shields.io/github/issues/nyxorbyte/NYXOR?style=flat-square&logo=github)](https://github.com/nyxorbyte/NYXOR/issues)
+[![Stars](https://img.shields.io/github/stars/nyxorbyte/NYXOR?style=flat-square&logo=github)](https://github.com/nyxorbyte/NYXOR/stargazers)
 
-For device telemetry and Android notifications, install the Termux:API
-application and package.
+<br>
 
-## Installation
+[Про NYXOR](#about) •
+[Можливості](#features) •
+[Встановлення](#installation) •
+[Запуск](#launch) •
+[Оновлення](#update) •
+[Безпека](#privacy) •
+[Ліцензія](#license)
+
+</div>
+
+---
+
+<a id="about"></a>
+
+## 🌙 Про NYXOR
+
+**NYXOR** — це незалежна термінальна програма, створена спеціально для
+**Android та Termux**. Вона допомагає стежити за кампаніями Twitch Drops,
+підтримувати активну сесію та отримувати доступні нагороди без постійного
+ручного контролю.
+
+Проєкт не намагається переносити десктопний інтерфейс на телефон.
+NYXOR має власний компактний **TUI-інтерфейс**, адаптований для термінала,
+сенсорного екрана та невеликої ширини дисплея.
+
+> **Запустив, налаштував і залишив працювати.**
+
+---
+
+<a id="features"></a>
+
+## ✨ Можливості
+
+| Можливість | Опис |
+|---|---|
+| 🎁 **Twitch Drops** | Робота з доступними кампаніями та нагородами Twitch Drops |
+| 📺 **Автоматизація** | Менше ручних дій під час пошуку та перегляду відповідних трансляцій |
+| 📊 **Прогрес у терміналі** | Зрозумілий статус роботи без браузерного чи графічного інтерфейсу |
+| 📱 **Termux-first** | Інтерфейс і запуск оптимізовані саме для Android через Termux |
+| 🌐 **Українська та English** | Перемикання мови без окремої версії програми |
+| 💾 **Локальні налаштування** | Параметри та дані сесії зберігаються тільки на пристрої |
+| 🧾 **Журнал роботи** | Логи допомагають перевірити стан програми та знайти причину помилки |
+| ⚙️ **Просте встановлення** | Основне налаштування виконує `install.sh` |
+| 🧩 **Власний бренд і структура** | Код, назви файлів та інтерфейс оформлені як самостійний проєкт NYXOR |
+
+---
+
+<a id="interface"></a>
+
+## 🖥️ Інтерфейс
+
+```text
+╭──────────────────────────────────────────────╮
+│                    NYXOR                     │
+│          grinds while you sleep              │
+├──────────────────────────────────────────────┤
+│  Статус:      ● активний                     │
+│  Кампанія:    пошук доступних Drops          │
+│  Канал:       автоматичний вибір             │
+│  Прогрес:     ███████████░░░░  73%           │
+├──────────────────────────────────────────────┤
+│  [1] Запуск   [2] Кампанії   [3] Налаштування│
+│  [4] Історія  [5] Мова       [0] Вихід       │
+╰──────────────────────────────────────────────╯
+```
+
+> Вигляд окремих пунктів може змінюватися між версіями.
+
+---
+
+<a id="installation"></a>
+
+## 📦 Встановлення
+
+### 1. Оновіть пакети Termux
+
+```bash
+pkg update -y && pkg upgrade -y
+```
+
+### 2. Встановіть Git
 
 ```bash
 pkg install git -y
-git clone https://github.com/ThunderBoldX/NYXOR.git
-cd NYXOR
-bash install.sh
 ```
 
-## Authentication
+### 3. Склонуйте NYXOR
 
-Run:
+```bash
+git clone https://github.com/nyxorbyte/NYXOR.git
+```
+
+### 4. Перейдіть до папки проєкту
+
+```bash
+cd NYXOR
+```
+
+### 5. Дозвольте запуск інсталятора
+
+```bash
+chmod +x install.sh
+```
+
+### 6. Запустіть встановлення
+
+```bash
+./install.sh
+```
+
+Інсталятор підготує необхідні компоненти та перевірить середовище Termux.
+
+---
+
+<a id="launch"></a>
+
+## 🚀 Запуск
 
 ```bash
 cd ~/NYXOR
-python nyxor_auth.py
+./NYXOR
 ```
 
-Follow the Twitch device-login instructions shown in the terminal.
+Коли програма відкриється вперше, виконайте початкове налаштування
+та оберіть потрібну мову інтерфейсу.
 
-## Start
+---
 
-```bash
-nyxor
-```
+<a id="update"></a>
 
-The interface language can be changed under **Settings**.
+## 🔄 Оновлення
 
-## Updating
+Щоб завантажити останні зміни з GitHub:
 
 ```bash
 cd ~/NYXOR
 git pull
-bash install.sh
+./install.sh
 ```
 
-## Private files
+Після цього запустіть NYXOR звичайною командою:
 
-The following files are intentionally excluded from Git:
+```bash
+./NYXOR
+```
 
-- `cookies.jar`;
-- `nyxor_settings.json`;
-- runtime state;
-- logs;
-- drop history;
-- local backups.
+---
 
-Never upload your `cookies.jar`.
+## 🗑️ Видалення
 
-## License
+Щоб повністю видалити програму разом із локальними даними:
 
-NYXOR is released under the MIT License.
+```bash
+rm -rf ~/NYXOR
+```
 
-Some portions are derived from MIT-licensed third-party code. See
+> ⚠️ Команда безповоротно видалить папку NYXOR, налаштування, сесію,
+> історію та локальні журнали роботи.
+
+---
+
+<a id="languages"></a>
+
+## 🌍 Мови
+
+NYXOR підтримує:
+
+- 🇺🇦 **Українську**
+- 🇬🇧 **English**
+
+Мову можна змінити в налаштуваннях програми.
+
+---
+
+<a id="privacy"></a>
+
+## 🔐 Приватність і локальні дані
+
+NYXOR створює службові файли безпосередньо на вашому пристрої.
+Вони не повинні потрапляти до GitHub або передаватися іншим людям.
+
+До приватних чи тимчасових файлів можуть належати:
+
+```text
+cookies.jar
+nyxor_settings.json
+logs/
+history/
+*.log
+*.pid
+__pycache__/
+backup/
+```
+
+Ці дані виключені з репозиторію через `.gitignore`.
+
+> **Ніколи не публікуйте `cookies.jar` або інші файли сесії.**
+> Людина, яка отримає їх, потенційно може використати вашу активну сесію.
+
+NYXOR не потребує публікації пароля Twitch у репозиторії.
+Усі персональні дані користувача повинні залишатися лише на його пристрої.
+
+---
+
+## 📁 Структура репозиторію
+
+```text
+NYXOR/
+├── NYXOR                    # файл запуску програми
+├── install.sh               # встановлення та підготовка середовища
+├── README.md                # документація проєкту
+├── CHANGELOG.md             # історія змін
+├── LICENSE                  # умови використання
+├── THIRD_PARTY_NOTICES.md   # інформація про сторонні компоненти
+└── .gitignore               # виключення приватних і тимчасових файлів
+```
+
+Внутрішня структура може розширюватися разом із розвитком проєкту.
+
+---
+
+## 🛠️ Вирішення проблем
+
+<details>
+<summary><strong>Permission denied під час запуску</strong></summary>
+
+Надайте файлам право на виконання:
+
+```bash
+cd ~/NYXOR
+chmod +x NYXOR install.sh
+./NYXOR
+```
+
+</details>
+
+<details>
+<summary><strong>Команда git не знайдена</strong></summary>
+
+Встановіть Git:
+
+```bash
+pkg update -y
+pkg install git -y
+```
+
+</details>
+
+<details>
+<summary><strong>Після оновлення програма не запускається</strong></summary>
+
+Повторно запустіть інсталятор:
+
+```bash
+cd ~/NYXOR
+git pull
+chmod +x install.sh NYXOR
+./install.sh
+```
+
+</details>
+
+<details>
+<summary><strong>Сесія Twitch перестала працювати</strong></summary>
+
+Сесії можуть завершуватися або ставати недійсними.
+Відкрийте NYXOR та виконайте повторну авторизацію через передбачений
+у програмі спосіб. Не надсилайте файл сесії стороннім людям.
+
+</details>
+
+<details>
+<summary><strong>Де подивитися причину помилки</strong></summary>
+
+Перевірте повідомлення в терміналі та локальні журнали роботи.
+Перед публікацією звіту видаліть із нього токени, cookies,
+ідентифікатори сесії та інші приватні дані.
+
+</details>
+
+---
+
+## 🗺️ Напрям розвитку
+
+- [x] Термінальний інтерфейс для Termux
+- [x] Українська та англійська локалізація
+- [x] Локальне збереження налаштувань
+- [x] Окремий інсталятор
+- [ ] Подальше покращення стабільності
+- [ ] Зручніші повідомлення про помилки
+- [ ] Розширена статистика кампаній
+- [ ] Сповіщення про завершення або зміну статусу
+- [ ] Оформлені GitHub Releases
+
+---
+
+## 🤝 Зворотний зв’язок
+
+Знайшли помилку або маєте ідею?
+
+1. Перевірте, чи немає вже схожого запиту в
+   [Issues](https://github.com/nyxorbyte/NYXOR/issues).
+2. Створіть новий Issue.
+3. Додайте версію Android, Termux і кроки для повторення проблеми.
+4. Не прикріплюйте cookies, токени, паролі або приватні журнали.
+
+Pull Request також вітаються, якщо зміни не порушують ліцензію проєкту
+та правила використання сторонніх компонентів.
+
+---
+
+<a id="license"></a>
+
+## ⚖️ Ліцензія та сторонні компоненти
+
+NYXOR поширюється на умовах, указаних у файлі [`LICENSE`](LICENSE).
+
+Інформація про використані сторонні компоненти, їхніх авторів
+та відповідні ліцензії розміщена у
 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
-## Disclaimer
+**Copyright © 2026 nyxorbyte**
 
-NYXOR is an independent community project and is not affiliated with or
-endorsed by Twitch.
+---
+
+## ⚠️ Відмова від відповідальності
+
+NYXOR є незалежним неофіційним проєктом і не пов’язаний,
+не схвалений та не підтримується Twitch Interactive, Inc. або Amazon.com, Inc.
+
+Назви Twitch, Twitch Drops, логотипи та пов’язані торговельні марки
+належать їхнім відповідним власникам.
+
+Функціональність програми може змінюватися або тимчасово переставати
+працювати через оновлення Twitch, API, правил платформи чи механізмів
+авторизації. Користувач самостійно відповідає за використання програми
+та дотримання правил відповідних сервісів.
+
+---
+
+<div align="center">
+
+### ⭐ Подобається NYXOR?
+
+Поставте зірку репозиторію — це допомагає розвитку проєкту.
+
+<br>
+
+**Built for Termux. Powered by the night.**
+
+`NYXOR · grinds while you sleep`
+
+</div>

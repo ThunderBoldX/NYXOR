@@ -1,0 +1,277 @@
+{
+  "app": {
+    "name": "NYXOR",
+    "tagline": "grinds while you sleep"
+  },
+  "tabs": {
+    "home": "Home",
+    "queue": "Queue",
+    "history": "History",
+    "journal": "Journal",
+    "settings": "Settings"
+  },
+  "actions": {
+    "start": "Start",
+    "stop": "Stop",
+    "restart": "Restart",
+    "add": "Add",
+    "move_up": "Move up",
+    "move_down": "Move down",
+    "remove": "Remove",
+    "refresh": "Refresh",
+    "clear": "Clear",
+    "close_ui": "Close interface"
+  },
+  "headings": {
+    "active_drop": "ACTIVE DROP",
+    "queue": "GAME QUEUE",
+    "system": "SYSTEM STATUS",
+    "statistics": "STATISTICS",
+    "events": "RECENT EVENTS",
+    "components": "NYXOR Components"
+  },
+  "labels": {
+    "process": "Process",
+    "uptime": "Uptime",
+    "account": "Account",
+    "game": "Game",
+    "channel": "Channel",
+    "viewers": "Viewers",
+    "status": "Status",
+    "updated": "Updated",
+    "remaining": "Remaining",
+    "estimated_finish": "Estimated completion",
+    "watch_packet": "Watch packet",
+    "last_http_204": "Last successful packet",
+    "twitch_gql": "Twitch connection",
+    "wake_lock": "Wake lock",
+    "network": "Network",
+    "battery": "Battery",
+    "drops": "Drops",
+    "packets": "Watch packets",
+    "switches": "Game switches",
+    "auto_restarts": "Automatic restarts",
+    "session_watch_time": "Farming time in this session",
+    "python": "Python",
+    "project": "Project"
+  },
+  "status": {
+    "running": "RUNNING",
+    "stopped": "STOPPED",
+    "alive": "running",
+    "not_running": "stopped",
+    "waiting": "Waiting",
+    "farming": "farming",
+    "completed": "completed",
+    "not_linked": "account not linked",
+    "queued": "queued",
+    "normal": "stable",
+    "temporary_error": "temporary error",
+    "requested": "active",
+    "first_priority": "First priority",
+    "in_queue": "In queue",
+    "loading": "Loading…",
+    "loading_nyxor": "Loading NYXOR…",
+    "waiting_data": "Waiting for data…",
+    "empty_queue": "Queue is empty",
+    "history_empty": "History is empty",
+    "journal_empty": "Journal is empty",
+    "events_empty": "No events yet. Start NYXOR."
+  },
+  "table": {
+    "number": "No.",
+    "game": "Game",
+    "status": "Status",
+    "time": "Time",
+    "event": "Event",
+    "channel": "Channel"
+  },
+  "queue": {
+    "game_placeholder": "Exact game name",
+    "add_below": "Add a game below",
+    "more_games": "… {count} more {games}",
+    "changed_restart": "{message}. Restart NYXOR to apply the new queue.",
+    "saved": "Queue saved",
+    "changed": "Queue changed",
+    "added": "Added: {game}",
+    "removed": "Removed: {game}",
+    "order_updated": "Priority order updated",
+    "already_exists": "This game is already in the queue",
+    "enter_game": "Enter a game name",
+    "empty_start": "The queue is empty — add at least one game"
+  },
+  "drop": {
+    "no_active": "Twitch is not showing an active drop yet.",
+    "progress_hint": "Progress will appear when Twitch opens an active drop.",
+    "approximately": "approximately {time}",
+    "finish_at": "at {time}"
+  },
+  "health": {
+    "http_ok": "packet accepted",
+    "http_error": "packet rejected",
+    "api_missing": "Termux:API required",
+    "not_found": "not found",
+    "optional": "optional"
+  },
+  "stats": {
+    "today": "today {count}",
+    "seven_days": "last 7 days {count}",
+    "total": "total {count}",
+    "session_cycles": "{count} session cycles",
+    "graph_hint": "Chart below: recent watch packets; 1 means success, 0 means failure."
+  },
+  "settings": {
+    "android_notifications": "Android system notifications",
+    "auto_restart": "Automatically restart after an error",
+    "device_telemetry": "Battery and Wi-Fi data through Termux:API",
+    "saved": "Settings saved",
+    "language": "Interface language",
+    "language_uk": "Ukrainian",
+    "language_en": "English",
+    "language_restart": "Language changed. Restart the NYXOR interface to apply it.",
+    "restart_interface": "Restart interface"
+  },
+  "notifications": {
+    "already_running": "NYXOR is already running",
+    "already_stopped": "NYXOR is already stopped",
+    "started": "NYXOR started",
+    "stopped": "NYXOR stopped",
+    "start_failed": "Could not start NYXOR",
+    "missing_files": "nyxor_core.py or nyxor_worker.py was not found",
+    "drop_received": "Drop received",
+    "game_switch": "Game switched",
+    "restarting": "NYXOR is restarting",
+    "fatal_stop": "NYXOR stopped",
+    "file_cleared": "{name} cleared"
+  },
+  "system": {
+    "scroll_hint": "Scroll the Home page up and down to view all cards. The q key closes only the interface; NYXOR continues running in the background.",
+    "journal_name": "Journal",
+    "history_name": "History"
+  },
+  "units": {
+    "second": {
+      "one": "{count} second",
+      "few": "{count} seconds",
+      "many": "{count} seconds",
+      "other": "{count} seconds"
+    },
+    "minute": {
+      "one": "{count} minute",
+      "few": "{count} minutes",
+      "many": "{count} minutes",
+      "other": "{count} minutes"
+    },
+    "hour": {
+      "one": "{count} hour",
+      "few": "{count} hours",
+      "many": "{count} hours",
+      "other": "{count} hours"
+    },
+    "game": {
+      "one": "game",
+      "few": "games",
+      "many": "games",
+      "other": "games"
+    },
+    "drop": {
+      "one": "drop",
+      "few": "drops",
+      "many": "drops",
+      "other": "drops"
+    }
+  },
+  "relative_time": {
+    "just_now": "just now",
+    "ago": "{time} ago"
+  },
+  "battery_status": {
+    "CHARGING": "charging",
+    "DISCHARGING": "discharging",
+    "FULL": "fully charged",
+    "NOT_CHARGING": "not charging",
+    "UNKNOWN": "unknown status"
+  },
+  "runtime": {
+    "exact": {
+      "Mining is working": "Farming is running",
+      "Waiting for new Drops or online channel": "Waiting for new drops or online channels",
+      "No available Drop/channel": "No available drop or channel",
+      "Updating campaigns and claim...": "Updating campaigns and claiming rewards…",
+      "Sending minute-watched...": "Sending a watch packet…",
+      "Checking online channels...": "Checking online channels…",
+      "Switching channel...": "Switching channel…",
+      "Packet accepted by Twitch": "Twitch accepted the packet",
+      "Фарм працює": "Farming is running",
+      "Очікую нові дропи або канал у мережі": "Waiting for new drops or online channels",
+      "Немає доступного дропа або каналу": "No available drop or channel",
+      "Немає доступного Drop/каналу": "No available drop or channel",
+      "Оновлюю кампанії та забираю нагороди…": "Updating campaigns and claiming rewards…",
+      "Оновлюю кампанії та claim…": "Updating campaigns and claiming rewards…",
+      "Надсилаю пакет перегляду…": "Sending a watch packet…",
+      "Перевіряю канали в мережі…": "Checking online channels…",
+      "Перемикаю канал…": "Switching channel…",
+      "Twitch прийняв пакет": "Twitch accepted the packet",
+      "Twitch ще не показує активний дроп": "Twitch is not showing an active drop yet",
+      "Twitch ще не показує активний Drop": "Twitch is not showing an active drop yet",
+      "NYXOR завершив роботу": "NYXOR finished",
+      "NYXOR зупинено користувачем": "NYXOR stopped by the user",
+      "Процес NYXOR завершено": "NYXOR process finished",
+      "Запуск NYXOR…": "Starting NYXOR…",
+      "Зупинено користувачем": "Stopped by the user",
+      "Процес завершено": "NYXOR process finished",
+      "Waiting for new drops or online channel": "Waiting for new drops or online channels",
+      "Waiting for new drops or online channels": "Waiting for new drops or online channels",
+      "Чекаю нові дропи або онлайн-канали": "Waiting for new drops or online channels",
+      "Чекаю нові дропси або онлайн-канали": "Waiting for new drops or online channels",
+      "Чекаю нові Дропи або онлайн-канал": "Waiting for new drops or online channels",
+      "Чекаю нові дропи або онлайн-канал": "Waiting for new drops or online channels"
+    },
+    "replacements": {
+      "Пакет перегляду": "Watch packet",
+      "пакети перегляду": "watch packets",
+      "Час роботи": "Uptime",
+      "Дроп отримано": "Drop received",
+      "Дропи": "Drops",
+      "Дроп": "Drop",
+      "Отримання": "Claim",
+      "Перезапуск": "Restart",
+      "Головна": "Home",
+      "Журнал": "Journal",
+      "У мережі": "Online",
+      "Не в мережі": "Offline",
+      "пакет прийнято": "packet accepted",
+      "пакет не прийнято": "packet rejected",
+      "повторна спроба через": "retrying in",
+      "Автоматичний перезапуск через": "Automatic restart in",
+      "Watch packet": "Watch packet",
+      "watch-пакети": "watch packets",
+      "Uptime": "Uptime",
+      "Drop отримано": "Drop received",
+      "Drop": "Drop",
+      "Drops": "Drops",
+      "Claim": "Claim",
+      "Restart": "Restart",
+      "Dashboard": "Home",
+      "Logs": "Journal",
+      "Online": "Online",
+      "Offline": "Offline"
+    },
+    "waiting_for_drops": "Waiting for new drops or online channels"
+  },
+  "errors": {
+    "persisted_query": "Twitch temporarily could not find the saved query. Farming will continue with the latest known data. Code: PersistedQueryNotFound",
+    "gql_prefix": "Temporary Twitch GQL error",
+    "launch": "Launch error",
+    "journal_read": "Could not read the journal: {error}"
+  },
+  "events": {
+    "packet_ok": "HTTP {status}: watch packet accepted",
+    "packet_error": "HTTP {status}: watch packet rejected",
+    "started": "NYXOR started",
+    "finished": "NYXOR finished",
+    "stopped_by_user": "NYXOR stopped by the user",
+    "restart_in": "{error}; retrying in {time}",
+    "restarting_in": "Automatic restart in {time}"
+  }
+}

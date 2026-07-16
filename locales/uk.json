@@ -1,0 +1,246 @@
+{
+  "app": {
+    "name": "NYXOR",
+    "tagline": "grinds while you sleep"
+  },
+  "tabs": {
+    "home": "Головна",
+    "queue": "Черга",
+    "history": "Історія",
+    "journal": "Журнал",
+    "settings": "Налаштування"
+  },
+  "actions": {
+    "start": "Запустити",
+    "stop": "Зупинити",
+    "restart": "Перезапустити",
+    "add": "Додати",
+    "move_up": "Вище",
+    "move_down": "Нижче",
+    "remove": "Видалити",
+    "refresh": "Оновити",
+    "clear": "Очистити",
+    "close_ui": "Закрити інтерфейс"
+  },
+  "headings": {
+    "active_drop": "АКТИВНИЙ ДРОП",
+    "queue": "ЧЕРГА ІГОР",
+    "system": "СТАН СИСТЕМИ",
+    "statistics": "СТАТИСТИКА",
+    "events": "ОСТАННІ ПОДІЇ",
+    "components": "Компоненти NYXOR"
+  },
+  "labels": {
+    "process": "Процес",
+    "uptime": "Час роботи",
+    "account": "Акаунт",
+    "game": "Гра",
+    "channel": "Канал",
+    "viewers": "Глядачі",
+    "status": "Стан",
+    "updated": "Оновлено",
+    "remaining": "Залишилося",
+    "estimated_finish": "Очікуване завершення",
+    "watch_packet": "Пакет перегляду",
+    "last_http_204": "Останній успішний пакет",
+    "twitch_gql": "З’єднання з Twitch",
+    "wake_lock": "Утримання активності",
+    "network": "Мережа",
+    "battery": "Батарея",
+    "drops": "Дропи",
+    "packets": "Пакети перегляду",
+    "switches": "Перемикання ігор",
+    "auto_restarts": "Автоматичні перезапуски",
+    "session_watch_time": "Час фарму в цій сесії",
+    "python": "Python",
+    "project": "Проєкт"
+  },
+  "status": {
+    "running": "ПРАЦЮЄ",
+    "stopped": "ЗУПИНЕНО",
+    "alive": "працює",
+    "not_running": "зупинено",
+    "waiting": "Очікування",
+    "farming": "фармиться",
+    "completed": "завершено",
+    "not_linked": "акаунт не прив’язано",
+    "queued": "очікує",
+    "normal": "стабільне",
+    "temporary_error": "тимчасова помилка",
+    "requested": "активне",
+    "first_priority": "Перший пріоритет",
+    "in_queue": "У черзі",
+    "loading": "Завантаження…",
+    "loading_nyxor": "Завантаження NYXOR…",
+    "waiting_data": "Очікування даних…",
+    "empty_queue": "Черга порожня",
+    "history_empty": "Історія поки порожня",
+    "journal_empty": "Журнал ще порожній",
+    "events_empty": "Подій ще немає. Запусти NYXOR."
+  },
+  "table": {
+    "number": "№",
+    "game": "Гра",
+    "status": "Стан",
+    "time": "Час",
+    "event": "Подія",
+    "channel": "Канал"
+  },
+  "queue": {
+    "game_placeholder": "Точна назва гри",
+    "add_below": "Додай гру нижче",
+    "more_games": "… ще {count} {games}",
+    "changed_restart": "{message}. Перезапусти NYXOR, щоб застосувати нову чергу.",
+    "saved": "Чергу збережено",
+    "changed": "Чергу змінено",
+    "added": "Додано: {game}",
+    "removed": "Видалено: {game}",
+    "order_updated": "Порядок пріоритетів оновлено",
+    "already_exists": "Ця гра вже є в черзі",
+    "enter_game": "Введи назву гри",
+    "empty_start": "Черга порожня — додай хоча б одну гру"
+  },
+  "drop": {
+    "no_active": "Twitch ще не показує активний дроп.",
+    "progress_hint": "Прогрес з’явиться, коли Twitch відкриє активний дроп.",
+    "approximately": "приблизно {time}",
+    "finish_at": "о {time}"
+  },
+  "health": {
+    "http_ok": "пакет прийнято",
+    "http_error": "пакет не прийнято",
+    "api_missing": "потрібен Termux:API",
+    "not_found": "не знайдено",
+    "optional": "необов’язково"
+  },
+  "stats": {
+    "today": "сьогодні {count}",
+    "seven_days": "за 7 днів {count}",
+    "total": "загалом {count}",
+    "session_cycles": "циклів у сесії {count}",
+    "graph_hint": "Графік нижче: останні пакети перегляду; 1 — успіх, 0 — помилка."
+  },
+  "settings": {
+    "android_notifications": "Системні сповіщення Android",
+    "auto_restart": "Автоматичний перезапуск після помилки",
+    "device_telemetry": "Дані батареї та Wi‑Fi через Termux:API",
+    "saved": "Налаштування збережено",
+    "language": "Мова інтерфейсу",
+    "language_uk": "Українська",
+    "language_en": "Англійська",
+    "language_restart": "Мову змінено. Перезапусти інтерфейс NYXOR, щоб застосувати її.",
+    "restart_interface": "Перезапустити інтерфейс"
+  },
+  "notifications": {
+    "already_running": "NYXOR уже працює",
+    "already_stopped": "NYXOR уже зупинено",
+    "started": "NYXOR запущено",
+    "stopped": "NYXOR зупинено",
+    "start_failed": "Не вдалося запустити NYXOR",
+    "missing_files": "Не знайдено nyxor_core.py або nyxor_worker.py",
+    "drop_received": "Дроп отримано",
+    "game_switch": "Перемикання гри",
+    "restarting": "NYXOR перезапускається",
+    "fatal_stop": "NYXOR зупинено",
+    "file_cleared": "{name} очищено"
+  },
+  "system": {
+    "scroll_hint": "Головну сторінку можна прокручувати вгору й униз. Клавіша q закриває лише інтерфейс; NYXOR продовжує працювати у фоні.",
+    "journal_name": "Журнал",
+    "history_name": "Історію"
+  },
+  "units": {
+    "second": {
+      "one": "{count} секунда",
+      "few": "{count} секунди",
+      "many": "{count} секунд",
+      "other": "{count} секунди"
+    },
+    "minute": {
+      "one": "{count} хвилина",
+      "few": "{count} хвилини",
+      "many": "{count} хвилин",
+      "other": "{count} хвилини"
+    },
+    "hour": {
+      "one": "{count} година",
+      "few": "{count} години",
+      "many": "{count} годин",
+      "other": "{count} години"
+    },
+    "game": {
+      "one": "гра",
+      "few": "гри",
+      "many": "ігор",
+      "other": "гри"
+    },
+    "drop": {
+      "one": "дроп",
+      "few": "дропи",
+      "many": "дропів",
+      "other": "дропи"
+    }
+  },
+  "relative_time": {
+    "just_now": "щойно",
+    "ago": "{time} тому"
+  },
+  "battery_status": {
+    "CHARGING": "заряджається",
+    "DISCHARGING": "розряджається",
+    "FULL": "заряджено",
+    "NOT_CHARGING": "не заряджається",
+    "UNKNOWN": "стан невідомий"
+  },
+  "runtime": {
+    "exact": {
+      "Mining is working": "Фарм працює",
+      "Waiting for new Drops or online channel": "Чекаю нові дропси або онлайн-канали",
+      "No available Drop/channel": "Немає доступного дропа або каналу",
+      "Updating campaigns and claim...": "Оновлюю кампанії та забираю нагороди…",
+      "Sending minute-watched...": "Надсилаю пакет перегляду…",
+      "Checking online channels...": "Перевіряю канали в мережі…",
+      "Switching channel...": "Перемикаю канал…",
+      "Packet accepted by Twitch": "Twitch прийняв пакет",
+      "Twitch ще не показує активний Drop": "Twitch ще не показує активний дроп",
+      "Процес завершено": "Процес NYXOR завершено",
+      "Waiting for new drops or online channel": "Чекаю нові дропси або онлайн-канали",
+      "Waiting for new drops or online channels": "Чекаю нові дропси або онлайн-канали",
+      "Очікую нові дропи або канал у мережі": "Чекаю нові дропси або онлайн-канали",
+      "Чекаю нові дропи або онлайн-канали": "Чекаю нові дропси або онлайн-канали",
+      "Чекаю нові дропси або онлайн-канали": "Чекаю нові дропси або онлайн-канали",
+      "Чекаю нові Дропи або онлайн-канал": "Чекаю нові дропси або онлайн-канали",
+      "Чекаю нові дропи або онлайн-канал": "Чекаю нові дропси або онлайн-канали"
+    },
+    "replacements": {
+      "Watch packet": "Пакет перегляду",
+      "watch-пакети": "пакети перегляду",
+      "Uptime": "Час роботи",
+      "Drop отримано": "Дроп отримано",
+      "Drop": "Дроп",
+      "Drops": "Дропи",
+      "Claim": "Отримання",
+      "Restart": "Перезапуск",
+      "Dashboard": "Головна",
+      "Logs": "Журнал",
+      "Online": "У мережі",
+      "Offline": "Не в мережі"
+    },
+    "waiting_for_drops": "Чекаю нові дропси або онлайн-канали"
+  },
+  "errors": {
+    "persisted_query": "Twitch тимчасово не знайшов збережений запит. Фарм продовжиться за останніми даними. Код: PersistedQueryNotFound",
+    "gql_prefix": "Тимчасова помилка Twitch GQL",
+    "launch": "Помилка запуску",
+    "journal_read": "Не вдалося прочитати журнал: {error}"
+  },
+  "events": {
+    "packet_ok": "HTTP {status}: пакет перегляду прийнято",
+    "packet_error": "HTTP {status}: пакет перегляду не прийнято",
+    "started": "NYXOR запущено",
+    "finished": "NYXOR завершив роботу",
+    "stopped_by_user": "NYXOR зупинено користувачем",
+    "restart_in": "{error}; повторна спроба через {time}",
+    "restarting_in": "Автоматичний перезапуск через {time}"
+  }
+}

@@ -62,6 +62,72 @@ def save_queue(queue: list[str]) -> None:
 
     save_settings(settings)
 
+
+def normalize_streamer_login(value: str) -> str:
+    raw = value.strip()
+    if not raw:
+        return ""
+
+    if raw.startswith("@"):
+        raw = raw[1:]
+
+    lowered = raw.casefold()
+    marker = "twitch.tv/"
+    if marker in lowered:
+        start = lowered.index(marker) + len(marker)
+        raw = raw[start:]
+
+    raw = raw.split("?", 1)[0].split("#", 1)[0]
+    raw = raw.strip().strip("/")
+
+    if "/" in raw:
+        raw = raw.split("/", 1)[0]
+
+    return raw.strip()
+
+
+def load_streamers() -> list[str]:
+    settings = load_settings()
+    raw_streamers = settings.get("streamer_channels")
+
+    if not isinstance(raw_streamers, list):
+        return []
+
+    result: list[str] = []
+    seen: set[str] = set()
+
+    for item in raw_streamers:
+        if isinstance(item, dict):
+            value = str(item.get("login") or item.get("name") or "")
+        else:
+            value = str(item or "")
+
+        login = normalize_streamer_login(value)
+        folded = login.casefold()
+
+        if login and folded not in seen:
+            seen.add(folded)
+            result.append(login)
+
+    return result
+
+
+def save_streamers(streamers: list[str]) -> None:
+    normalized: list[str] = []
+    seen: set[str] = set()
+
+    for value in streamers:
+        login = normalize_streamer_login(value)
+        folded = login.casefold()
+
+        if login and folded not in seen:
+            seen.add(folded)
+            normalized.append(login)
+
+    settings = load_settings()
+    settings["streamer_channels"] = normalized
+    save_settings(settings)
+
 def load_jsonl(path: Path, limit: int = 200) -> list[dict[str, Any]]:
     if not path.exists():
         return []

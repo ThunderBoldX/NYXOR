@@ -5,10 +5,11 @@
   },
   "tabs": {
     "home": "Головна",
-    "queue": "Черга",
+    "queue": "Ігри",
     "history": "Історія",
     "journal": "Журнал",
-    "settings": "Налаштування"
+    "settings": "Налаштування",
+    "streamers": "Стримери"
   },
   "actions": {
     "start": "Запустити",
@@ -24,11 +25,12 @@
   },
   "headings": {
     "active_drop": "АКТИВНИЙ ДРОП",
-    "queue": "ЧЕРГА ІГОР",
+    "queue": "ІГРИ",
     "system": "СТАН СИСТЕМИ",
     "statistics": "СТАТИСТИКА",
     "events": "ОСТАННІ ПОДІЇ",
-    "components": "Компоненти NYXOR"
+    "components": "Компоненти NYXOR",
+    "channel_points": "ФАРМ CHANNEL POINTS"
   },
   "labels": {
     "process": "Процес",
@@ -53,7 +55,15 @@
     "auto_restarts": "Автоматичні перезапуски",
     "session_watch_time": "Час фарму в цій сесії",
     "python": "Python",
-    "project": "Проєкт"
+    "project": "Проєкт",
+    "mode": "Режим",
+    "player": "Плеєр",
+    "bonus": "Коробочки",
+    "watch_streak": "Watch Streak",
+    "moments": "Moments",
+    "raid": "Рейд",
+    "prediction": "Prediction",
+    "pubsub": "PubSub"
   },
   "status": {
     "running": "ПРАЦЮЄ",
@@ -69,11 +79,11 @@
     "temporary_error": "тимчасова помилка",
     "requested": "активне",
     "first_priority": "Перший пріоритет",
-    "in_queue": "У черзі",
+    "in_queue": "У списку",
     "loading": "Завантаження…",
     "loading_nyxor": "Завантаження NYXOR…",
     "waiting_data": "Очікування даних…",
-    "empty_queue": "Черга порожня",
+    "empty_queue": "Список ігор порожній",
     "history_empty": "Історія поки порожня",
     "journal_empty": "Журнал ще порожній",
     "events_empty": "Подій ще немає. Запусти NYXOR."
@@ -87,24 +97,36 @@
     "channel": "Канал"
   },
   "queue": {
-    "game_placeholder": "Точна назва гри",
+    "game_placeholder": "Почни вводити назву гри…",
     "add_below": "Додай гру нижче",
     "more_games": "… ще {count} {games}",
-    "changed_restart": "{message}. Перезапусти NYXOR, щоб застосувати нову чергу.",
-    "saved": "Чергу збережено",
-    "changed": "Чергу змінено",
+    "changed_restart": "{message}. Перезапусти NYXOR, щоб застосувати новий список ігор.",
+    "saved": "Список ігор збережено",
+    "changed": "Список ігор змінено",
     "added": "Додано: {game}",
     "removed": "Видалено: {game}",
     "order_updated": "Порядок пріоритетів оновлено",
-    "already_exists": "Ця гра вже є в черзі",
+    "already_exists": "Ця гра вже є у списку",
     "enter_game": "Введи назву гри",
-    "empty_start": "Черга порожня — додай хоча б одну гру"
+    "empty_start": "Список ігор порожній — додай хоча б одну гру",
+    "suggestions_heading": "Категорії Twitch",
+    "searching": "🔎 Шукаю категорії Twitch…",
+    "no_suggestions": "Нічого не знайдено",
+    "choose_suggestion": "Оберіть точну категорію зі списку нижче",
+    "enter_more_characters": "Введи щонайменше 2 символи",
+    "search_auth_missing": "Спочатку авторизуй Twitch через nyxor_auth.py",
+    "search_auth_invalid": "Сесія Twitch застаріла — повтори авторизацію",
+    "search_rate_limited": "Twitch тимчасово обмежив пошук. Спробуй трохи пізніше",
+    "search_network_error": "Не вдалося підключитися до Twitch",
+    "search_twitch_error": "Twitch повернув помилку під час пошуку",
+    "search_unknown_error": "Не вдалося виконати пошук категорій"
   },
   "drop": {
     "no_active": "Twitch ще не показує активний дроп.",
     "progress_hint": "Прогрес з’явиться, коли Twitch відкриє активний дроп.",
     "approximately": "приблизно {time}",
-    "finish_at": "о {time}"
+    "finish_at": "о {time}",
+    "points_fallback": "Drops мають вищий пріоритет і будуть підхоплені автоматично."
   },
   "health": {
     "http_ok": "пакет прийнято",
@@ -129,7 +151,14 @@
     "language_uk": "Українська",
     "language_en": "Англійська",
     "language_restart": "Мову змінено. Перезапусти інтерфейс NYXOR, щоб застосувати її.",
-    "restart_interface": "Перезапустити інтерфейс"
+    "restart_interface": "Перезапустити інтерфейс",
+    "channel_points_enabled": "Функції Channel Points",
+    "auto_claim_bonus": "Автоматично забирати коробочки",
+    "follow_raids": "Автоматично переходити за рейдами",
+    "claim_moments": "Автоматично забирати Moments",
+    "predictions_enabled": "Автоматичні Predictions",
+    "predictions_warning": "⚠ Predictions витрачають Channel Points. За замовчуванням вимкнено; після зміни налаштувань перезапусти майнер.",
+    "saved_restart": "Налаштування збережено. Перезапусти майнер, щоб застосувати зміни."
   },
   "notifications": {
     "already_running": "NYXOR уже працює",
@@ -210,7 +239,14 @@
       "Чекаю нові дропи або онлайн-канали": "Чекаю нові дропси або онлайн-канали",
       "Чекаю нові дропси або онлайн-канали": "Чекаю нові дропси або онлайн-канали",
       "Чекаю нові Дропи або онлайн-канал": "Чекаю нові дропси або онлайн-канали",
-      "Чекаю нові дропи або онлайн-канал": "Чекаю нові дропси або онлайн-канали"
+      "Чекаю нові дропи або онлайн-канал": "Чекаю нові дропси або онлайн-канали",
+      "Чекаю нові Drops або онлайн-стримера": "Чекаю нові дропси або онлайн-стримера",
+      "Активних Drops немає — фармлю Channel Points": "Активних дропсів немає — фармлю Channel Points",
+      "Надсилаю minute-watched для Drops...": "Надсилаю пакет перегляду для дропсів…",
+      "Надсилаю minute-watched для Channel Points...": "Надсилаю пакет перегляду для Channel Points…",
+      "Активую Twitch HLS-плеєр...": "Активую Twitch HLS-плеєр…",
+      "HLS активний; пакет прийнято Twitch": "HLS активний; Twitch прийняв пакет",
+      "Пакет прийнято, але HLS ще не активний": "Twitch прийняв пакет, але HLS-плеєр ще не активний"
     },
     "replacements": {
       "Watch packet": "Пакет перегляду",
@@ -242,5 +278,27 @@
     "stopped_by_user": "NYXOR зупинено користувачем",
     "restart_in": "{error}; повторна спроба через {time}",
     "restarting_in": "Автоматичний перезапуск через {time}"
+  },
+  "streamers": {
+    "login_placeholder": "Логін або twitch.tv/канал",
+    "empty": "Список стримерів порожній",
+    "add_below": "Додай Twitch-канал нижче",
+    "in_list": "У списку",
+    "changed_restart": "{message}. Перезапусти NYXOR, щоб застосувати список стримерів.",
+    "saved": "Список стримерів збережено",
+    "changed": "Список стримерів змінено",
+    "added": "Додано канал: {login}",
+    "removed": "Видалено канал: {login}",
+    "order_updated": "Пріоритет стримерів оновлено",
+    "already_exists": "Цей канал уже є у списку",
+    "enter_login": "Введи логін Twitch-каналу",
+    "invalid_login": "Некоректний логін Twitch"
+  },
+  "modes": {
+    "drops": "Drops",
+    "points": "Channel Points"
+  },
+  "common": {
+    "disabled": "вимкнено"
   }
 }

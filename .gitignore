@@ -12,20 +12,23 @@ logs/*
 runtime/*
 !runtime/.gitkeep
 
+# Backups and local exports
+backups/
+backup/
+NYXOR_CLEANUP_HOLD_*/
+*.bak
+*.bak.*
+*.before_*
+*.tmp
+*.zip
+
 # Python
 __pycache__/
 *.py[cod]
 *.pyo
 .pytest_cache/
 .mypy_cache/
-
-# Backups and temporary files
-*.bak
-*.bak.*
-*.before_*
-*.tmp
-*.zip
-NYXOR_CLEANUP_HOLD_*/
+.ruff_cache/
 
 # Editors and operating systems
 .vscode/

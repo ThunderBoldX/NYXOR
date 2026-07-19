@@ -1,13 +1,23 @@
 [project]
 name = "nyxor"
-version = "0.5.0"
-description = "NYXOR terminal drop automation interface"
+version = "1.0.0"
+description = "Terminal Twitch Drops and Channel Points automation for Android/Termux"
+readme = "README_EN.md"
 requires-python = ">=3.11"
-dependencies = [
-    "aiohttp",
-    "rich",
-    "textual",
+license = { file = "LICENSE" }
+authors = [
+    { name = "ThunderBoldX" },
 ]
+dependencies = [
+    "aiohttp>=3.9,<4.0",
+    "rich>=13,<15",
+    "textual>=0.80,<2",
+    "truststore>=0.9",
+]
+
+[project.urls]
+Homepage = "https://github.com/ThunderBoldX/NYXOR"
+Issues = "https://github.com/ThunderBoldX/NYXOR/issues"
 
 [project.scripts]
 nyxor = "nyxor_app:main"

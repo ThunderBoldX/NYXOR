@@ -5,10 +5,11 @@
   },
   "tabs": {
     "home": "Home",
-    "queue": "Queue",
+    "queue": "Games",
     "history": "History",
     "journal": "Journal",
-    "settings": "Settings"
+    "settings": "Settings",
+    "streamers": "Streamers"
   },
   "actions": {
     "start": "Start",
@@ -24,11 +25,12 @@
   },
   "headings": {
     "active_drop": "ACTIVE DROP",
-    "queue": "GAME QUEUE",
+    "queue": "GAMES",
     "system": "SYSTEM STATUS",
     "statistics": "STATISTICS",
     "events": "RECENT EVENTS",
-    "components": "NYXOR Components"
+    "components": "NYXOR Components",
+    "channel_points": "CHANNEL POINTS FARMING"
   },
   "labels": {
     "process": "Process",
@@ -53,7 +55,15 @@
     "auto_restarts": "Automatic restarts",
     "session_watch_time": "Farming time in this session",
     "python": "Python",
-    "project": "Project"
+    "project": "Project",
+    "mode": "Mode",
+    "player": "Player",
+    "bonus": "Bonus chests",
+    "watch_streak": "Watch Streak",
+    "moments": "Moments",
+    "raid": "Raid",
+    "prediction": "Prediction",
+    "pubsub": "PubSub"
   },
   "status": {
     "running": "RUNNING",
@@ -69,11 +79,11 @@
     "temporary_error": "temporary error",
     "requested": "active",
     "first_priority": "First priority",
-    "in_queue": "In queue",
+    "in_queue": "In the list",
     "loading": "Loading…",
     "loading_nyxor": "Loading NYXOR…",
     "waiting_data": "Waiting for data…",
-    "empty_queue": "Queue is empty",
+    "empty_queue": "The games list is empty",
     "history_empty": "History is empty",
     "journal_empty": "Journal is empty",
     "events_empty": "No events yet. Start NYXOR."
@@ -87,24 +97,36 @@
     "channel": "Channel"
   },
   "queue": {
-    "game_placeholder": "Exact game name",
+    "game_placeholder": "Start typing a game name…",
     "add_below": "Add a game below",
     "more_games": "… {count} more {games}",
-    "changed_restart": "{message}. Restart NYXOR to apply the new queue.",
-    "saved": "Queue saved",
-    "changed": "Queue changed",
+    "changed_restart": "{message}. Restart NYXOR to apply the new games list.",
+    "saved": "Games list saved",
+    "changed": "Games list changed",
     "added": "Added: {game}",
     "removed": "Removed: {game}",
     "order_updated": "Priority order updated",
-    "already_exists": "This game is already in the queue",
+    "already_exists": "This game is already in the list",
     "enter_game": "Enter a game name",
-    "empty_start": "The queue is empty — add at least one game"
+    "empty_start": "The games list is empty — add at least one game",
+    "suggestions_heading": "Twitch categories",
+    "searching": "🔎 Searching Twitch categories…",
+    "no_suggestions": "No categories found",
+    "choose_suggestion": "Choose the exact category from the list below",
+    "enter_more_characters": "Enter at least 2 characters",
+    "search_auth_missing": "Authenticate Twitch with nyxor_auth.py first",
+    "search_auth_invalid": "The Twitch session expired — authenticate again",
+    "search_rate_limited": "Twitch temporarily limited search. Try again later",
+    "search_network_error": "Could not connect to Twitch",
+    "search_twitch_error": "Twitch returned an error while searching",
+    "search_unknown_error": "Could not search Twitch categories"
   },
   "drop": {
     "no_active": "Twitch is not showing an active drop yet.",
     "progress_hint": "Progress will appear when Twitch opens an active drop.",
     "approximately": "approximately {time}",
-    "finish_at": "at {time}"
+    "finish_at": "at {time}",
+    "points_fallback": "Drops have higher priority and will be picked up automatically."
   },
   "health": {
     "http_ok": "packet accepted",
@@ -129,7 +151,14 @@
     "language_uk": "Ukrainian",
     "language_en": "English",
     "language_restart": "Language changed. Restart the NYXOR interface to apply it.",
-    "restart_interface": "Restart interface"
+    "restart_interface": "Restart interface",
+    "channel_points_enabled": "Channel Points features",
+    "auto_claim_bonus": "Automatically claim bonus chests",
+    "follow_raids": "Automatically follow raids",
+    "claim_moments": "Automatically claim Moments",
+    "predictions_enabled": "Automatic Predictions",
+    "predictions_warning": "⚠ Predictions spend Channel Points. They are disabled by default; restart the miner after changing these settings.",
+    "saved_restart": "Settings saved. Restart the miner to apply changes."
   },
   "notifications": {
     "already_running": "NYXOR is already running",
@@ -225,7 +254,14 @@
       "Чекаю нові дропи або онлайн-канали": "Waiting for new drops or online channels",
       "Чекаю нові дропси або онлайн-канали": "Waiting for new drops or online channels",
       "Чекаю нові Дропи або онлайн-канал": "Waiting for new drops or online channels",
-      "Чекаю нові дропи або онлайн-канал": "Waiting for new drops or online channels"
+      "Чекаю нові дропи або онлайн-канал": "Waiting for new drops or online channels",
+      "Чекаю нові Drops або онлайн-стримера": "Waiting for new drops or an online streamer",
+      "Активних Drops немає — фармлю Channel Points": "No active drops — farming Channel Points",
+      "Надсилаю minute-watched для Drops...": "Sending a watch packet for Drops…",
+      "Надсилаю minute-watched для Channel Points...": "Sending a watch packet for Channel Points…",
+      "Активую Twitch HLS-плеєр...": "Activating the Twitch HLS player…",
+      "HLS активний; пакет прийнято Twitch": "HLS is active; Twitch accepted the packet",
+      "Пакет прийнято, але HLS ще не активний": "Twitch accepted the packet, but the HLS player is not active yet"
     },
     "replacements": {
       "Пакет перегляду": "Watch packet",
@@ -273,5 +309,27 @@
     "stopped_by_user": "NYXOR stopped by the user",
     "restart_in": "{error}; retrying in {time}",
     "restarting_in": "Automatic restart in {time}"
+  },
+  "streamers": {
+    "login_placeholder": "Login or twitch.tv/channel",
+    "empty": "The streamers list is empty",
+    "add_below": "Add a Twitch channel below",
+    "in_list": "In the list",
+    "changed_restart": "{message}. Restart NYXOR to apply the streamers list.",
+    "saved": "Streamers list saved",
+    "changed": "Streamers list changed",
+    "added": "Channel added: {login}",
+    "removed": "Channel removed: {login}",
+    "order_updated": "Streamer priority updated",
+    "already_exists": "This channel is already in the list",
+    "enter_login": "Enter a Twitch channel login",
+    "invalid_login": "Invalid Twitch login"
+  },
+  "modes": {
+    "drops": "Drops",
+    "points": "Channel Points"
+  },
+  "common": {
+    "disabled": "disabled"
   }
 }

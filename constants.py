@@ -129,7 +129,7 @@ PING_TIMEOUT = timedelta(seconds=10)
 ONLINE_DELAY = timedelta(seconds=120)
 WATCH_INTERVAL = timedelta(seconds=59)
 # Strings
-WINDOW_TITLE = f"NYXOR v{__version__} (by DevilXD)"
+WINDOW_TITLE = f"NYXOR v{__version__}"
 # Logging
 LOGGING_LEVELS = {
     0: logging.ERROR,

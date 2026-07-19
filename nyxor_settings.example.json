@@ -3,5 +3,21 @@
   "priority_games": [],
   "notifications_enabled": true,
   "auto_restart": true,
-  "device_telemetry": true
+  "device_telemetry": true,
+  "channel_points": {
+    "enabled": true,
+    "auto_claim_bonus": true,
+    "follow_raids": true,
+    "claim_moments": true,
+    "predictions": {
+      "enabled": false,
+      "strategy": "most_voted",
+      "percentage": 2,
+      "max_points": 1000,
+      "minimum_balance": 5000,
+      "reserve_points": 3000,
+      "seconds_before_close": 20
+    }
+  },
+  "streamer_channels": []
 }

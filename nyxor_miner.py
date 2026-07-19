@@ -23,7 +23,7 @@ from nyxor_campaigns import get_cookie_value, gql_request
 from nyxor_channels import fetch_channels, load_settings
 
 
-WATCH_INTERVAL = 59
+WATCH_INTERVAL = 20
 CHANNEL_REFRESH_CYCLES = 5
 
 SETTINGS_PATTERN = (
@@ -87,30 +87,34 @@ def create_watch_payload(
     channel: dict[str, Any],
     user_id: str,
 ) -> dict[str, str]:
+    """
+    Build the same minimal minute-watched event shape used by the
+    current Twitch Channel Points Miner.
+
+    Twitch Spade can return HTTP 204 even when an event is not useful
+    for viewer-crediting, so avoid unrelated fields and keep player=site.
+    """
+
+    properties: dict[str, Any] = {
+        "channel_id": str(channel["channel_id"]),
+        "broadcast_id": str(channel["stream_id"]),
+        "player": "site",
+        "user_id": str(user_id),
+        "live": True,
+        "channel": str(channel["login"]),
+    }
+
+    game = str(channel.get("game") or "").strip()
+    game_id = str(channel.get("game_id") or "").strip()
+
+    if game and game_id:
+        properties["game"] = game
+        properties["game_id"] = game_id
+
     event = [
         {
             "event": "minute-watched",
-            "properties": {
-                "broadcast_id": str(
-                    channel["stream_id"]
-                ),
-                "channel_id": str(
-                    channel["channel_id"]
-                ),
-                "channel": str(channel["login"]),
-                "client_time": iso_now(),
-                "game": str(channel.get("game") or ""),
-                "game_id": str(
-                    channel.get("game_id") or ""
-                ),
-                "hidden": False,
-                "is_live": True,
-                "live": True,
-                "logged_in": True,
-                "minutes_logged": 1,
-                "muted": False,
-                "user_id": str(user_id),
-            },
+            "properties": properties,
         }
     ]
 

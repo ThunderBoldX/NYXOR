@@ -2,136 +2,146 @@
 
 [🇺🇦 Українська](README.md) | **🇬🇧 English**
 
-<br>
-
 # ⚡ NYXOR
 
 ### **Nyxor — grinds while you sleep.**
 
-A terminal assistant for automatically earning **Twitch Drops**  
+Terminal automation for **Twitch Drops** and **Channel Points**  
 on Android through **Termux**.
 
-<br>
-
-[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Termux-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://termux.dev/)
-[![Languages](https://img.shields.io/badge/Language-UA%20%7C%20EN-2563EB?style=for-the-badge)](#languages)
-[![License](https://img.shields.io/badge/License-Custom-8B5CF6?style=for-the-badge)](LICENSE)
-
-[![Last commit](https://img.shields.io/github/last-commit/ThunderBoldX/NYXOR?style=flat-square&logo=github)](https://github.com/ThunderBoldX/NYXOR/commits/main)
-[![Repo size](https://img.shields.io/github/repo-size/ThunderBoldX/NYXOR?style=flat-square&logo=github)](https://github.com/ThunderBoldX/NYXOR)
-[![Issues](https://img.shields.io/github/issues/ThunderBoldX/NYXOR?style=flat-square&logo=github)](https://github.com/ThunderBoldX/NYXOR/issues)
-[![Stars](https://img.shields.io/github/stars/ThunderBoldX/NYXOR?style=flat-square&logo=github)](https://github.com/ThunderBoldX/NYXOR/stargazers)
-
-<br>
-
-[About NYXOR](#about) •
-[Features](#features) •
-[Installation](#installation) •
-[Launch](#launch) •
-[Update](#update) •
-[Privacy](#privacy) •
-[License](#license)
+[![Version](https://img.shields.io/badge/version-1.0.0-7C3AED?style=for-the-badge)](CHANGELOG.md)
+[![Platform](https://img.shields.io/badge/Android-Termux-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://termux.dev/)
+[![Languages](https://img.shields.io/badge/UA-English-2563EB?style=for-the-badge)](#-languages)
+[![License](https://img.shields.io/badge/License-MIT-8B5CF6?style=for-the-badge)](LICENSE)
 
 </div>
 
 ---
 
-<a id="about"></a>
+## 🌙 What NYXOR does
 
-## 🌙 What is NYXOR?
+NYXOR runs one lightweight Twitch HLS player and automatically chooses what to farm:
 
-**NYXOR** is an Android app for automatically earning **Twitch Drops** through **Termux**.
+1. **Drops always have the highest priority.**
+2. When no active Drops are available, NYXOR watches the first online channel from the **Streamers** tab and farms Channel Points.
+3. When Drops become available again, NYXOR automatically switches back.
 
-It is made for people who want rewards from Twitch streams without keeping Twitch open all the time or checking the progress manually.
-
-Launch NYXOR, choose the campaign you need, and continue with your day. The app runs in the terminal and shows what is happening with your Drops progress.
-
-NYXOR is made specifically for phones: no heavy interface, unnecessary windows, or complicated setup.
-
-> **Launch it, choose a game, and farm Drops.**
-
----
-
-<a id="features"></a>
+The application does not run two parallel streams and does not require the browser to remain open after authentication.
 
 ## ✨ Features
 
-| Feature | Description |
+| Feature | Status |
 |---|---|
-| 🎁 **Twitch Drops** | Works with available Twitch Drops campaigns and rewards |
-| 📺 **Automation** | Reduces the number of manual actions needed to find and watch suitable streams |
-| 📊 **Terminal progress** | Shows a clear status without a browser or graphical interface |
-| 📱 **Built for Termux** | The interface and launch process are optimized for Android and Termux |
-| 🌐 **Ukrainian and English** | Switch languages without installing a separate version |
-| 💾 **Local settings** | Settings and session data are stored only on your device |
-| 🧾 **Logs** | Logs help you check the app status and find the cause of an error |
-| ⚙️ **Simple installation** | The main setup is handled by `install.sh` |
-| 🧩 **Independent project** | The code, file names, and interface are organized under the NYXOR brand |
-
----
-
-<a id="installation"></a>
+| 🎁 Twitch Drops discovery, progress and automatic claim | ✅ |
+| 🎮 Prioritized game list | ✅ |
+| 🔎 Live search for exact Twitch categories | ✅ |
+| 📺 Prioritized streamer list for Channel Points | ✅ |
+| 🔁 Automatic Drops ↔ Channel Points fallback | ✅ |
+| 🎬 One low-quality HLS player | ✅ |
+| 💰 Channel Points earning | ✅ |
+| 🎁 Automatic bonus chest claim | ✅ |
+| 🔥 Watch Streak tracking | Experimental |
+| 🎭 Raid following without interrupting Drops | Experimental |
+| 🎬 Automatic Moments claim | Experimental |
+| 🔮 Predictions with spending limits | Experimental, disabled by default |
+| 🌍 Ukrainian and English UI | ✅ |
+| 📊 Dashboard, journal, history and local statistics | ✅ |
+| 🔋 Wake lock and optional Termux:API telemetry | ✅ |
 
 ## 📦 Installation
 
-### 1. Update Termux packages
+> Use a current Termux build from F-Droid or GitHub rather than the outdated Google Play build.
 
 ```bash
 pkg update -y && pkg upgrade -y
-```
-
-### 2. Install Git
-
-```bash
 pkg install git -y
-```
-
-### 3. Clone NYXOR
-
-```bash
 git clone https://github.com/ThunderBoldX/NYXOR.git
-```
-
-### 4. Open the project folder
-
-```bash
 cd NYXOR
-```
-
-### 5. Allow the installer to run
-
-```bash
 chmod +x install.sh
-```
-
-### 6. Start the installation
-
-```bash
 ./install.sh
 ```
 
-The installer will prepare the required components and check your Termux environment.
+## 🔐 First authentication
 
----
+```bash
+cd ~/NYXOR
+python nyxor_auth.py
+```
 
-<a id="launch"></a>
+NYXOR displays a Twitch device code and opens the authorization page. The authenticated session is stored locally in `cookies.jar`.
 
 ## 🚀 Launch
 
 ```bash
-cd ~/NYXOR
-./NYXOR
+nyxor
 ```
 
-When the app opens for the first time, complete the initial setup and choose your preferred interface language.
+Inside the application:
 
----
+- add Twitch categories in the **Games** tab;
+- add fallback channels in the **Streamers** tab;
+- press **Start** on the dashboard.
 
-<a id="update"></a>
+## ⚙️ Selection logic
+
+```text
+Active Drops?
+├─ Yes → select the highest-priority game → find a channel → farm Drops + Points
+└─ No  → find the first online streamer → farm Channel Points
+
+During a cycle:
+HLS → minute-watched → balance → bonus claim → PubSub events
+```
+
+## 🔮 Predictions
+
+Automatic Predictions are **disabled by default** because they spend Channel Points.
+
+Default conservative profile:
+
+```json
+{
+  "enabled": false,
+  "strategy": "most_voted",
+  "percentage": 2,
+  "max_points": 1000,
+  "minimum_balance": 5000,
+  "reserve_points": 3000,
+  "seconds_before_close": 20
+}
+```
+
+The values can be changed in `nyxor_settings.json`. Review `max_points` and `reserve_points` before enabling Predictions.
+
+## 🧪 Diagnostics
+
+Test HLS on an online channel:
+
+```bash
+cd ~/NYXOR
+python nyxor_hls_test.py LOGIN
+```
+
+Seven-minute Channel Points test:
+
+```bash
+python nyxor_points_probe.py LOGIN
+```
+
+Longer test:
+
+```bash
+python nyxor_points_probe.py LOGIN --minutes 20
+```
+
+Logs and state:
+
+```bash
+tail -n 150 ~/NYXOR/logs/nyxor.log
+cat ~/NYXOR/runtime/state.json
+```
 
 ## 🔄 Update
-
-To download the latest changes from GitHub:
 
 ```bash
 cd ~/NYXOR
@@ -139,198 +149,72 @@ git pull
 ./install.sh
 ```
 
-Then launch NYXOR as usual:
+`cookies.jar`, `nyxor_settings.json`, history and local logs are ignored by Git and should remain untouched during a normal update.
+
+## 🗑️ Remove the command
 
 ```bash
-./NYXOR
+cd ~/NYXOR
+./uninstall.sh
 ```
 
----
-
-## 🗑️ Uninstall
-
-To completely remove the app together with its local data:
+This removes the `nyxor` command but keeps the project folder and private data. To remove everything:
 
 ```bash
 rm -rf ~/NYXOR
 ```
 
-> ⚠️ This command permanently deletes the NYXOR folder, settings, session data, history, and local logs.
+## 🔐 Privacy
 
----
-
-<a id="languages"></a>
-
-## 🌍 Languages
-
-NYXOR supports:
-
-- 🇺🇦 **Ukrainian**
-- 🇬🇧 **English**
-
-You can change the language in the app settings.
-
----
-
-<a id="privacy"></a>
-
-## 🔐 Privacy and local data
-
-NYXOR creates service files directly on your device. They should not be uploaded to GitHub or shared with other people.
-
-Private or temporary files may include:
+Never publish or share:
 
 ```text
 cookies.jar
 nyxor_settings.json
 logs/
-history/
-*.log
-*.pid
-__pycache__/
-backup/
+runtime/
+data/
+backups/
 ```
 
-These files are excluded from the repository through `.gitignore`.
+`cookies.jar` contains an active Twitch session. These files are excluded through `.gitignore`.
 
-> **Never publish `cookies.jar` or other session files.**  
-> Someone who gets them may be able to use your active session.
-
-NYXOR does not require you to publish your Twitch password in the repository. All personal user data should stay only on the user's device.
-
----
-
-## 📁 Repository structure
+## 📁 Main structure
 
 ```text
 NYXOR/
-├── NYXOR                    # app launcher
-├── install.sh               # installation and environment setup
-├── README.md                # Ukrainian documentation
-├── README_EN.md             # English documentation
-├── CHANGELOG.md             # update history
-├── LICENSE                  # terms of use
-├── THIRD_PARTY_NOTICES.md   # information about third-party components
-└── .gitignore               # excludes private and temporary files
+├── nyxor_app.py                 # terminal UI
+├── nyxor_core.py                # Drops + Points main loop
+├── nyxor_player.py              # Twitch HLS
+├── nyxor_points.py              # balance and bonus chests
+├── nyxor_rewards.py             # PubSub, streak, raids, Moments, Predictions
+├── nyxor_auth.py                # Twitch authentication
+├── nyxor_hls_test.py            # HLS diagnostics
+├── nyxor_points_probe.py        # Channel Points test
+├── nyxor/                       # UI, localization, storage and runtime
+├── locales/                     # Ukrainian and English translations
+├── install.sh
+└── nyxor_settings.example.json
 ```
 
-The internal structure may grow as the project develops.
+## 🌍 Languages
 
----
+- 🇺🇦 Ukrainian
+- 🇬🇧 English
 
-## 🛠️ Troubleshooting
+Change the language in **Settings**, then restart the interface.
 
-<details>
-<summary><strong>Permission denied when launching</strong></summary>
+## ⚠️ Important
 
-Give the files permission to run:
+NYXOR is an independent unofficial project and is not affiliated with Twitch Interactive, Inc. Twitch may change its APIs, persisted queries, HLS or reward mechanisms, which can temporarily break individual features.
 
-```bash
-cd ~/NYXOR
-chmod +x NYXOR install.sh
-./NYXOR
-```
+Automation may conflict with platform rules. You are responsible for using the application and for any account-related risk.
 
-</details>
+## ⚖️ License
 
-<details>
-<summary><strong>Git command not found</strong></summary>
-
-Install Git:
-
-```bash
-pkg update -y
-pkg install git -y
-```
-
-</details>
-
-<details>
-<summary><strong>The app does not start after an update</strong></summary>
-
-Run the installer again:
-
-```bash
-cd ~/NYXOR
-git pull
-chmod +x install.sh NYXOR
-./install.sh
-```
-
-</details>
-
-<details>
-<summary><strong>The Twitch session stopped working</strong></summary>
-
-Sessions may expire or become invalid. Open NYXOR and sign in again using the method provided by the app. Do not send your session file to other people.
-
-</details>
-
-<details>
-<summary><strong>Where can I find the cause of an error?</strong></summary>
-
-Check the messages in the terminal and the local logs. Before publishing an error report, remove tokens, cookies, session IDs, and any other private data.
-
-</details>
-
----
-
-## 🗺️ Roadmap
-
-- [x] Terminal interface for Termux
-- [x] Ukrainian and English languages
-- [x] Local settings storage
-- [x] Separate installer
-- [ ] Better stability
-- [ ] Clearer error messages
-- [ ] More detailed campaign statistics
-- [ ] Notifications when the status changes or a task is completed
-- [ ] Proper GitHub Releases
-
----
-
-## 🤝 Feedback
-
-Found a bug or have an idea?
-
-1. Check whether a similar report already exists in [Issues](https://github.com/ThunderBoldX/NYXOR/issues).
-2. Create a new Issue.
-3. Add your Android version, Termux version, and the steps needed to reproduce the problem.
-4. Do not attach cookies, tokens, passwords, or private logs.
-
-Pull Requests are also welcome as long as the changes do not break the project license or the rules of third-party components.
-
----
-
-<a id="license"></a>
-
-## ⚖️ License and third-party components
-
-NYXOR is distributed under the terms listed in [`LICENSE`](LICENSE).
-
-Information about third-party components, their authors, and their licenses is available in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
-
-**Copyright © 2026 ThunderBoldX**
-
----
-
-## ⚠️ Disclaimer
-
-NYXOR is an independent unofficial project and is not connected with, approved by, or supported by Twitch Interactive, Inc.
-
-The Twitch name, Twitch Drops, logos, and related trademarks belong to their respective owners.
-
-The app may change or temporarily stop working because of Twitch updates, API changes, platform rules, or authorization changes. The user is responsible for how the app is used and for following the rules of the related services.
-
----
+NYXOR is distributed under the [MIT License](LICENSE). Some code is derived from MIT-licensed components; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 <div align="center">
-
-### ⭐ Like NYXOR?
-
-Give the repository a star — it helps the project grow.
-
-<br>
 
 **Built for Termux. Powered by the night.**
 

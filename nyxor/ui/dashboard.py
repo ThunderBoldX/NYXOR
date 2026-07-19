@@ -44,8 +44,24 @@ class DashboardMixin:
             )
 
             account = escape(str(state.get("account") or "—"))
+            raw_mode = str(state.get("mode") or "").strip()
+            mode = escape(
+                tr(f"modes.{raw_mode}", default=raw_mode or "—")
+            )
             game = escape(str(state.get("game") or "—"))
             channel = escape(str(state.get("channel") or "—"))
+            # NYXOR_CHANNEL_POINTS_DASHBOARD_V1
+            points = escape(str(state.get("points") or "—"))
+            points_session = escape(str(state.get("points_session") or "—"))
+            points_bonus = escape(str(state.get("points_bonus") or "—"))
+            points_streak = escape(str(state.get("points_streak") or "—"))
+            points_moments = escape(str(state.get("points_moments") or "0"))
+            points_raid = escape(str(state.get("points_raid") or "—"))
+            points_prediction = escape(
+                str(state.get("points_prediction") or tr("common.disabled"))
+            )
+            points_pubsub = escape(str(state.get("points_pubsub") or "—"))
+            player = escape(str(state.get("player") or "—"))
             viewers = escape(str(state.get("viewers") or telemetry.get("viewers") or "—"))
 
             raw_message = (
@@ -70,8 +86,18 @@ class DashboardMixin:
                 f"[#B57BFF]{tr('labels.process')}:[/#B57BFF] {status}    "
                 f"[#B57BFF]{tr('labels.uptime')}:[/#B57BFF] {uptime}\n"
                 f"[#B57BFF]{tr('labels.account')}:[/#B57BFF] [bold]{account}[/bold]\n"
+                f"[#B57BFF]{tr('labels.mode')}:[/#B57BFF] [bold]{mode}[/bold]\n"
                 f"[#B57BFF]{tr('labels.game')}:[/#B57BFF] [bold #E8E3F5]{game}[/bold #E8E3F5]\n"
                 f"[#B57BFF]{tr('labels.channel')}:[/#B57BFF] {channel}\n"
+                f"[#B57BFF]Points:[/#B57BFF] [bold]{points}[/bold] "
+                f"[dim]({points_session})[/dim]\n"
+                f"[#B57BFF]{tr('labels.bonus')}:[/#B57BFF] {points_bonus}\n"
+                f"[#B57BFF]{tr('labels.watch_streak')}:[/#B57BFF] {points_streak}\n"
+                f"[#B57BFF]{tr('labels.moments')}:[/#B57BFF] {points_moments}\n"
+                f"[#B57BFF]{tr('labels.raid')}:[/#B57BFF] {points_raid}\n"
+                f"[#B57BFF]{tr('labels.prediction')}:[/#B57BFF] {points_prediction}\n"
+                f"[#B57BFF]{tr('labels.pubsub')}:[/#B57BFF] {points_pubsub}\n"
+                f"[#B57BFF]{tr('labels.player')}:[/#B57BFF] {player}\n"
                 f"[#B57BFF]{tr('labels.viewers')}:[/#B57BFF] {viewers}\n"
                 f"[#B57BFF]{tr('labels.status')}:[/#B57BFF] {message}\n"
                 f"[dim]{tr('labels.updated')}: {updated}[/dim]"
@@ -85,6 +111,15 @@ class DashboardMixin:
             heading = self.query_one("#drop-heading", Static)
             details = self.query_one("#drop-details", Static)
             bar = self.query_one("#drop-progress", ProgressBar)
+
+            if str(state.get("mode") or "") == "points":
+                bar.update(total=100, progress=0)
+                heading.update(f"⭐ {tr('headings.channel_points')}")
+                details.update(
+                    f"[bold]{escape(drop_text)}[/bold]\n"
+                    f"[dim]{tr('drop.points_fallback')}[/dim]"
+                )
+                return
 
             if progress is None:
                 bar.update(total=100, progress=0)

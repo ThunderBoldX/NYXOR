@@ -33,6 +33,7 @@ from nyxor.ui.dashboard import DashboardMixin
 from nyxor.ui.history import HistoryMixin
 from nyxor.ui.process import ProcessMixin
 from nyxor.ui.queue import QueueMixin
+from nyxor.ui.streamers import StreamersMixin
 from nyxor.ui.settings import SettingsMixin
 from nyxor.ui.styles import NYXOR_CSS
 
@@ -44,6 +45,7 @@ BRAND_TAGLINE = tr("app.tagline", default="grinds while you sleep")
 class NyxorApp(
     DashboardMixin,
     QueueMixin,
+    StreamersMixin,
     ProcessMixin,
     HistoryMixin,
     SettingsMixin,
@@ -69,6 +71,7 @@ class NyxorApp(
             cleanup_stale_pid()
 
             self.queue_games: list[str] = []
+            self.streamer_channels: list[str] = []
             self._last_log_text = ""
             self._last_history_signature = ""
             self._last_events_signature = ""
@@ -77,6 +80,12 @@ class NyxorApp(
 
     def compose(self) -> ComposeResult:
             settings = load_settings()
+            points_settings = settings.get("channel_points")
+            if not isinstance(points_settings, dict):
+                points_settings = {}
+            prediction_settings = points_settings.get("predictions")
+            if not isinstance(prediction_settings, dict):
+                prediction_settings = {}
 
             yield Header(show_clock=True)
 
@@ -123,10 +132,38 @@ class NyxorApp(
                             id="queue-game-input",
                         )
                         yield Button(f"＋ {tr('actions.add')}", id="queue-add", variant="primary")
+                    yield DataTable(id="game-suggestions")
                     with Horizontal(id="queue-actions"):
                         yield Button(f"↑ {tr('actions.move_up')}", id="queue-up")
                         yield Button(f"↓ {tr('actions.move_down')}", id="queue-down")
                         yield Button(f"✕ {tr('actions.remove')}", id="queue-remove", variant="error")
+
+                with TabPane(f"📺 {tr('tabs.streamers')}", id="streamers-pane"):
+                    yield DataTable(id="streamers-table")
+                    with Horizontal(id="streamers-input-row"):
+                        yield Input(
+                            placeholder=tr("streamers.login_placeholder"),
+                            id="streamer-login-input",
+                        )
+                        yield Button(
+                            f"＋ {tr('actions.add')}",
+                            id="streamer-add",
+                            variant="primary",
+                        )
+                    with Horizontal(id="streamers-actions"):
+                        yield Button(
+                            f"↑ {tr('actions.move_up')}",
+                            id="streamer-up",
+                        )
+                        yield Button(
+                            f"↓ {tr('actions.move_down')}",
+                            id="streamer-down",
+                        )
+                        yield Button(
+                            f"✕ {tr('actions.remove')}",
+                            id="streamer-remove",
+                            variant="error",
+                        )
 
                 with TabPane(f"🎁 {tr('tabs.history')}", id="history-pane"):
                     yield DataTable(id="history-table")
@@ -189,6 +226,45 @@ class NyxorApp(
                             id="telemetry-switch",
                         )
 
+                    with Horizontal(classes="settings-row"):
+                        yield Label(tr("settings.channel_points_enabled"))
+                        yield Switch(
+                            value=bool(points_settings.get("enabled", True)),
+                            id="points-enabled-switch",
+                        )
+
+                    with Horizontal(classes="settings-row"):
+                        yield Label(tr("settings.auto_claim_bonus"))
+                        yield Switch(
+                            value=bool(points_settings.get("auto_claim_bonus", True)),
+                            id="points-bonus-switch",
+                        )
+
+                    with Horizontal(classes="settings-row"):
+                        yield Label(tr("settings.follow_raids"))
+                        yield Switch(
+                            value=bool(points_settings.get("follow_raids", True)),
+                            id="points-raids-switch",
+                        )
+
+                    with Horizontal(classes="settings-row"):
+                        yield Label(tr("settings.claim_moments"))
+                        yield Switch(
+                            value=bool(points_settings.get("claim_moments", True)),
+                            id="points-moments-switch",
+                        )
+
+                    with Horizontal(classes="settings-row"):
+                        yield Label(tr("settings.predictions_enabled"))
+                        yield Switch(
+                            value=bool(prediction_settings.get("enabled", False)),
+                            id="points-predictions-switch",
+                        )
+
+                    yield Static(
+                        tr("settings.predictions_warning"),
+                        classes="settings-warning",
+                    )
                     yield Static("", id="system-info")
 
             yield Footer()
@@ -199,12 +275,28 @@ class NyxorApp(
             queue_table.zebra_stripes = True
             queue_table.add_columns(tr("table.number"), tr("table.game"), tr("table.status"))
 
+            game_suggestions = self.query_one("#game-suggestions", DataTable)
+            game_suggestions.cursor_type = "row"
+            game_suggestions.zebra_stripes = True
+            game_suggestions.add_columns(tr("queue.suggestions_heading"))
+            game_suggestions.display = False
+
+            streamers_table = self.query_one("#streamers-table", DataTable)
+            streamers_table.cursor_type = "row"
+            streamers_table.zebra_stripes = True
+            streamers_table.add_columns(
+                tr("table.number"),
+                tr("table.channel"),
+                tr("table.status"),
+            )
+
             history_table = self.query_one("#history-table", DataTable)
             history_table.cursor_type = "row"
             history_table.zebra_stripes = True
             history_table.add_columns(tr("table.time"), tr("table.game"), tr("table.event"), tr("table.channel"))
 
             self.reload_queue()
+            self.reload_streamers()
             self.refresh_all()
             self.refresh_system_info()
 
@@ -236,6 +328,14 @@ class NyxorApp(
                 self.action_queue_down()
             elif button_id == "queue-remove":
                 self.action_queue_remove()
+            elif button_id == "streamer-add":
+                self.add_streamer()
+            elif button_id == "streamer-up":
+                self.action_streamer_up()
+            elif button_id == "streamer-down":
+                self.action_streamer_down()
+            elif button_id == "streamer-remove":
+                self.action_streamer_remove()
             elif button_id == "logs-refresh":
                 self._last_log_text = ""
                 self.refresh_logs()

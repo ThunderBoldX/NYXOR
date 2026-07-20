@@ -9,7 +9,7 @@
 Термінальна автоматизація **Twitch Drops** і **Channel Points**  
 для Android через **Termux**.
 
-[![Version](https://img.shields.io/badge/version-1.0.0-7C3AED?style=for-the-badge)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.1-7C3AED?style=for-the-badge)](CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/Android-Termux-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://termux.dev/)
 [![Languages](https://img.shields.io/badge/UA-English-2563EB?style=for-the-badge)](#-мови)
 [![License](https://img.shields.io/badge/License-MIT-8B5CF6?style=for-the-badge)](LICENSE)

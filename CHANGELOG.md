@@ -1,3 +1,17 @@
+## v1.0.1 — UI, stability and localization fixes
+
+- Added Channel Points progress toward the most expensive available reward.
+- Improved the mobile statistics layout.
+- Added a structured HLS, Spade, PubSub and error journal.
+- Added automatic journal rotation to limit storage usage.
+- Aligned Settings labels, switches and language selector.
+- Removed the redundant system-information panel.
+- Removed the Ctrl+C footer from status tables.
+- Fixed Rich markup crashes during long Channel Points sessions.
+- Improved English localization of runtime statuses.
+- Updated README feature statuses.
+- Removed THIRD_PARTY_NOTICES.md.
+
 # Changelog
 
 ## 1.0.0 — 2026-07-20

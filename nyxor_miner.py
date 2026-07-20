@@ -431,7 +431,6 @@ def render_status(state: dict[str, Any]) -> Panel:
     return Panel(
         grid,
         title="⛏ NYXOR — RUNNING",
-        subtitle="Ctrl+C — зупинити",
         border_style=(
             "green"
             if success

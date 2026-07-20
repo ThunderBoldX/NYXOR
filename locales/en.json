@@ -126,7 +126,10 @@
     "progress_hint": "Progress will appear when Twitch opens an active drop.",
     "approximately": "approximately {time}",
     "finish_at": "at {time}",
-    "points_fallback": "Drops have higher priority and will be picked up automatically."
+    "points_fallback": "Drops have higher priority and will be picked up automatically.",
+    "points_goal_remaining": "{points} Points remaining",
+    "points_goal_ready": "✓ Reward is already affordable",
+    "points_goal_unavailable": "The reward list is currently unavailable. NYXOR is still farming Channel Points."
   },
   "health": {
     "http_ok": "packet accepted",
@@ -140,7 +143,11 @@
     "seven_days": "last 7 days {count}",
     "total": "total {count}",
     "session_cycles": "{count} session cycles",
-    "graph_hint": "Chart below: recent watch packets; 1 means success, 0 means failure."
+    "graph_hint": "Chart below: recent watch packets; 1 means success, 0 means failure.",
+    "today_row": "Today: {count}",
+    "seven_days_row": "Last 7 days: {count}",
+    "total_row": "Total: {count}",
+    "session_cycles_row": "Cycles this session: {count}"
   },
   "settings": {
     "android_notifications": "Android system notifications",
@@ -261,7 +268,12 @@
       "Надсилаю minute-watched для Channel Points...": "Sending a watch packet for Channel Points…",
       "Активую Twitch HLS-плеєр...": "Activating the Twitch HLS player…",
       "HLS активний; пакет прийнято Twitch": "HLS is active; Twitch accepted the packet",
-      "Пакет прийнято, але HLS ще не активний": "Twitch accepted the packet, but the HLS player is not active yet"
+      "Пакет прийнято, але HLS ще не активний": "Twitch accepted the packet, but the HLS player is not active yet",
+      "очікування": "waiting",
+      "Очікування": "Waiting",
+      "✓ підключено": "✓ connected",
+      "✕ відключено": "✕ disconnected",
+      "✓ HLS активний": "✓ HLS active"
     },
     "replacements": {
       "Пакет перегляду": "Watch packet",
@@ -291,7 +303,15 @@
       "Dashboard": "Home",
       "Logs": "Journal",
       "Online": "Online",
-      "Offline": "Offline"
+      "Offline": "Offline",
+      "коробок": "chests",
+      "підключено": "connected",
+      "відключено": "disconnected",
+      "очікування": "waiting",
+      "Очікування": "Waiting",
+      "HLS активний": "HLS active",
+      "HLS неактивний": "HLS inactive",
+      "помилка": "error"
     },
     "waiting_for_drops": "Waiting for new drops or online channels"
   },

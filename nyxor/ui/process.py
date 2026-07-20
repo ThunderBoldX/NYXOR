@@ -55,7 +55,9 @@ class ProcessMixin:
             env["PYTHONUNBUFFERED"] = "1"
 
             try:
-                with LOG_PATH.open("ab", buffering=0) as log_file:
+                # Raw stdout is kept only for a fatal startup traceback.
+                # Each manual start truncates the file so it cannot grow forever.
+                with LOG_PATH.open("wb", buffering=0) as log_file:
                     process = await asyncio.create_subprocess_exec(
                         sys.executable,
                         str(WORKER_PATH),

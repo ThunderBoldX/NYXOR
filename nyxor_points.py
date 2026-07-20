@@ -27,6 +27,18 @@ class ChannelPointsResult:
     bonus_status: str
     claimed_bonus: bool = False
     bonus_count: int = 0
+    reward_title: str | None = None
+    reward_cost: int | None = None
+
+
+@dataclass(slots=True, frozen=True)
+class ChannelPointsSnapshot:
+    """Balance, bonus claim and the most expensive visible reward."""
+
+    balance: int
+    claim_id: str | None
+    reward_title: str | None
+    reward_cost: int | None
 
 
 @dataclass(slots=True)
@@ -157,6 +169,191 @@ async def _post_gql(
     return decoded
 
 
+def _optional_bool(value: Any) -> bool | None:
+    """Return a boolean only when Twitch supplied an unambiguous value."""
+
+    if isinstance(value, bool):
+        return value
+
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"true", "1", "yes"}:
+            return True
+        if normalized in {"false", "0", "no"}:
+            return False
+
+    if isinstance(value, int) and value in {0, 1}:
+        return bool(value)
+
+    return None
+
+
+def _reward_field(reward: dict[str, Any], *names: str) -> Any:
+    for name in names:
+        if name in reward:
+            return reward[name]
+    return None
+
+
+def _reward_cost(reward: dict[str, Any]) -> int | None:
+    raw = _reward_field(reward, "cost", "price", "points")
+
+    if isinstance(raw, dict):
+        raw = (
+            raw.get("amount")
+            or raw.get("value")
+            or raw.get("cost")
+            or raw.get("points")
+        )
+
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        return None
+
+    return value if value > 0 else None
+
+
+def _looks_like_reward(value: Any) -> bool:
+    if not isinstance(value, dict):
+        return False
+
+    title = _reward_field(value, "title", "name")
+    return bool(str(title or "").strip()) and _reward_cost(value) is not None
+
+
+def _iter_reward_nodes(value: Any):
+    """Flatten Twitch reward arrays, nodes and edges defensively."""
+
+    if isinstance(value, list):
+        for item in value:
+            yield from _iter_reward_nodes(item)
+        return
+
+    if not isinstance(value, dict):
+        return
+
+    if _looks_like_reward(value):
+        yield value
+        return
+
+    node = value.get("node")
+    if isinstance(node, dict):
+        yield from _iter_reward_nodes(node)
+
+    for key in ("nodes", "edges", "items", "rewards"):
+        child = value.get(key)
+        if isinstance(child, (list, dict)):
+            yield from _iter_reward_nodes(child)
+
+
+def _iter_reward_collections(value: Any):
+    """
+    Find reward collections anywhere in ChannelPointsContext.
+
+    Twitch has moved these fields between community/channel/settings objects
+    before, so the parser intentionally does not depend on one exact path.
+    """
+
+    if isinstance(value, list):
+        for item in value:
+            yield from _iter_reward_collections(item)
+        return
+
+    if not isinstance(value, dict):
+        return
+
+    for key, child in value.items():
+        normalized = key.replace("_", "").lower()
+
+        if normalized in {"customrewards", "automaticrewards"}:
+            yield child
+
+        if isinstance(child, (dict, list)):
+            yield from _iter_reward_collections(child)
+
+
+def _reward_is_available(reward: dict[str, Any]) -> bool:
+    enabled = _optional_bool(
+        _reward_field(reward, "isEnabled", "is_enabled", "enabled")
+    )
+    paused = _optional_bool(
+        _reward_field(reward, "isPaused", "is_paused", "paused")
+    )
+    in_stock = _optional_bool(
+        _reward_field(reward, "isInStock", "is_in_stock", "inStock")
+    )
+
+    if enabled is False:
+        return False
+    if paused is True:
+        return False
+    if in_stock is False:
+        return False
+
+    availability = reward.get("availability")
+    if isinstance(availability, dict):
+        availability_stock = _optional_bool(
+            _reward_field(
+                availability,
+                "isInStock",
+                "is_in_stock",
+                "inStock",
+            )
+        )
+        availability_paused = _optional_bool(
+            _reward_field(
+                availability,
+                "isPaused",
+                "is_paused",
+                "paused",
+            )
+        )
+
+        if availability_stock is False or availability_paused is True:
+            return False
+
+    return True
+
+
+def _most_expensive_reward(
+    data: dict[str, Any],
+) -> tuple[str | None, int | None]:
+    """Return the highest-cost reward currently visible to the viewer."""
+
+    rewards: list[tuple[str, int]] = []
+    seen: set[tuple[str, int]] = set()
+
+    for collection in _iter_reward_collections(data):
+        for reward in _iter_reward_nodes(collection):
+            if not _reward_is_available(reward):
+                continue
+
+            title = str(
+                _reward_field(reward, "title", "name") or ""
+            ).strip()
+            cost = _reward_cost(reward)
+
+            if not title or cost is None:
+                continue
+
+            key = (title.casefold(), cost)
+            if key in seen:
+                continue
+
+            seen.add(key)
+            rewards.append((title, cost))
+
+    if not rewards:
+        return None, None
+
+    title, cost = max(
+        rewards,
+        key=lambda item: (item[1], item[0].casefold()),
+    )
+    return title, cost
+
+
 def _community_points(data: dict[str, Any]) -> dict[str, Any] | None:
     root = data.get("data")
     if not isinstance(root, dict):
@@ -181,11 +378,11 @@ def _community_points(data: dict[str, Any]) -> dict[str, Any] | None:
     return None
 
 
-async def fetch_channel_points(
+async def fetch_channel_points_context(
     session: aiohttp.ClientSession,
     headers: dict[str, str],
     channel_login: str,
-) -> tuple[int, str | None]:
+) -> ChannelPointsSnapshot:
     login = channel_login.strip()
     if not login:
         raise ValueError("Не передано логін Twitch-каналу")
@@ -213,7 +410,31 @@ async def fetch_channel_points(
     if isinstance(claim, dict) and claim.get("id"):
         claim_id = str(claim["id"])
 
-    return balance, claim_id
+    reward_title, reward_cost = _most_expensive_reward(response)
+
+    return ChannelPointsSnapshot(
+        balance=balance,
+        claim_id=claim_id,
+        reward_title=reward_title,
+        reward_cost=reward_cost,
+    )
+
+
+async def fetch_channel_points(
+    session: aiohttp.ClientSession,
+    headers: dict[str, str],
+    channel_login: str,
+) -> tuple[int, str | None]:
+    """
+    Backwards-compatible balance/claim helper used by Predictions and PubSub.
+    """
+
+    snapshot = await fetch_channel_points_context(
+        session,
+        headers,
+        channel_login,
+    )
+    return snapshot.balance, snapshot.claim_id
 
 
 async def claim_channel_points_bonus(
@@ -256,7 +477,15 @@ async def update_channel_points(
     the session delta includes rewards claimed after NYXOR starts.
     """
 
-    balance, claim_id = await fetch_channel_points(session, headers, login)
+    snapshot = await fetch_channel_points_context(
+        session,
+        headers,
+        login,
+    )
+    balance = snapshot.balance
+    claim_id = snapshot.claim_id
+    reward_title = snapshot.reward_title
+    reward_cost = snapshot.reward_cost
     session_delta = tracker.update(login, balance)
 
     claimed = False
@@ -286,7 +515,14 @@ async def update_channel_points(
                 # Twitch may update the balance with a small delay.
                 await asyncio.sleep(0.6)
                 try:
-                    balance, _ = await fetch_channel_points(session, headers, login)
+                    refreshed = await fetch_channel_points_context(
+                        session,
+                        headers,
+                        login,
+                    )
+                    balance = refreshed.balance
+                    reward_title = refreshed.reward_title
+                    reward_cost = refreshed.reward_cost
                     session_delta = tracker.update(login, balance)
                 except Exception:
                     # A later NYXOR cycle will refresh the balance.
@@ -302,4 +538,6 @@ async def update_channel_points(
         bonus_status=bonus_status,
         claimed_bonus=claimed,
         bonus_count=bonus_count,
+        reward_title=reward_title,
+        reward_cost=reward_cost,
     )

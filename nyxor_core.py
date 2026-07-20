@@ -964,7 +964,6 @@ def render_status(state: dict[str, Any]) -> Panel:
     return Panel(
         grid,
         title="⛏ NYXOR — GAMES + STREAMERS",
-        subtitle="Ctrl+C — зупинити",
         border_style="green" if state.get("success") else "cyan",
     )
 
@@ -1075,6 +1074,9 @@ async def main() -> None:
             "game": "—",
             "channel": "—",
             "points": "—" if points_enabled else "вимкнено",
+            "points_balance_value": 0,
+            "points_goal_title": "",
+            "points_goal_cost": 0,
             "points_session": "—",
             "points_bonus": "очікування",
             "points_streak": "—",
@@ -1087,6 +1089,7 @@ async def main() -> None:
             ),
             "points_pubsub": "очікування",
             "player": "—",
+            "player_http_status": None,
             "drop": "—",
             "success": False,
             "http_status": None,
@@ -1267,6 +1270,9 @@ async def main() -> None:
                         state["game"] = "—"
                         state["channel"] = "—"
                         state["player"] = "—"
+                        state["points_balance_value"] = 0
+                        state["points_goal_title"] = ""
+                        state["points_goal_cost"] = 0
                         state["drop"] = "Немає доступного Drop/каналу"
                         state["success"] = False
                         state["http_status"] = None
@@ -1309,6 +1315,9 @@ async def main() -> None:
 
                         current_game = target_game
                         current_channel = target_channel
+                        state["points_balance_value"] = 0
+                        state["points_goal_title"] = ""
+                        state["points_goal_cost"] = 0
 
                     current_mode = target_mode
                     current_game = target_game
@@ -1344,6 +1353,7 @@ async def main() -> None:
                         timeout=30,
                     )
                     state["player"] = playback.display_text()
+                    state["player_http_status"] = playback.http_status
 
                     if current_mode == "drops":
                         state["drop"] = active_drop_text(current_state)
@@ -1379,6 +1389,13 @@ async def main() -> None:
                                 auto_claim=points_auto_claim,
                             )
                             state["points"] = f"{points_result.balance:,}".replace(",", " ")
+                            state["points_balance_value"] = points_result.balance
+                            state["points_goal_title"] = (
+                                points_result.reward_title or ""
+                            )
+                            state["points_goal_cost"] = (
+                                points_result.reward_cost or 0
+                            )
                             delta = points_result.session_delta
                             delta_prefix = "+" if delta >= 0 else ""
                             state["points_session"] = (

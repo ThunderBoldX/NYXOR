@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from rich.markup import escape
+from rich.text import Text
 from textual.widgets import Button, ProgressBar, RichLog, Sparkline, Static
 
 from nyxor.formatting import (
@@ -27,6 +28,26 @@ from nyxor.storage import load_json, load_jsonl, load_queue
 
 BRAND_NAME = tr("app.name", default="NYXOR")
 BRAND_TAGLINE = tr("app.tagline", default="grinds while you sleep")
+
+
+def _format_points(value: int) -> str:
+    return f"{max(0, int(value)):,}".replace(",", " ")
+
+
+def _state_int(value: Any) -> int:
+    if isinstance(value, bool):
+        return int(value)
+
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        pass
+
+    compact = str(value or "").replace(" ", "").replace(",", "")
+    try:
+        return int(compact)
+    except ValueError:
+        return 0
 
 
 class DashboardMixin:
@@ -53,15 +74,17 @@ class DashboardMixin:
             # NYXOR_CHANNEL_POINTS_DASHBOARD_V1
             points = escape(str(state.get("points") or "—"))
             points_session = escape(str(state.get("points_session") or "—"))
-            points_bonus = escape(str(state.get("points_bonus") or "—"))
-            points_streak = escape(str(state.get("points_streak") or "—"))
+            points_bonus = escape(localize_runtime_message(state.get("points_bonus") or "—"))
+            points_streak = escape(localize_runtime_message(state.get("points_streak") or "—"))
             points_moments = escape(str(state.get("points_moments") or "0"))
-            points_raid = escape(str(state.get("points_raid") or "—"))
+            points_raid = escape(localize_runtime_message(state.get("points_raid") or "—"))
             points_prediction = escape(
-                str(state.get("points_prediction") or tr("common.disabled"))
+                localize_runtime_message(
+                    state.get("points_prediction") or tr("common.disabled")
+                )
             )
-            points_pubsub = escape(str(state.get("points_pubsub") or "—"))
-            player = escape(str(state.get("player") or "—"))
+            points_pubsub = escape(localize_runtime_message(state.get("points_pubsub") or "—"))
+            player = escape(localize_runtime_message(state.get("player") or "—"))
             viewers = escape(str(state.get("viewers") or telemetry.get("viewers") or "—"))
 
             raw_message = (
@@ -81,25 +104,25 @@ class DashboardMixin:
 
             return (
                 f"[bold #E8E3F5]{brand_line}[/bold #E8E3F5]\n"
-                f"[italic #B57BFF]{tagline_line}[/italic #B57BFF]\n"
-                "[#7B2FFF]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/#7B2FFF]\n"
-                f"[#B57BFF]{tr('labels.process')}:[/#B57BFF] {status}    "
-                f"[#B57BFF]{tr('labels.uptime')}:[/#B57BFF] {uptime}\n"
-                f"[#B57BFF]{tr('labels.account')}:[/#B57BFF] [bold]{account}[/bold]\n"
-                f"[#B57BFF]{tr('labels.mode')}:[/#B57BFF] [bold]{mode}[/bold]\n"
-                f"[#B57BFF]{tr('labels.game')}:[/#B57BFF] [bold #E8E3F5]{game}[/bold #E8E3F5]\n"
-                f"[#B57BFF]{tr('labels.channel')}:[/#B57BFF] {channel}\n"
-                f"[#B57BFF]Points:[/#B57BFF] [bold]{points}[/bold] "
+                f"[#B57BFF]{tagline_line}[/]\n"
+                "[#7B2FFF]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/]\n"
+                f"[#B57BFF]{tr('labels.process')}:[/] {status}    "
+                f"[#B57BFF]{tr('labels.uptime')}:[/] {uptime}\n"
+                f"[#B57BFF]{tr('labels.account')}:[/] [bold]{account}[/bold]\n"
+                f"[#B57BFF]{tr('labels.mode')}:[/] [bold]{mode}[/bold]\n"
+                f"[#B57BFF]{tr('labels.game')}:[/] [bold #E8E3F5]{game}[/bold #E8E3F5]\n"
+                f"[#B57BFF]{tr('labels.channel')}:[/] {channel}\n"
+                f"[#B57BFF]Points:[/] [bold]{points}[/bold] "
                 f"[dim]({points_session})[/dim]\n"
-                f"[#B57BFF]{tr('labels.bonus')}:[/#B57BFF] {points_bonus}\n"
-                f"[#B57BFF]{tr('labels.watch_streak')}:[/#B57BFF] {points_streak}\n"
-                f"[#B57BFF]{tr('labels.moments')}:[/#B57BFF] {points_moments}\n"
-                f"[#B57BFF]{tr('labels.raid')}:[/#B57BFF] {points_raid}\n"
-                f"[#B57BFF]{tr('labels.prediction')}:[/#B57BFF] {points_prediction}\n"
-                f"[#B57BFF]{tr('labels.pubsub')}:[/#B57BFF] {points_pubsub}\n"
-                f"[#B57BFF]{tr('labels.player')}:[/#B57BFF] {player}\n"
-                f"[#B57BFF]{tr('labels.viewers')}:[/#B57BFF] {viewers}\n"
-                f"[#B57BFF]{tr('labels.status')}:[/#B57BFF] {message}\n"
+                f"[#B57BFF]{tr('labels.bonus')}:[/] {points_bonus}\n"
+                f"[#B57BFF]{tr('labels.watch_streak')}:[/] {points_streak}\n"
+                f"[#B57BFF]{tr('labels.moments')}:[/] {points_moments}\n"
+                f"[#B57BFF]{tr('labels.raid')}:[/] {points_raid}\n"
+                f"[#B57BFF]{tr('labels.prediction')}:[/] {points_prediction}\n"
+                f"[#B57BFF]{tr('labels.pubsub')}:[/] {points_pubsub}\n"
+                f"[#B57BFF]{tr('labels.player')}:[/] {player}\n"
+                f"[#B57BFF]{tr('labels.viewers')}:[/] {viewers}\n"
+                f"[#B57BFF]{tr('labels.status')}:[/] {message}\n"
                 f"[dim]{tr('labels.updated')}: {updated}[/dim]"
             )
 
@@ -113,12 +136,53 @@ class DashboardMixin:
             bar = self.query_one("#drop-progress", ProgressBar)
 
             if str(state.get("mode") or "") == "points":
-                bar.update(total=100, progress=0)
-                heading.update(f"⭐ {tr('headings.channel_points')}")
-                details.update(
-                    f"[bold]{escape(drop_text)}[/bold]\n"
-                    f"[dim]{tr('drop.points_fallback')}[/dim]"
+                balance = _state_int(
+                    state.get("points_balance_value")
+                    or state.get("points")
                 )
+                reward_title = str(
+                    state.get("points_goal_title") or ""
+                ).strip()
+                reward_cost = _state_int(state.get("points_goal_cost"))
+
+                heading.update(f"⭐ {tr('headings.channel_points')}")
+
+                if reward_title and reward_cost > 0:
+                    percent = max(
+                        0.0,
+                        min(100.0, balance / reward_cost * 100.0),
+                    )
+                    remaining = max(0, reward_cost - balance)
+                    bar.update(total=100, progress=percent)
+
+                    if remaining > 0:
+                        footer = tr(
+                            "drop.points_goal_remaining",
+                            points=_format_points(remaining),
+                        )
+                    else:
+                        footer = tr("drop.points_goal_ready")
+
+                    details.update(
+                        Text.from_markup(
+                            f"[bold #E8E3F5]{escape(reward_title)}"
+                            f"[/bold #E8E3F5]\n"
+                            f"[#B57BFF]{_format_points(balance)}[/] "
+                            f"[dim]/[/dim] "
+                            f"[bold]{_format_points(reward_cost)} Points[/bold]\n"
+                            f"[dim]{escape(footer)}[/dim]",
+                            justify="left",
+                        )
+                    )
+                else:
+                    bar.update(total=100, progress=0)
+                    details.update(
+                        Text.from_markup(
+                            f"[bold]{escape(drop_text)}[/bold]\n"
+                            f"[dim]{tr('drop.points_goal_unavailable')}[/dim]",
+                            justify="left",
+                        )
+                    )
                 return
 
             if progress is None:
@@ -311,16 +375,18 @@ class DashboardMixin:
             restarts = int(stats.get("restarts") or 0)
 
             content = (
-                f"[bold #E8E3F5]✦ {tr('headings.statistics')}[/bold #E8E3F5]\n"
-                f"[yellow]{tr('labels.drops')}:[/yellow] "
-                f"{tr('stats.today', count=today_claims)}  |  "
-                f"{tr('stats.seven_days', count=week_claims)}  |  "
-                f"{tr('stats.total', count=all_claims)}\n"
-                f"[yellow]{tr('labels.packets')}:[/yellow] ✓ {success_packets}  |  "
-                f"✕ {failed_packets}  |  {tr('stats.session_cycles', count=cycles)}\n"
-                f"[yellow]{tr('labels.switches')}:[/yellow] {switches}    "
+                f"[bold #E8E3F5]✦ {tr('headings.statistics')}[/bold #E8E3F5]\n\n"
+                f"[yellow]{tr('labels.drops')}:[/yellow]\n"
+                f"{tr('stats.today_row', default='Сьогодні: {count}', count=today_claims)}\n"
+                f"{tr('stats.seven_days_row', default='За 7 днів: {count}', count=week_claims)}\n"
+                f"{tr('stats.total_row', default='Загалом: {count}', count=all_claims)}\n\n"
+                f"[yellow]{tr('labels.packets')}:[/yellow]\n"
+                f"✓ {success_packets}  |  ✕ {failed_packets}\n"
+                f"{tr('stats.session_cycles_row', default='Циклів у сесії: {count}', count=cycles)}\n\n"
+                f"[yellow]{tr('labels.switches')}:[/yellow] {switches}\n"
                 f"[yellow]{tr('labels.auto_restarts')}:[/yellow] {restarts}\n"
-                f"[yellow]{tr('labels.session_watch_time')}:[/yellow] ≈ {plural('units.minute', cycles)}\n"
+                f"[yellow]{tr('labels.session_watch_time')}:[/yellow] "
+                f"≈ {plural('units.minute', cycles)}\n"
                 f"[dim]{tr('stats.graph_hint')}[/dim]"
             )
 

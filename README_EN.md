@@ -40,10 +40,10 @@ The application does not run two parallel streams and does not require the brows
 | 🎬 One low-quality HLS player | ✅ |
 | 💰 Channel Points earning | ✅ |
 | 🎁 Automatic bonus chest claim | ✅ |
-| 🔥 Watch Streak tracking | Experimental |
-| 🎭 Raid following without interrupting Drops | Experimental |
-| 🎬 Automatic Moments claim | Experimental |
-| 🔮 Predictions with spending limits | Experimental, disabled by default |
+| 🔥 Watch Streak tracking | ✅ |
+| 🎭 Raid following without interrupting Drops | ✅ |
+| 🎬 Automatic Moments claim | ✅ |
+| 🔮 Predictions with spending limits | ✅ Disabled by default |
 | 🌍 Ukrainian and English UI | ✅ |
 | 📊 Dashboard, journal, history and local statistics | ✅ |
 | 🔋 Wake lock and optional Termux:API telemetry | ✅ |
@@ -212,7 +212,6 @@ Automation may conflict with platform rules. You are responsible for using the a
 
 ## ⚖️ License
 
-NYXOR is distributed under the [MIT License](LICENSE). Some code is derived from MIT-licensed components; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 <div align="center">
 

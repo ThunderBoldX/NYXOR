@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import re
 import shutil
 import subprocess
@@ -9,6 +10,8 @@ import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+from rich.console import Console
 
 import nyxor_core as core
 from nyxor.localization import localize_runtime_message, plural, tr
@@ -28,7 +31,35 @@ from nyxor.paths import (
 APP_NAME = "NYXOR"
 APP_TAGLINE = "grinds while you sleep"
 
+EVENTS_MAX_BYTES = 2_000_000
+EVENTS_KEEP_LINES = 4_000
+
+
+class _DiscardWriter:
+    """A tiny file-like sink used by Rich in background-worker mode."""
+
+    encoding = "utf-8"
+
+    def write(self, value: str) -> int:
+        return len(value)
+
+    def flush(self) -> None:
+        return None
+
+    def isatty(self) -> bool:
+        return False
+
+
 ensure_directories()
+
+# The Textual UI reads runtime/state.json and data/events.jsonl.
+# Printing a full Rich table every 20 seconds only bloats nyxor.log.
+core.console = Console(
+    file=_DiscardWriter(),
+    force_terminal=False,
+    color_system=None,
+    width=120,
+)
 
 _original_render_status = core.render_status
 
@@ -96,9 +127,43 @@ def update_stats(**changes: int) -> dict[str, Any]:
     return stats
 
 
+def _trim_jsonl(
+    path: Path,
+    *,
+    max_bytes: int,
+    keep_lines: int,
+) -> None:
+    try:
+        if not path.exists() or path.stat().st_size <= max_bytes:
+            return
+
+        lines = path.read_text(
+            encoding="utf-8",
+            errors="replace",
+        ).splitlines()
+
+        kept = lines[-keep_lines:]
+        temporary = path.with_suffix(path.suffix + ".trim")
+
+        temporary.write_text(
+            ("\n".join(kept) + "\n") if kept else "",
+            encoding="utf-8",
+        )
+        temporary.replace(path)
+    except OSError:
+        pass
+
+
 def append_jsonl(path: Path, item: dict[str, Any]) -> None:
     with path.open("a", encoding="utf-8") as file:
         file.write(json.dumps(item, ensure_ascii=False, default=str) + "\n")
+
+    if path == EVENTS_PATH:
+        _trim_jsonl(
+            path,
+            max_bytes=EVENTS_MAX_BYTES,
+            keep_lines=EVENTS_KEEP_LINES,
+        )
 
 
 def add_event(event_type: str, message: str, **extra: Any) -> None:
@@ -109,6 +174,62 @@ def add_event(event_type: str, message: str, **extra: Any) -> None:
     }
     item.update(extra)
     append_jsonl(EVENTS_PATH, item)
+
+
+class _EventLogHandler(logging.Handler):
+    """Mirror useful NYXOR logger records into the structured Journal."""
+
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            message = record.getMessage().strip()
+        except Exception:
+            return
+
+        if not message:
+            return
+
+        if record.levelno < logging.INFO:
+            lowered = message.casefold()
+            if not any(
+                marker in lowered
+                for marker in (
+                    "error",
+                    "failed",
+                    "failure",
+                    "помил",
+                    "недоступ",
+                )
+            ):
+                return
+
+        if record.levelno >= logging.ERROR:
+            event_type = "log_error"
+        elif record.levelno >= logging.WARNING:
+            event_type = "warning"
+        else:
+            event_type = "event"
+
+        add_event(
+            event_type,
+            message[:700],
+            source=record.name,
+            level=record.levelname,
+        )
+
+
+def configure_event_logging() -> None:
+    logger = logging.getLogger("NYXOR")
+    logger.setLevel(logging.DEBUG)
+    logger.propagate = False
+
+    if not any(
+        isinstance(handler, _EventLogHandler)
+        for handler in logger.handlers
+    ):
+        logger.addHandler(_EventLogHandler())
+
+
+configure_event_logging()
 
 
 def notifications_enabled() -> bool:
@@ -324,6 +445,12 @@ def patched_render_status(state: dict[str, Any]):
                 tr("events.packet_ok", status=state.get("http_status") or 204),
                 game=game,
                 channel=channel,
+                mode=state.get("mode"),
+                http_status=state.get("http_status") or 204,
+                hls_http_status=state.get("player_http_status"),
+                player=state.get("player"),
+                points=state.get("points"),
+                points_session=state.get("points_session"),
             )
 
     elif state.get("http_status") and state.get("cycles") != _last_state.get("cycles"):
@@ -334,6 +461,12 @@ def patched_render_status(state: dict[str, Any]):
             tr("events.packet_error", status=state.get("http_status")),
             game=game,
             channel=channel,
+            mode=state.get("mode"),
+            http_status=state.get("http_status") or 0,
+            hls_http_status=state.get("player_http_status"),
+            player=state.get("player"),
+            points=state.get("points"),
+            points_session=state.get("points_session"),
         )
 
     if _last_game and game and game != "—" and game != _last_game:
@@ -371,6 +504,38 @@ def patched_render_status(state: dict[str, Any]):
             channel=channel,
         )
         send_notification(f"🎁 {tr('notifications.drop_received')}", f"{game or 'Twitch'}: {localize_runtime_message(claim)}")
+
+    points_bonus = str(state.get("points_bonus") or "").strip()
+    if points_bonus and any(
+        marker in points_bonus.casefold()
+        for marker in ("помил", "error", "failed")
+    ):
+        previous_points_bonus = str(
+            _last_state.get("points_bonus") or ""
+        ).strip()
+
+        if points_bonus != previous_points_bonus:
+            add_event(
+                "points_error",
+                points_bonus,
+                game=game,
+                channel=channel,
+                source="Channel Points",
+            )
+
+    player_text = str(state.get("player") or "").strip()
+    if player_text.startswith("✗"):
+        previous_player = str(_last_state.get("player") or "").strip()
+
+        if player_text != previous_player:
+            add_event(
+                "hls_error",
+                player_text,
+                game=game,
+                channel=channel,
+                hls_http_status=state.get("player_http_status"),
+                source="HLS",
+            )
 
     if (
         message
@@ -423,7 +588,6 @@ def run_once() -> None:
 def main() -> None:
     attempt = 0
     update_stats(starts=1)
-    add_event("start", tr("events.started"))
     send_notification("▶ NYXOR", "NYXOR запущено")
 
     while True:
@@ -431,12 +595,10 @@ def main() -> None:
             write_state(running=True, message=tr("notifications.started"))
             run_once()
             write_state(running=False, message=tr("events.finished"))
-            add_event("stop", tr("events.finished"))
             return
 
         except KeyboardInterrupt:
             write_state(running=False, message=tr("events.stopped_by_user"))
-            add_event("stop", tr("events.stopped_by_user"))
             return
 
         except Exception as error:
@@ -471,7 +633,6 @@ def main() -> None:
                     time.sleep(1)
                 except KeyboardInterrupt:
                     write_state(running=False, message=tr("events.stopped_by_user"))
-                    add_event("stop", tr("events.stopped_by_user"))
                     return
 
 

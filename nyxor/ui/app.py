@@ -23,6 +23,7 @@ from textual.widgets import (
 
 from nyxor.localization import current_locale, tr
 from nyxor.paths import (
+    EVENTS_PATH,
     HISTORY_PATH,
     LOG_PATH,
     ensure_directories,
@@ -181,7 +182,7 @@ class NyxorApp(
                         id="nyxor-log",
                         wrap=True,
                         highlight=True,
-                        markup=False,
+                        markup=True,
                     )
                     with Horizontal(id="journal-actions"):
                         yield Button(tr("actions.refresh"), id="logs-refresh")
@@ -265,7 +266,6 @@ class NyxorApp(
                         tr("settings.predictions_warning"),
                         classes="settings-warning",
                     )
-                    yield Static("", id="system-info")
 
             yield Footer()
 
@@ -298,7 +298,6 @@ class NyxorApp(
             self.reload_queue()
             self.reload_streamers()
             self.refresh_all()
-            self.refresh_system_info()
 
             self.set_interval(1.0, self.refresh_runtime)
             self.set_interval(3.0, self.refresh_events)
@@ -340,7 +339,13 @@ class NyxorApp(
                 self._last_log_text = ""
                 self.refresh_logs()
             elif button_id == "logs-clear":
-                self.clear_file(LOG_PATH, tr("system.journal_name"))
+                self.clear_file(EVENTS_PATH, tr("system.journal_name"))
+
+                try:
+                    LOG_PATH.write_text("", encoding="utf-8")
+                except OSError:
+                    pass
+
                 self._last_log_text = ""
                 self.refresh_logs()
             elif button_id == "history-refresh":

@@ -126,7 +126,10 @@
     "progress_hint": "Прогрес з’явиться, коли Twitch відкриє активний дроп.",
     "approximately": "приблизно {time}",
     "finish_at": "о {time}",
-    "points_fallback": "Drops мають вищий пріоритет і будуть підхоплені автоматично."
+    "points_fallback": "Drops мають вищий пріоритет і будуть підхоплені автоматично.",
+    "points_goal_remaining": "Залишилося: {points} Points",
+    "points_goal_ready": "✓ Нагорода вже доступна",
+    "points_goal_unavailable": "Список нагород поки недоступний. NYXOR продовжує фармити Channel Points."
   },
   "health": {
     "http_ok": "пакет прийнято",
@@ -140,7 +143,11 @@
     "seven_days": "за 7 днів {count}",
     "total": "загалом {count}",
     "session_cycles": "циклів у сесії {count}",
-    "graph_hint": "Графік нижче: останні пакети перегляду; 1 — успіх, 0 — помилка."
+    "graph_hint": "Графік нижче: останні пакети перегляду; 1 — успіх, 0 — помилка.",
+    "today_row": "Сьогодні: {count}",
+    "seven_days_row": "За 7 днів: {count}",
+    "total_row": "Загалом: {count}",
+    "session_cycles_row": "Циклів у сесії: {count}"
   },
   "settings": {
     "android_notifications": "Системні сповіщення Android",

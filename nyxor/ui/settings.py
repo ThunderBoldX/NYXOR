@@ -1,51 +1,12 @@
 from __future__ import annotations
 
-import sys
-
-from rich.markup import escape
-from textual.widgets import Select, Static, Switch
+from textual.widgets import Select, Switch
 
 from nyxor.localization import current_locale, set_locale, tr
-from nyxor.paths import BASE_DIR, CORE_PATH, WORKER_PATH
 from nyxor.storage import load_settings, save_settings
 
 
 class SettingsMixin:
-    def refresh_system_info(self) -> None:
-            import shutil
-
-            wake_status = (
-                "[green]✓[/green]"
-                if shutil.which("termux-wake-lock")
-                else f"[yellow]{tr('health.not_found')}[/yellow]"
-            )
-            battery_status = (
-                "[green]✓[/green]"
-                if shutil.which("termux-battery-status")
-                else f"[yellow]{tr('health.api_missing')}[/yellow]"
-            )
-            wifi_status = (
-                "[green]✓[/green]"
-                if shutil.which("termux-wifi-connectioninfo")
-                else f"[yellow]{tr('health.api_missing')}[/yellow]"
-            )
-
-            info = (
-                f"[bold #E8E3F5]{tr('headings.components')}[/bold #E8E3F5]\n\n"
-                f"[yellow]{tr('labels.python')}:[/yellow] {escape(sys.version.split()[0])}\n"
-                f"[yellow]{tr('labels.project')}:[/yellow] {escape(str(BASE_DIR))}\n"
-                f"[yellow]nyxor_core.py:[/yellow] "
-                f"{'[green]✓[/green]' if CORE_PATH.exists() else '[red]✕[/red]'}\n"
-                f"[yellow]nyxor_worker.py:[/yellow] "
-                f"{'[green]✓[/green]' if WORKER_PATH.exists() else '[red]✕[/red]'}\n"
-                f"[yellow]termux-wake-lock:[/yellow] {wake_status}\n"
-                f"[yellow]termux-battery-status:[/yellow] {battery_status}\n"
-                f"[yellow]termux-wifi-connectioninfo:[/yellow] {wifi_status}\n\n"
-                f"[dim]{tr('system.scroll_hint')}[/dim]"
-            )
-
-            self.query_one("#system-info", Static).update(info)
-
     def on_select_changed(self, event: Select.Changed) -> None:
             if event.select.id != "language-select":
                 return

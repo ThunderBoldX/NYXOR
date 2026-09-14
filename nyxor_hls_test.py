@@ -5,6 +5,7 @@ import secrets
 import sys
 
 import aiohttp
+from nyxor.network import client_session
 from rich.console import Console
 
 from constants import COOKIES_PATH, ClientType
@@ -38,7 +39,7 @@ async def main(login: str) -> int:
         return 2
 
     timeout = aiohttp.ClientTimeout(sock_connect=20, total=45)
-    async with aiohttp.ClientSession(
+    async with client_session(
         timeout=timeout,
         cookie_jar=jar,
         headers={"User-Agent": client.USER_AGENT},

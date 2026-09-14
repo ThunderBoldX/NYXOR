@@ -91,7 +91,7 @@ else:
     SELF_PATH = Path(sys.argv[0]).resolve()
     if SELF_PATH.stem == "pyinstaller" or SELF_PATH.name == "gui.py":
         SELF_PATH = Path(__file__).with_name("main.py").resolve()
-WORKING_DIR = SELF_PATH.parent
+WORKING_DIR = Path(os.environ.get("NYXOR_DATA_DIR", str(SELF_PATH.parent)))
 # Development paths
 VENV_PATH = Path(WORKING_DIR, "env")
 SITE_PACKAGES_PATH = Path(VENV_PATH, SYS_SITE_PACKAGES)

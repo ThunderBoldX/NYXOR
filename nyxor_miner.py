@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 import aiohttp
+from nyxor.network import client_session
 from rich.console import Console
 from rich.live import Live
 from rich.markup import escape
@@ -519,7 +520,7 @@ async def main() -> None:
         total=40,
     )
 
-    async with aiohttp.ClientSession(
+    async with client_session(
         timeout=timeout,
         cookie_jar=cookie_jar,
         headers={

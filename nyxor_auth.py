@@ -6,6 +6,7 @@ import subprocess
 import time
 
 import aiohttp
+from nyxor.network import client_session
 
 from constants import COOKIES_PATH, ClientType
 import secrets
@@ -20,7 +21,7 @@ async def login() -> None:
         total=30,
     )
 
-    async with aiohttp.ClientSession(
+    async with client_session(
         cookie_jar=jar,
         timeout=timeout,
         headers={"User-Agent": client.USER_AGENT},

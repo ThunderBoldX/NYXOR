@@ -3,9 +3,11 @@ from __future__ import annotations
 from typing import Any
 
 from textual.app import App, ComposeResult
+from textual import events
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.widgets import (
     Button,
+    Collapsible,
     DataTable,
     Footer,
     Header,
@@ -104,8 +106,13 @@ class NyxorApp(
                             )
                             yield Static(tr("status.waiting_data"), id="drop-details")
 
+                        yield Static("", id="campaigns-card", classes="card")
+                        yield Static("", id="points-card", classes="card")
+
                         yield Static(f"📋 {tr('headings.queue')}", id="queue-card", classes="card")
-                        yield Static(f"📡 {tr('headings.system')}", id="health-card", classes="card")
+                        with Collapsible(title=tr("dashboard.details"), collapsed=True, id="system-details"):
+                            yield Static(f"📡 {tr('headings.system')}", id="health-card", classes="card")
+                            yield Static("", id="rewards-details", classes="card")
 
                         with Vertical(id="stats-card", classes="card"):
                             yield Static(f"📊 {tr('headings.statistics')}", id="stats-content")
@@ -120,10 +127,10 @@ class NyxorApp(
                                 markup=True,
                             )
 
-                        with Horizontal(id="dashboard-actions"):
-                            yield Button(f"▶ {tr('actions.start')}", id="start-nyxor", variant="success")
-                            yield Button(f"■ {tr('actions.stop')}", id="stop-nyxor", variant="error")
-                            yield Button(f"↻ {tr('actions.restart')}", id="restart-nyxor", variant="warning")
+                    with Horizontal(id="dashboard-actions"):
+                        yield Button(f"▶ {tr('dashboard.start')}", id="start-nyxor", variant="primary")
+                        yield Button(f"■ {tr('dashboard.stop')}", id="stop-nyxor")
+                        yield Button(f"↻ {tr('dashboard.restart')}", id="restart-nyxor")
 
                 with TabPane(f"🎮 {tr('tabs.queue')}", id="queue-pane"):
                     yield DataTable(id="queue-table")
@@ -268,6 +275,9 @@ class NyxorApp(
                     )
 
             yield Footer()
+
+    def on_resize(self, event: events.Resize) -> None:
+            self.set_class(event.size.width < 60, "compact")
 
     def on_mount(self) -> None:
             queue_table = self.query_one("#queue-table", DataTable)

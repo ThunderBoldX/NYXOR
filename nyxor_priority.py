@@ -6,6 +6,7 @@ import sys
 from typing import Any
 
 import aiohttp
+from nyxor.network import client_session
 from rich.console import Console
 from rich.table import Table
 
@@ -56,7 +57,7 @@ async def fetch_active_games() -> list[dict[str, Any]]:
 
     timeout = aiohttp.ClientTimeout(sock_connect=20, total=40)
 
-    async with aiohttp.ClientSession(timeout=timeout, cookie_jar=jar) as session:
+    async with client_session(timeout=timeout, cookie_jar=jar) as session:
         response = await gql_request(session, GQL_QUERIES["Campaigns"], headers)
 
     current_user = response.get("data", {}).get("currentUser")

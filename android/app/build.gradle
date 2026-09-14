@@ -1,0 +1,42 @@
+plugins { id 'com.android.application'; id 'com.chaquo.python' }
+
+android {
+    namespace 'com.thunderboldx.nyxor'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'com.thunderboldx.nyxor'
+        minSdk 26
+        targetSdk 35
+        versionCode 6
+        versionName '2.2.0-preview'
+        ndk { abiFilters 'arm64-v8a', 'x86_64' }
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    sourceSets { main { assets.srcDir "$buildDir/generated/assets" } }
+    buildTypes { release { minifyEnabled false } }
+    testOptions { unitTests.includeAndroidResources = true }
+}
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.14.1'
+}
+chaquopy {
+    defaultConfig {
+        version '3.12'
+        if (System.getenv('NYXOR_BUILD_PYTHON')) buildPython System.getenv('NYXOR_BUILD_PYTHON')
+        pip { install 'aiohttp==3.10.10'; install 'rich==13.9.4' }
+    }
+    sourceSets { main { srcDir "$buildDir/generated/python" } }
+}
+tasks.register('preparePythonSource', Sync) {
+    from('../..') { include '*.py', 'nyxor/**/*.py'; exclude 'nyxor/ui/**', '**/__pycache__/**' }
+    into "$buildDir/generated/python"
+}
+tasks.register('prepareLocales', Sync) {
+    from('../../locales'); into "$buildDir/generated/assets/locales"
+}
+tasks.configureEach {
+    if (name != 'preparePythonSource' && name.toLowerCase().contains('python')) dependsOn 'preparePythonSource'
+    if (name.startsWith('merge') && name.endsWith('Assets')) dependsOn 'prepareLocales'
+    if (name.toLowerCase().contains('lint')) dependsOn 'prepareLocales', 'preparePythonSource'
+}

@@ -193,6 +193,17 @@ class TwitchRewardsEngine:
             name=f"nyxor-pubsub-{new_id}",
         )
 
+    async def reconfigure(self, config):
+        changed = any(getattr(self, key) != bool(config.get(key, True))
+                      for key in ("enabled", "auto_claim_bonus", "follow_raids", "claim_moments"))
+        if changed:
+            channel, mode = self._channel, self._mode
+            await self.set_channel(None, "")
+            for key in ("enabled", "auto_claim_bonus", "follow_raids", "claim_moments"):
+                setattr(self, key, bool(config.get(key, True)))
+            self._pending_raid_login = ""
+            await self.set_channel(channel, mode)
+
     async def stop(self) -> None:
         self._stopping = True
         await self._stop_socket()
@@ -535,6 +546,19 @@ class TwitchRewardsEngine:
         if self._mode == "drops":
             self._status["raid"] = f"пропущено → {target_login} (Drops)"
             logger.info("Skipped raid to %s because Drops are active", target_login)
+            return
+
+        from nyxor.storage import load_settings
+        from nyxor_core import fetch_streamer_channel, load_streamer_channels
+        from nyxor.points_selection import channel_allowed, point_games
+        settings = load_settings()
+        point_settings = settings.get("channel_points") or {}
+        if not point_settings.get("enabled", True) or not point_settings.get("follow_raids", True):
+            return
+        target = await fetch_streamer_channel(self.session, self.gql_headers, target_login)
+        if not target or not channel_allowed(target, load_streamer_channels(settings), point_games(settings)):
+            self._status["raid"] = f"пропущено → {target_login} (поза списком)"
+            logger.info("Skipped raid outside configured channels/games: %s", target_login)
             return
 
         await _post_gql(

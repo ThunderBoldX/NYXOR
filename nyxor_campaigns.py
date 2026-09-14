@@ -5,6 +5,7 @@ import secrets
 from typing import Any
 
 import aiohttp
+from nyxor.network import client_session
 from rich.console import Console
 from rich.table import Table
 
@@ -137,7 +138,7 @@ async def main() -> None:
         total=40,
     )
 
-    async with aiohttp.ClientSession(
+    async with client_session(
         timeout=timeout,
         cookie_jar=jar,
     ) as session:

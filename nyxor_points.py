@@ -29,6 +29,7 @@ class ChannelPointsResult:
     bonus_count: int = 0
     reward_title: str | None = None
     reward_cost: int | None = None
+    rewards: list[dict] = field(default_factory=list)
 
 
 @dataclass(slots=True, frozen=True)
@@ -39,6 +40,7 @@ class ChannelPointsSnapshot:
     claim_id: str | None
     reward_title: str | None
     reward_cost: int | None
+    rewards: list[dict] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -316,6 +318,20 @@ def _reward_is_available(reward: dict[str, Any]) -> bool:
     return True
 
 
+def visible_rewards(data):
+    result, seen = [], set()
+    for collection in _iter_reward_collections(data):
+        for reward in _iter_reward_nodes(collection):
+            title = str(_reward_field(reward, "title", "name") or "").strip()
+            cost = _reward_cost(reward)
+            key = (title.casefold(), cost)
+            if title and cost is not None and key not in seen:
+                seen.add(key)
+                result.append(dict(id=str(reward.get("id") or title), title=title, cost=cost,
+                                   available=_reward_is_available(reward)))
+    return sorted(result, key=lambda item: (item["cost"], item["title"]))
+
+
 def _most_expensive_reward(
     data: dict[str, Any],
 ) -> tuple[str | None, int | None]:
@@ -417,6 +433,7 @@ async def fetch_channel_points_context(
         claim_id=claim_id,
         reward_title=reward_title,
         reward_cost=reward_cost,
+        rewards=visible_rewards(response),
     )
 
 
@@ -486,6 +503,7 @@ async def update_channel_points(
     claim_id = snapshot.claim_id
     reward_title = snapshot.reward_title
     reward_cost = snapshot.reward_cost
+    rewards = snapshot.rewards
     session_delta = tracker.update(login, balance)
 
     claimed = False
@@ -523,6 +541,7 @@ async def update_channel_points(
                     balance = refreshed.balance
                     reward_title = refreshed.reward_title
                     reward_cost = refreshed.reward_cost
+                    rewards = refreshed.rewards
                     session_delta = tracker.update(login, balance)
                 except Exception:
                     # A later NYXOR cycle will refresh the balance.
@@ -540,4 +559,5 @@ async def update_channel_points(
         bonus_count=bonus_count,
         reward_title=reward_title,
         reward_cost=reward_cost,
+        rewards=rewards,
     )

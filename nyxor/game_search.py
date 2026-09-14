@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import aiohttp
+from nyxor.network import client_session
 
 from constants import COOKIES_PATH, ClientType
 from nyxor_campaigns import get_cookie_value
@@ -168,7 +169,7 @@ async def search_game_categories(
     timeout = aiohttp.ClientTimeout(sock_connect=10, total=20)
 
     try:
-        async with aiohttp.ClientSession(timeout=timeout) as session:
+        async with client_session(timeout=timeout) as session:
             async with session.get(
                 SEARCH_CATEGORIES_URL,
                 headers=headers,

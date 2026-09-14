@@ -10,6 +10,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Any
 
 import aiohttp
+from nyxor.network import client_session
 from rich.console import Console
 from rich.live import Live
 from rich.markup import escape
@@ -19,6 +20,7 @@ from rich.table import Table
 from constants import COOKIES_PATH, ClientType, GQL_QUERIES
 from nyxor_campaigns import get_cookie_value, gql_request
 from nyxor_channels import fetch_channels, load_settings
+from nyxor.drop_selection import allowed_channels, best_coverage_channels, channel_drops, progress_snapshot
 from nyxor_miner import (
     WATCH_INTERVAL,
     build_gql_headers,
@@ -29,13 +31,21 @@ from nyxor_miner import (
 )
 
 
-from nyxor_points import ChannelPointsTracker, update_channel_points
+from nyxor_points import ChannelPointsTracker, update_channel_points, fetch_channel_points_context
+from nyxor.points_selection import point_games, pick_points_target, channel_allowed
+from nyxor.channel_history import ChannelHistory, history_path
 from nyxor_player import TwitchHLSPlayer
 from nyxor_rewards import TwitchRewardsEngine
 
 # NYXOR_CHANNEL_POINTS_PATCH_V1
 STATE_REFRESH_CYCLES = 1
-NO_TARGET_RETRY = 90
+NO_TARGET_RETRY = 20
+CONFIG_REVISION = 0
+
+def settings_changed():
+    global CONFIG_REVISION
+    CONFIG_REVISION += 1
+
 DETAIL_FETCH_DELAY = 0.30
 STREAMER_CHECK_DELAY = 0.20
 GQL_RETRY_DELAYS = (1.5, 3.0, 5.0)
@@ -405,6 +415,7 @@ def build_game_states(
 ) -> dict[str, dict[str, Any]]:
     now = datetime.now(timezone.utc)
     states: dict[str, dict[str, Any]] = {}
+    claimed_drop_ids: set[tuple[str, str]] = set()
 
     for campaign in campaigns:
         if campaign.get("status") != "ACTIVE":
@@ -468,6 +479,8 @@ def build_game_states(
                 drop.get("endAt"),
                 campaign_end,
             )
+            drop_start = max(drop_start, campaign_start)
+            drop_end = min(drop_end, campaign_end)
 
             # Якщо Twitch повернув self — він є джерелом істини.
             # Коли self відсутній (типово після повного claim),
@@ -511,6 +524,8 @@ def build_game_states(
 
             info = {
                 "campaign_id": campaign_id,
+                "allowed_channels": allowed_channels(campaign),
+                "preconditions": [str(item.get("id") or "") for item in drop.get("preconditionDrops") or []],
                 "campaign": str(campaign.get("name") or "Без назви"),
                 "drop_id": drop_id,
                 "drop": str(drop.get("name") or "Невідомий Drop"),
@@ -532,6 +547,7 @@ def build_game_states(
 
             if claimed:
                 state["claimed"] += 1
+                claimed_drop_ids.add((campaign_id, drop_id))
                 continue
 
             if current >= required:
@@ -544,6 +560,10 @@ def build_game_states(
                 state["future"].append(info)
 
     for state in states.values():
+        state["mineable"] = [
+            drop for drop in state["mineable"]
+            if all((drop["campaign_id"], prerequisite) in claimed_drop_ids for prerequisite in drop["preconditions"])
+        ]
         state["mineable"].sort(
             key=lambda item: (
                 item["remaining"],
@@ -818,6 +838,8 @@ async def pick_target(
     streamer_logins: list[str],
     current_game: str,
     current_login: str,
+    session: aiohttp.ClientSession | None = None,
+    headers: dict[str, str] | None = None,
 ) -> tuple[str, dict[str, Any]] | None:
     for game in priority_games:
         state = states.get(game)
@@ -828,7 +850,44 @@ async def pick_target(
         try:
             channels = await fetch_channels_retry(game)
         except Exception:
-            continue
+            channels = []
+
+        # Restricted campaign streamers may be outside the directory's top 30.
+        if session is not None and headers is not None:
+            known = {str(item.get("login") or "").casefold() for item in channels}
+            extra_logins = {
+                str(item.get("login") or "").casefold()
+                for drop in state["mineable"]
+                for item in drop.get("allowed_channels") or []
+                if item.get("login")
+            } - known
+            semaphore = asyncio.Semaphore(5)
+
+            async def fetch_extra(login: str) -> dict[str, Any] | None:
+                async with semaphore:
+                    try:
+                        candidate = await fetch_streamer_channel(session, headers, login)
+                        if candidate is None or not channel_drops(state, candidate):
+                            return None
+                        response = await gql_request_retry(
+                            session,
+                            GQL_QUERIES["AvailableDrops"].with_variables({"channelID": candidate["channel_id"]}),
+                            headers,
+                            attempts=2,
+                        )
+                        data = ((response.get("data") or {}).get("channel") or {})
+                        candidate["available_campaign_ids"] = [
+                            str(item.get("id") or "") for item in data.get("viewerDropCampaigns") or []
+                        ]
+                        return candidate
+                    except Exception:
+                        return None
+
+            extras = await asyncio.gather(*(fetch_extra(login) for login in sorted(extra_logins)))
+            channels.extend(item for item in extras if item is not None)
+
+        channels = best_coverage_channels(state, channels)
+        channels.sort(key=lambda item: int(item.get("viewers") or 0), reverse=True)
 
         if not channels:
             continue
@@ -886,11 +945,12 @@ def queue_text(
 
 def active_drop_text(
     state: dict[str, Any] | None,
+    channel: dict[str, Any] | None = None,
 ) -> str:
     if not state:
         return "—"
 
-    mineable = state.get("mineable") or []
+    mineable = channel_drops(state, channel) if channel is not None else state.get("mineable") or []
     if mineable:
         drop = mineable[0]
         return (
@@ -973,12 +1033,13 @@ async def wait_live(
     live: Live,
     state: dict[str, Any],
 ) -> None:
+    revision = CONFIG_REVISION
     deadline = time.monotonic() + max(seconds, 0)
 
     while True:
         remaining = deadline - time.monotonic()
 
-        if remaining <= 0:
+        if remaining <= 0 or revision != CONFIG_REVISION:
             state["remaining"] = 0
             live.update(render_status(state))
             return
@@ -1007,7 +1068,7 @@ async def main() -> None:
     priority_games = load_priority_games(settings)
     streamer_logins = load_streamer_channels(settings)
 
-    if not priority_games and not streamer_logins:
+    if not priority_games and not streamer_logins and not point_games(settings):
         raise RuntimeError(
             "Списки ігор і стримерів порожні. "
             "Додай хоча б одну гру або Twitch-канал у NYXOR."
@@ -1034,7 +1095,7 @@ async def main() -> None:
 
     timeout = aiohttp.ClientTimeout(sock_connect=20, total=40)
 
-    async with aiohttp.ClientSession(
+    async with client_session(
         timeout=timeout,
         cookie_jar=jar,
         headers={"User-Agent": client.USER_AGENT},
@@ -1057,6 +1118,7 @@ async def main() -> None:
         points_auto_claim = bool(
             points_settings.get("auto_claim_bonus", True)
         )
+        channel_history = ChannelHistory(history_path(user_id))
         points_tracker = ChannelPointsTracker()
         rewards = TwitchRewardsEngine(
             session,
@@ -1123,33 +1185,25 @@ async def main() -> None:
             ) as live:
                 while True:
                     cycle_started = time.monotonic()
+                    settings = load_settings()
+                    priority_games = load_priority_games(settings)
+                    streamer_logins = load_streamer_channels(settings)
+                    preferred = preferred_channels(settings)
+                    games_for_points = point_games(settings)
+                    points_order = settings.get("points_order", "popular")
+                    points_settings = settings.get("channel_points") or {}
+                    points_enabled = bool(points_settings.get("enabled", True))
+                    points_auto_claim = bool(points_settings.get("auto_claim_bonus", True))
+                    await rewards.reconfigure(points_settings)
+
 
                     state["message"] = "Оновлюю кампанії та claim..."
                     live.update(render_status(state))
 
                     try:
-                        if priority_games:
-                            campaigns, inventory_drops, claimed_benefits = (
-                                await fetch_campaign_snapshot(
-                                    session,
-                                    gql_headers,
-                                    user_id,
-                                    priority_games,
-                                )
-                            )
-
-                            claim_messages = await claim_ready_drops(
-                                session,
-                                gql_headers,
-                                user_id,
-                                campaigns,
-                                inventory_drops,
-                            )
-
-                            if claim_messages:
-                                state["claim"] = claim_messages[-1]
-
-                                # Після claim перечитуємо стан, щоб відкрити наступний Drop.
+                        drop_failed = False
+                        try:
+                            if priority_games:
                                 campaigns, inventory_drops, claimed_benefits = (
                                     await fetch_campaign_snapshot(
                                         session,
@@ -1159,32 +1213,60 @@ async def main() -> None:
                                     )
                                 )
 
-                            states = build_game_states(
-                                campaigns,
-                                inventory_drops,
-                                claimed_benefits,
+                                claim_messages = await claim_ready_drops(
+                                    session,
+                                    gql_headers,
+                                    user_id,
+                                    campaigns,
+                                    inventory_drops,
+                                )
+
+                                if claim_messages:
+                                    state["claim"] = claim_messages[-1]
+
+                                    # Після claim перечитуємо стан, щоб відкрити наступний Drop.
+                                    campaigns, inventory_drops, claimed_benefits = (
+                                        await fetch_campaign_snapshot(
+                                            session,
+                                            gql_headers,
+                                            user_id,
+                                            priority_games,
+                                        )
+                                    )
+
+                                states = build_game_states(
+                                    campaigns,
+                                    inventory_drops,
+                                    claimed_benefits,
+                                )
+                            else:
+                                states = {}
+
+                            state["queue"] = queue_text(
+                                priority_games,
+                                states,
+                                current_game if current_mode == "drops" else "",
                             )
-                        else:
-                            states = {}
 
-                        state["queue"] = queue_text(
-                            priority_games,
-                            states,
-                            current_game if current_mode == "drops" else "",
-                        )
+                            drop_target = await pick_target(
+                                priority_games,
+                                states,
+                                preferred,
+                                streamer_logins,
+                                current_game if current_mode == "drops" else "",
+                                (
+                                    str(current_channel.get("login") or "")
+                                    if current_channel and current_mode == "drops"
+                                    else ""
+                                ),
+                                session=session,
+                                headers=gql_headers,
+                            )
 
-                        drop_target = await pick_target(
-                            priority_games,
-                            states,
-                            preferred,
-                            streamer_logins,
-                            current_game if current_mode == "drops" else "",
-                            (
-                                str(current_channel.get("login") or "")
-                                if current_channel and current_mode == "drops"
-                                else ""
-                            ),
-                        )
+                        except Exception as drop_error:
+                            logger.warning("Drop discovery failed; checking points channels: %s", drop_error)
+                            drop_target = None
+                            drop_failed = True
 
                         if drop_target is not None:
                             # Drops always win over raids and ordinary point farming.
@@ -1193,45 +1275,15 @@ async def main() -> None:
                             drop_game, drop_channel = drop_target
                             target = ("drops", drop_game, drop_channel)
                         else:
-                            new_raid_login = rewards.consume_raid_target()
-                            if new_raid_login:
-                                raid_override_login = new_raid_login
-                                raid_override_misses = 0
-
+                            raid_login = rewards.consume_raid_target() if rewards.follow_raids else ""
                             points_channel = None
-                            if raid_override_login:
-                                try:
-                                    points_channel = await fetch_streamer_channel(
-                                        session,
-                                        gql_headers,
-                                        raid_override_login,
-                                    )
-                                except Exception:
-                                    points_channel = None
-
-                                if points_channel is None:
-                                    raid_override_misses += 1
-                                    if raid_override_misses >= 3:
-                                        raid_override_login = ""
-                                        raid_override_misses = 0
-                                else:
-                                    raid_override_misses = 0
-
-                            if points_channel is None:
-                                points_channel = await pick_streamer_target(
-                                    session,
-                                    gql_headers,
-                                    streamer_logins,
-                                )
-
-                            if points_channel is None:
-                                target = None
-                            else:
-                                target = (
-                                    "points",
-                                    str(points_channel.get("game") or "Без категорії"),
-                                    points_channel,
-                                )
+                            if points_enabled:
+                                points_channel = await pick_points_target(
+                                    session, gql_headers, streamer_logins, games_for_points,
+                                    points_order, raid_login=raid_login)
+                            target = ("points", str(points_channel.get("game") or "Без категорії"), points_channel) if points_channel else None
+                            if target is None and drop_failed and current_mode == "drops" and current_channel and current_game in priority_games:
+                                target = (current_mode, current_game, current_channel)
 
                     except Exception as error:
                         # Twitch GQL / persisted queries іноді тимчасово падають.
@@ -1255,9 +1307,14 @@ async def main() -> None:
                             )
                             continue
 
-                        target = (current_mode, current_game, current_channel)
+                        allowed = (current_game in priority_games if current_mode == "drops" else
+                                   points_enabled and channel_allowed(current_channel, streamer_logins, games_for_points))
+                        target = (current_mode, current_game, current_channel) if allowed else None
 
                     if target is None:
+                        channel_history.end()
+                        state["points_rewards"] = []
+                        state["channel_login"] = ""
                         current_mode = ""
                         current_game = ""
                         current_channel = None
@@ -1267,6 +1324,7 @@ async def main() -> None:
                         apply_rewards_snapshot(state, rewards.snapshot())
 
                         state["mode"] = ""
+                        state["active_drops"] = []
                         state["game"] = "—"
                         state["channel"] = "—"
                         state["player"] = "—"
@@ -1297,6 +1355,14 @@ async def main() -> None:
                     )
 
                     if changed:
+                        channel_history.end()
+                        state["points_rewards"] = []
+                        if points_enabled:
+                            try:
+                                initial = await fetch_channel_points_context(session, gql_headers, str(target_channel["login"]))
+                                target_channel["_points_balance"] = initial.balance
+                            except Exception:
+                                target_channel["_points_balance"] = None
                         if target_mode == "drops":
                             state["message"] = (
                                 f"Знайдено Drops. Перемикаюся на {target_game}..."
@@ -1334,6 +1400,7 @@ async def main() -> None:
                         current_game if current_mode == "drops" else "",
                     )
                     state["mode"] = current_mode
+                    state["active_drops"] = progress_snapshot(current_state, current_channel)
                     state["game"] = current_game
                     state["channel"] = str(
                         current_channel.get("display_name")
@@ -1343,6 +1410,7 @@ async def main() -> None:
                     state["viewers"] = int(current_channel.get("viewers") or 0)
 
                     channel_login = str(current_channel.get("login") or "")
+                    state["channel_login"] = channel_login
                     await rewards.set_channel(current_channel, current_mode)
                     apply_rewards_snapshot(state, rewards.snapshot())
                     state["message"] = "Активую Twitch HLS-плеєр..."
@@ -1356,7 +1424,7 @@ async def main() -> None:
                     state["player_http_status"] = playback.http_status
 
                     if current_mode == "drops":
-                        state["drop"] = active_drop_text(current_state)
+                        state["drop"] = active_drop_text(current_state, current_channel)
                         state["message"] = "Надсилаю minute-watched для Drops..."
                     else:
                         state["drop"] = (
@@ -1377,6 +1445,11 @@ async def main() -> None:
                     state["success"] = success
                     state["http_status"] = http_status
                     state["cycles"] += 1
+                    if playback.active and success:
+                        channel_history.begin(current_channel, current_channel.get("_points_balance"))
+                        current_channel["_points_balance"] = None
+                    else:
+                        channel_history.end()
 
                     if points_enabled:
                         try:
@@ -1390,6 +1463,8 @@ async def main() -> None:
                             )
                             state["points"] = f"{points_result.balance:,}".replace(",", " ")
                             state["points_balance_value"] = points_result.balance
+                            channel_history.observe(channel_login, points_result.balance)
+                            state["points_rewards"] = points_result.rewards
                             state["points_goal_title"] = (
                                 points_result.reward_title or ""
                             )
@@ -1431,6 +1506,7 @@ async def main() -> None:
                     )
 
         finally:
+            channel_history.end()
             await rewards.stop()
             await player.stop()
             run_termux_command("termux-wake-unlock")

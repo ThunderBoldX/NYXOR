@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="440" viewBox="0 0 1280 440" role="img" aria-labelledby="title desc">
+  <title id="title">NYXOR — grinds while you sleep.</title>
+  <desc id="desc">Lavender crescent moon and mint stars over a dark night sky. Twitch Drops, Channel Points, Android.</desc>
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#191321"/><stop offset="1" stop-color="#0c0b10"/></linearGradient>
+    <radialGradient id="glow"><stop stop-color="#6b468e" stop-opacity=".35"/><stop offset="1" stop-color="#6b468e" stop-opacity="0"/></radialGradient>
+    <linearGradient id="moon" x2=".8" y2="1"><stop stop-color="#e6d6ff"/><stop offset="1" stop-color="#b898ec"/></linearGradient>
+  </defs>
+  <rect x="1" y="1" width="1278" height="438" rx="32" fill="url(#bg)" stroke="#34293f" stroke-width="2"/>
+  <ellipse cx="1000" cy="220" rx="278" ry="214" fill="url(#glow)"/>
+  <g fill="none" stroke="#bda0ef" stroke-opacity=".11"><circle cx="1004" cy="215" r="165"/><circle cx="1004" cy="215" r="198"/></g>
+  <g transform="translate(862 68) scale(9)">
+    <path d="M20 3C12 1 4 7 4 16s8 15 17 12c4-2 7-5 8-9-4 3-10 2-13-2S13 7 17 4" fill="url(#moon)"/>
+    <path d="m25 3 1.4 3.6L30 8l-3.6 1.4L25 13l-1.4-3.6L20 8l3.6-1.4Z" fill="#b6ebd5"/>
+  </g>
+  <g fill="#b6ebd5"><circle cx="817" cy="125" r="3"/><circle cx="1162" cy="326" r="3"/><circle cx="838" cy="321" r="2"/></g>
+  <g fill="#c3a6f5"><circle cx="1189" cy="112" r="2"/><circle cx="914" cy="380" r="2"/><circle cx="776" cy="226" r="2"/></g>
+  <g font-family="Segoe UI,Arial,sans-serif">
+    <text x="76" y="100" fill="#b6ebd5" font-size="15" letter-spacing="4">YOUR NIGHT SHIFT</text>
+    <text x="70" y="205" fill="#f4effb" font-size="96" font-weight="700" letter-spacing="4">NYXOR</text>
+    <text x="76" y="259" fill="#c3a6f5" font-size="32">grinds while you sleep.</text>
+    <g font-size="16" fill="#c6bdcf">
+      <rect x="76" y="311" width="148" height="40" rx="20" fill="#25202e" stroke="#42354f"/>
+      <text x="150" y="337" text-anchor="middle">Twitch Drops</text>
+      <rect x="236" y="311" width="168" height="40" rx="20" fill="#25202e" stroke="#42354f"/>
+      <text x="320" y="337" text-anchor="middle">Channel Points</text>
+      <rect x="416" y="311" width="122" height="40" rx="20" fill="#1d2a27" stroke="#33483f"/>
+      <text x="477" y="337" text-anchor="middle" fill="#b6ebd5">Android</text>
+    </g>
+  </g>
+</svg>

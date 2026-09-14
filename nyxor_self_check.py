@@ -27,9 +27,12 @@ def recursive_keys(value: object, prefix: str = "") -> set[str]:
 def main() -> int:
     errors: list[str] = []
 
-    python_files = sorted(ROOT.rglob("*.py"))
+    python_files = sorted(
+        path for path in ROOT.rglob("*.py")
+        if not any(part in path.parts for part in ("__pycache__", "build", ".gradle"))
+    )
     for path in python_files:
-        if "__pycache__" in path.parts:
+        if any(part in path.parts for part in ("__pycache__", "build", ".gradle")):
             continue
         try:
             ast.parse(path.read_text(encoding="utf-8"), filename=str(path))

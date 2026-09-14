@@ -7,6 +7,7 @@ import time
 from datetime import datetime
 
 import aiohttp
+from nyxor.network import client_session
 
 from constants import COOKIES_PATH, ClientType
 from nyxor_campaigns import get_cookie_value
@@ -47,7 +48,7 @@ async def run_probe(login: str, minutes: int) -> int:
 
     timeout = aiohttp.ClientTimeout(sock_connect=20, total=40)
 
-    async with aiohttp.ClientSession(
+    async with client_session(
         timeout=timeout,
         cookie_jar=jar,
         headers={"User-Agent": client.USER_AGENT},

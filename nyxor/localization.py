@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(os.environ.get("NYXOR_DATA_DIR", str(Path(__file__).resolve().parent.parent)))
 LOCALES_DIR = BASE_DIR / "locales"
 SETTINGS_PATH = BASE_DIR / "nyxor_settings.json"
 DEFAULT_LOCALE = "uk"

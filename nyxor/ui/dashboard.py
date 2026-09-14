@@ -52,81 +52,70 @@ def _state_int(value: Any) -> int:
 
 class DashboardMixin:
     def hero_markup(self, running: bool, state: dict[str, Any]) -> str:
-            meta = state.get("_meta")
-            meta = meta if isinstance(meta, dict) else {}
+        meta = state.get("_meta") or {}
+        telemetry = state.get("_telemetry") or {}
+        status = tr("status.running") if running else tr("status.stopped")
+        color = "#61DFC6" if running else "#A6A1BC"
+        mode = str(state.get("mode") or "")
+        game = escape(str(state.get("game") or tr("dashboard.welcome")))
+        channel = escape(str(state.get("channel") or "—"))
+        message = escape(localize_runtime_message(
+            meta.get("error") or state.get("message") or tr("dashboard.get_started")
+        ))
+        return (
+            f"[bold #C4A7FF]N Y X O R[/]  [{color}]● {status}[/]\n"
+            f"[dim]{BRAND_TAGLINE}[/dim]\n\n"
+            f"[bold #F1ECFF]{game}[/]\n"
+            f"[#61DFC6]{channel}[/]  [dim]{escape(tr(f'modes.{mode}', default=mode))}[/dim]\n"
+            f"[dim]{tr('labels.account')}: {escape(str(state.get('account') or '—'))}"
+            f" · {format_duration(telemetry.get('uptime_seconds'))}[/dim]\n"
+            f"{message}"
+        )
 
-            telemetry = state.get("_telemetry")
-            telemetry = telemetry if isinstance(telemetry, dict) else {}
+    def refresh_campaigns_card(self, state: dict[str, Any]) -> None:
+        drops = state.get("active_drops") or []
+        card = self.query_one("#campaigns-card", Static)
+        card.display = bool(drops) and state.get("mode") == "drops"
+        if not card.display:
+            return
+        count = len({drop["campaign_id"] for drop in drops})
+        lines = [f"[bold #61DFC6]◈ {tr('dashboard.campaigns', count=count)}[/]",
+                 f"[dim]{tr('dashboard.coverage_hint')}[/dim]"]
+        grouped: dict[str, list[dict[str, Any]]] = {}
+        for drop in drops:
+            grouped.setdefault(drop["campaign_id"], []).append(drop)
+        bar_width = max(8, min(28, self.size.width - 20))
+        for rewards in grouped.values():
+            lines.append(f"\n[bold #C4A7FF]{escape(rewards[0]['campaign'])}[/]")
+            for drop in rewards:
+                current, required = int(drop["current"]), int(drop["required"])
+                percent = min(100, max(0, round(current / max(1, required) * 100)))
+                filled = round(bar_width * percent / 100)
+                lines.extend([
+                    escape(drop["drop"]),
+                    f"[#61DFC6]{'━' * filled}[/][#39334F]{'━' * (bar_width - filled)}[/]  [bold]{percent}%[/]",
+                    f"[dim]{current}/{required} {tr('dashboard.minutes')}[/dim]",
+                ])
+        card.update("\n".join(lines))
 
-            status = (
-                f"[bold green]🟢 {tr('status.running')}[/bold green]"
-                if running
-                else f"[bold red]⚫ {tr('status.stopped')}[/bold red]"
-            )
-
-            account = escape(str(state.get("account") or "—"))
-            raw_mode = str(state.get("mode") or "").strip()
-            mode = escape(
-                tr(f"modes.{raw_mode}", default=raw_mode or "—")
-            )
-            game = escape(str(state.get("game") or "—"))
-            channel = escape(str(state.get("channel") or "—"))
-            # NYXOR_CHANNEL_POINTS_DASHBOARD_V1
-            points = escape(str(state.get("points") or "—"))
-            points_session = escape(str(state.get("points_session") or "—"))
-            points_bonus = escape(localize_runtime_message(state.get("points_bonus") or "—"))
-            points_streak = escape(localize_runtime_message(state.get("points_streak") or "—"))
-            points_moments = escape(str(state.get("points_moments") or "0"))
-            points_raid = escape(localize_runtime_message(state.get("points_raid") or "—"))
-            points_prediction = escape(
-                localize_runtime_message(
-                    state.get("points_prediction") or tr("common.disabled")
-                )
-            )
-            points_pubsub = escape(localize_runtime_message(state.get("points_pubsub") or "—"))
-            player = escape(localize_runtime_message(state.get("player") or "—"))
-            viewers = escape(str(state.get("viewers") or telemetry.get("viewers") or "—"))
-
-            raw_message = (
-                meta.get("error")
-                or state.get("message")
-                or meta.get("message")
-                or tr("status.waiting")
-            )
-            message = escape(localize_runtime_message(raw_message))
-
-            uptime = format_duration(telemetry.get("uptime_seconds"))
-            updated = age_text(meta.get("updated_at"))
-
-            brand_width = 36
-            brand_line = f"• {BRAND_NAME} •".center(brand_width)
-            tagline_line = BRAND_TAGLINE.center(brand_width)
-
-            return (
-                f"[bold #E8E3F5]{brand_line}[/bold #E8E3F5]\n"
-                f"[#B57BFF]{tagline_line}[/]\n"
-                "[#7B2FFF]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/]\n"
-                f"[#B57BFF]{tr('labels.process')}:[/] {status}    "
-                f"[#B57BFF]{tr('labels.uptime')}:[/] {uptime}\n"
-                f"[#B57BFF]{tr('labels.account')}:[/] [bold]{account}[/bold]\n"
-                f"[#B57BFF]{tr('labels.mode')}:[/] [bold]{mode}[/bold]\n"
-                f"[#B57BFF]{tr('labels.game')}:[/] [bold #E8E3F5]{game}[/bold #E8E3F5]\n"
-                f"[#B57BFF]{tr('labels.channel')}:[/] {channel}\n"
-                f"[#B57BFF]Points:[/] [bold]{points}[/bold] "
-                f"[dim]({points_session})[/dim]\n"
-                f"[#B57BFF]{tr('labels.bonus')}:[/] {points_bonus}\n"
-                f"[#B57BFF]{tr('labels.watch_streak')}:[/] {points_streak}\n"
-                f"[#B57BFF]{tr('labels.moments')}:[/] {points_moments}\n"
-                f"[#B57BFF]{tr('labels.raid')}:[/] {points_raid}\n"
-                f"[#B57BFF]{tr('labels.prediction')}:[/] {points_prediction}\n"
-                f"[#B57BFF]{tr('labels.pubsub')}:[/] {points_pubsub}\n"
-                f"[#B57BFF]{tr('labels.player')}:[/] {player}\n"
-                f"[#B57BFF]{tr('labels.viewers')}:[/] {viewers}\n"
-                f"[#B57BFF]{tr('labels.status')}:[/] {message}\n"
-                f"[dim]{tr('labels.updated')}: {updated}[/dim]"
-            )
+    def refresh_points_card(self, state: dict[str, Any]) -> None:
+        points = escape(str(state.get("points") or "—"))
+        delta = escape(str(state.get("points_session") or "—"))
+        self.query_one("#points-card", Static).update(
+            f"[bold #C4A7FF]✦ CHANNEL POINTS[/]\n"
+            f"[bold #F1ECFF]{points}[/]  [#61DFC6]{delta}[/] [dim]{tr('dashboard.session')}[/dim]\n"
+            f"[dim]{tr('labels.bonus')}:[/dim] {escape(localize_runtime_message(state.get('points_bonus') or '—'))}"
+        )
+        fields = (("watch_streak", "points_streak"), ("moments", "points_moments"),
+                  ("raid", "points_raid"), ("prediction", "points_prediction"),
+                  ("pubsub", "points_pubsub"), ("player", "player"), ("viewers", "viewers"))
+        lines = [f"[dim]{tr('labels.' + label)}:[/dim] {escape(localize_runtime_message(state.get(key) or '—'))}"
+                 for label, key in fields]
+        lines.append(f"[dim]{tr('labels.updated')}: {age_text((state.get('_meta') or {}).get('updated_at'))}[/dim]")
+        self.query_one("#rewards-details", Static).update("\n".join(lines))
 
     def refresh_drop_card(self, state: dict[str, Any]) -> None:
+            self.query_one("#drop-card").display = not bool(state.get("active_drops")) or state.get("mode") != "drops"
             raw_drop_text = state.get("drop") or state.get("progress") or "—"
             drop_text = localize_runtime_message(raw_drop_text)
             progress = parse_progress(drop_text)
@@ -406,6 +395,9 @@ class DashboardMixin:
             self.query_one("#packet-sparkline", Sparkline).data = values
 
     def refresh_runtime(self) -> None:
+            # A timer can fire while Textual is unmounting the screen on exit.
+            if not self.query("#hero-card"):
+                return
             cleanup_stale_pid()
             running = process_running()
             state = read_state()
@@ -415,6 +407,8 @@ class DashboardMixin:
             )
 
             self.refresh_drop_card(state)
+            self.refresh_campaigns_card(state)
+            self.refresh_points_card(state)
             self.refresh_queue_card(state)
             self.refresh_health_card(running, state)
             self.refresh_stats_card(state)

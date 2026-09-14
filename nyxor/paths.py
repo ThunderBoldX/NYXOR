@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from pathlib import Path
+import os
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(os.environ.get("NYXOR_DATA_DIR", str(Path(__file__).resolve().parent.parent)))
 PACKAGE_DIR = BASE_DIR / "nyxor"
 LOCALES_DIR = BASE_DIR / "locales"
 

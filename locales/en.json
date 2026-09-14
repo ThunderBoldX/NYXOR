@@ -351,5 +351,17 @@
   },
   "common": {
     "disabled": "disabled"
+  },
+  "dashboard": {
+    "details": "Connection & extra rewards",
+    "start": "Start",
+    "stop": "Stop",
+    "restart": "Restart",
+    "welcome": "Your next reward is waiting",
+    "get_started": "Add a game in Games, then press Start.",
+    "campaigns": "Campaigns on this channel: {count}",
+    "coverage_hint": "One stream · progress reported by Twitch",
+    "minutes": "min",
+    "session": "this session"
   }
 }

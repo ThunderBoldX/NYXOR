@@ -1,1 +1,0 @@
-"""NYXOR background worker modules."""

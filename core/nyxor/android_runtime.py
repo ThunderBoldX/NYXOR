@@ -105,9 +105,6 @@ async def mine() -> None:
     from nyxor.worker import runtime as worker
     from nyxor.storage import load_settings
     # Android supplies the foreground service, wake lock and notification.
-    worker.core.run_termux_command = lambda command: None
-    worker.send_notification = lambda *args, **kwargs: None
-    worker.poll_device = lambda: None
     worker.SESSION_STARTED_MONOTONIC = time.monotonic()
     worker.update_stats(starts=1)
     attempt = 0

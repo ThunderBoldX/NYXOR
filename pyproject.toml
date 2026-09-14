@@ -1,23 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name = "nyxor"
-version = "1.0.1"
-description = "Terminal Twitch Drops and Channel Points automation for Android/Termux"
-readme = "README_EN.md"
-requires-python = ">=3.11"
+name = "nyxor-core"
+version = "2.2.0.dev0"
+description = "Shared Twitch Drops and Channel Points engine for NYXOR"
+readme = "README.md"
+requires-python = ">=3.12"
 license = { file = "LICENSE" }
-authors = [
-    { name = "ThunderBoldX" },
-]
-dependencies = [
-    "aiohttp>=3.9,<4.0",
-    "rich>=13,<15",
-    "textual>=0.80,<2",
-    "truststore>=0.9",
-]
+authors = [{ name = "ThunderBoldX" }]
+dependencies = ["aiohttp==3.10.10", "rich==13.9.4"]
 
 [project.urls]
 Homepage = "https://github.com/ThunderBoldX/NYXOR"
 Issues = "https://github.com/ThunderBoldX/NYXOR/issues"
 
-[project.scripts]
-nyxor = "nyxor_app:main"
+[tool.setuptools]
+package-dir = {"" = "core"}
+py-modules = ["constants", "version", "nyxor_campaigns", "nyxor_channels", "nyxor_core", "nyxor_miner", "nyxor_player", "nyxor_points", "nyxor_rewards"]
+
+[tool.setuptools.packages.find]
+where = ["core"]
+include = ["nyxor*"]
+
+[tool.setuptools.package-data]
+nyxor = ["locales/*.json"]

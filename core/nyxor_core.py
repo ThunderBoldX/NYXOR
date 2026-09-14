@@ -3,8 +3,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import secrets
-import shutil
-import subprocess
 import time
 from datetime import datetime, timezone, timedelta
 from typing import Any
@@ -1049,18 +1047,6 @@ async def wait_live(
         await asyncio.sleep(min(1.0, remaining))
 
 
-def run_termux_command(command: str) -> None:
-    executable = shutil.which(command)
-
-    if executable is None:
-        return
-
-    subprocess.run(
-        [executable],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        check=False,
-    )
 
 
 async def main() -> None:
@@ -1175,7 +1161,6 @@ async def main() -> None:
         )
         await player.start()
 
-        run_termux_command("termux-wake-lock")
 
         try:
             with Live(
@@ -1509,16 +1494,5 @@ async def main() -> None:
             channel_history.end()
             await rewards.stop()
             await player.stop()
-            run_termux_command("termux-wake-unlock")
 
 
-if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        console.print("\n[yellow]⏹ Майнер зупинено[/yellow]")
-    except Exception as error:
-        console.print(
-            f"\n[bold red]❌ Помилка:[/bold red] {error}"
-        )
-        raise SystemExit(1)

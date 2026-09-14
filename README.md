@@ -15,13 +15,13 @@ Choose your games and channels, track rewards, and let NYXOR work in the backgro
 
 </div>
 
-## Screenshots
+## Take a look
 
 A dark palette, moon accents, rounded cards and smooth transitions. One place for your drops, channels and points.
 
 <table>
   <tr>
-    <td align="center" width="50%"><strong>Night grind</strong><br><sub>Active stream, balance and Drops progress</sub></td>
+    <td align="center" width="50%"><strong>Your night shift</strong><br><sub>Active stream, balance and Drops progress</sub></td>
     <td align="center" width="50%"><strong>Your game, your channels</strong><br><sub>Browse live channels and sort by viewer count</sub></td>
   </tr>
   <tr>
@@ -100,7 +100,8 @@ Allow unrestricted battery use for NYXOR if your phone offers that option. Closi
 | Link | Contents |
 | :--- | :--- |
 | [Android guide](android/README.md) | Installation, background service, diagnostics and APK build instructions, in Ukrainian |
-| [Changelog](CHANGELOG.md) | Project changes |
+| [Development](docs/DEVELOPMENT.md) | Repository structure, shared engine and local checks |
+| [Changelog](docs/CHANGELOG.md) | Project changes |
 | [Publishing on GitHub](docs/PUBLISHING.md) | Repository, screenshots and APK release checklist, in Ukrainian |
 | [Report an issue](https://github.com/ThunderBoldX/NYXOR/issues) | Include NYXOR version, phone model, Android version and steps to reproduce |
 

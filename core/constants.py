@@ -13,6 +13,7 @@ from typing import Any, Dict, Literal, NewType, TYPE_CHECKING
 from yarl import URL
 
 from version import __version__
+from nyxor.paths import BASE_DIR
 
 if TYPE_CHECKING:
     from collections import abc  # noqa
@@ -91,7 +92,7 @@ else:
     SELF_PATH = Path(sys.argv[0]).resolve()
     if SELF_PATH.stem == "pyinstaller" or SELF_PATH.name == "gui.py":
         SELF_PATH = Path(__file__).with_name("main.py").resolve()
-WORKING_DIR = Path(os.environ.get("NYXOR_DATA_DIR", str(SELF_PATH.parent)))
+WORKING_DIR = BASE_DIR
 # Development paths
 VENV_PATH = Path(WORKING_DIR, "env")
 SITE_PACKAGES_PATH = Path(VENV_PATH, SYS_SITE_PACKAGES)

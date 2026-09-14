@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from pathlib import Path as _Path
+import sys as _sys
+
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[1] / "core"))
+
 import asyncio
-import shutil
-import subprocess
 import time
 
 import aiohttp
@@ -13,6 +16,7 @@ import secrets
 
 
 async def login() -> None:
+    COOKIES_PATH.parent.mkdir(parents=True, exist_ok=True)
     client = ClientType.ANDROID_APP
     jar = aiohttp.CookieJar()
 
@@ -81,16 +85,6 @@ async def login() -> None:
         print("Відкрий сторінку Twitch і підтвердь цей код.")
         print(f"Посилання: {verification_uri}")
         print()
-
-        # Спробувати автоматично відкрити браузер Android.
-        if shutil.which("termux-open-url"):
-            subprocess.run(
-                ["termux-open-url", verification_uri],
-                check=False,
-            )
-            print("🌐 Сторінку активації відкрито у браузері.")
-        else:
-            print("⚠️ Автоматично відкрити браузер не вдалося.")
 
         print("⏳ Чекаю підтвердження входу...")
 

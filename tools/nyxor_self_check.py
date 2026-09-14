@@ -4,7 +4,7 @@ import ast
 import json
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def recursive_keys(value: object, prefix: str = "") -> set[str]:
@@ -29,10 +29,10 @@ def main() -> int:
 
     python_files = sorted(
         path for path in ROOT.rglob("*.py")
-        if not any(part in path.parts for part in ("__pycache__", "build", ".gradle"))
+        if not any(part in path.parts for part in ("__pycache__", "build", ".gradle", ".venv", ".local"))
     )
     for path in python_files:
-        if any(part in path.parts for part in ("__pycache__", "build", ".gradle")):
+        if any(part in path.parts for part in ("__pycache__", "build", ".gradle", ".venv", ".local")):
             continue
         try:
             ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
@@ -40,9 +40,9 @@ def main() -> int:
             errors.append(f"Python: {path.relative_to(ROOT)}: {error}")
 
     json_files = [
-        ROOT / "locales/uk.json",
-        ROOT / "locales/en.json",
-        ROOT / "nyxor_settings.example.json",
+        ROOT / "core/nyxor/locales/uk.json",
+        ROOT / "core/nyxor/locales/en.json",
+        ROOT / "docs/nyxor_settings.example.json",
     ]
     decoded: dict[Path, object] = {}
     for path in json_files:
@@ -51,8 +51,8 @@ def main() -> int:
         except (OSError, json.JSONDecodeError) as error:
             errors.append(f"JSON: {path.relative_to(ROOT)}: {error}")
 
-    uk = decoded.get(ROOT / "locales/uk.json")
-    en = decoded.get(ROOT / "locales/en.json")
+    uk = decoded.get(ROOT / "core/nyxor/locales/uk.json")
+    en = decoded.get(ROOT / "core/nyxor/locales/en.json")
     if isinstance(uk, dict) and isinstance(en, dict):
         uk_keys = recursive_keys(uk)
         en_keys = recursive_keys(en)

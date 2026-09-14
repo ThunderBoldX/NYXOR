@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+from pathlib import Path as _Path
+import sys as _sys
+
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[1] / "core"))
+
 import asyncio
 import secrets
 import sys
@@ -25,7 +30,7 @@ async def main(login: str) -> int:
 
     client = ClientType.ANDROID_APP
     if not COOKIES_PATH.exists():
-        console.print("[red]Не знайдено cookies.jar. Запусти python nyxor_auth.py[/red]")
+        console.print("[red]Не знайдено cookies.jar. Запусти python tools/nyxor_auth.py[/red]")
         return 2
 
     jar = aiohttp.CookieJar()

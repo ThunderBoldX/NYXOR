@@ -1,4 +1,0 @@
-aiohttp>=3.9,<4.0
-rich>=13,<15
-textual>=0.80,<2
-truststore>=0.9

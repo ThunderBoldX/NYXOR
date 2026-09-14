@@ -29,11 +29,11 @@ chaquopy {
     sourceSets { main { srcDir "$buildDir/generated/python" } }
 }
 tasks.register('preparePythonSource', Sync) {
-    from('../..') { include '*.py', 'nyxor/**/*.py'; exclude 'nyxor/ui/**', '**/__pycache__/**' }
+    from('../../core') { include '*.py', 'nyxor/**/*.py'; exclude '**/__pycache__/**' }
     into "$buildDir/generated/python"
 }
 tasks.register('prepareLocales', Sync) {
-    from('../../locales'); into "$buildDir/generated/assets/locales"
+    from('../../core/nyxor/locales'); into "$buildDir/generated/assets/locales"
 }
 tasks.configureEach {
     if (name != 'preparePythonSource' && name.toLowerCase().contains('python')) dependsOn 'preparePythonSource'

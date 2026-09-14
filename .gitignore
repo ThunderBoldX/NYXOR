@@ -36,3 +36,17 @@ __pycache__/
 .DS_Store
 Thumbs.db
 dist/
+
+# Android build outputs and signing credentials
+.gradle/
+android/**/build/
+android/local.properties
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Local development and package metadata
+.local/
+.venv/
+*.egg-info/

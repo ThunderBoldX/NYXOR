@@ -38,7 +38,7 @@ with tempfile.TemporaryDirectory() as directory:
             r._loop.close()
         os.chdir(cwd)
 '''
-        result = subprocess.run([sys.executable, '-c', code], cwd=Path(__file__).resolve().parent.parent,
+        result = subprocess.run([sys.executable, '-c', code], cwd=Path(__file__).resolve().parent.parent / "core",
                                 capture_output=True, text=True, timeout=45)
         self.assertEqual(result.returncode, 0, result.stderr)
 

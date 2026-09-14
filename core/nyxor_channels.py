@@ -64,7 +64,7 @@ def get_selected_game() -> str:
     ):
         raise RuntimeError(
             "Пріоритетну гру не вибрано. "
-            "Спочатку вибери її в termux_main.py."
+            "Додай гру в налаштуваннях NYXOR."
         )
 
     return selected_game.strip()

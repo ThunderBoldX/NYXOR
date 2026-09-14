@@ -150,7 +150,6 @@ class SelectionTests(unittest.IsolatedAsyncioTestCase):
             stack.enter_context(patch.object(core,'update_channel_points',AsyncMock(return_value=ChannelPointsResult(110,10,'ok'))))
             stack.enter_context(patch.object(core,'Live',MagicMock()))
             stack.enter_context(patch.object(core,'render_status',return_value='status'))
-            stack.enter_context(patch.object(core,'run_termux_command'))
             calls=[]
             async def next_cycle(seconds,live,state):
                 calls.append(state['channel_login'])

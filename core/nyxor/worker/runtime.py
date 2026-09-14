@@ -1,11 +1,7 @@
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
-import re
-import shutil
-import subprocess
 import time
 from datetime import datetime
 from pathlib import Path
@@ -52,7 +48,7 @@ class _DiscardWriter:
 
 ensure_directories()
 
-# The Textual UI reads runtime/state.json and data/events.jsonl.
+# The Android runtime reads state and events from private app storage.
 # Printing a full Rich table every 20 seconds only bloats nyxor.log.
 core.console = Console(
     file=_DiscardWriter(),
@@ -71,13 +67,8 @@ _last_game = ""
 _last_channel = ""
 _last_claim = ""
 _last_message = ""
-_last_device_poll = 0.0
 _last_success_at: str | None = None
 _packet_history: list[int] = []
-_device_cache: dict[str, Any] = {
-    "battery": None,
-    "network": None,
-}
 
 
 def load_json(path: Path, default: Any) -> Any:
@@ -232,135 +223,18 @@ def configure_event_logging() -> None:
 configure_event_logging()
 
 
-def notifications_enabled() -> bool:
-    return bool(load_settings().get("notifications_enabled", True))
 
 
-def device_telemetry_enabled() -> bool:
-    return bool(load_settings().get("device_telemetry", True))
 
 
-def auto_restart_enabled() -> bool:
-    return bool(load_settings().get("auto_restart", True))
 
 
-def send_notification(title: str, content: str) -> None:
-    if not notifications_enabled():
-        return
-
-    executable = shutil.which("termux-notification")
-    if executable is None:
-        return
-
-    try:
-        subprocess.run(
-            [
-                executable,
-                "--id",
-                "nyxor-termux",
-                "--title",
-                title,
-                "--content",
-                content,
-            ],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            timeout=5,
-            check=False,
-        )
-    except (OSError, subprocess.TimeoutExpired):
-        pass
 
 
-def run_json_command(command: str, timeout: int = 5) -> dict[str, Any] | None:
-    executable = shutil.which(command)
-    if executable is None:
-        return None
-
-    try:
-        result = subprocess.run(
-            [executable],
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-            check=False,
-        )
-    except (OSError, subprocess.TimeoutExpired):
-        return None
-
-    if result.returncode != 0:
-        return None
-
-    try:
-        data = json.loads(result.stdout)
-    except json.JSONDecodeError:
-        return None
-
-    return data if isinstance(data, dict) else None
 
 
-def ping_ms() -> float | None:
-    executable = shutil.which("ping")
-    if executable is None:
-        return None
-
-    try:
-        result = subprocess.run(
-            [executable, "-c", "1", "-W", "2", "1.1.1.1"],
-            capture_output=True,
-            text=True,
-            timeout=4,
-            check=False,
-        )
-    except (OSError, subprocess.TimeoutExpired):
-        return None
-
-    match = re.search(r"time[=<]\s*([\d.]+)\s*ms", result.stdout)
-    return round(float(match.group(1)), 1) if match else None
 
 
-def poll_device() -> None:
-    global _last_device_poll, _device_cache
-
-    now = time.monotonic()
-
-    if now - _last_device_poll < 30:
-        return
-
-    _last_device_poll = now
-
-    if not device_telemetry_enabled():
-        _device_cache = {"battery": None, "network": None}
-        return
-
-    battery_raw = run_json_command("termux-battery-status")
-    wifi_raw = run_json_command("termux-wifi-connectioninfo")
-
-    battery = None
-    if battery_raw:
-        battery = {
-            "percentage": battery_raw.get("percentage"),
-            "status": battery_raw.get("status"),
-            "temperature": battery_raw.get("temperature"),
-            "health": battery_raw.get("health"),
-        }
-
-    network = {"ping_ms": ping_ms()}
-
-    if wifi_raw:
-        network.update(
-            {
-                "ssid": wifi_raw.get("ssid"),
-                "ip": wifi_raw.get("ip"),
-                "link_speed_mbps": wifi_raw.get("link_speed_mbps"),
-                "rssi": wifi_raw.get("rssi"),
-            }
-        )
-
-    _device_cache = {
-        "battery": battery,
-        "network": network,
-    }
 
 
 def meaningful_claim(value: Any) -> str:
@@ -382,17 +256,13 @@ def append_history(state: dict[str, Any], claim: str) -> None:
 
 
 def telemetry_payload(state: dict[str, Any]) -> dict[str, Any]:
-    poll_device()
 
     return {
         "session_started_at": SESSION_STARTED_AT,
         "uptime_seconds": int(time.monotonic() - SESSION_STARTED_MONOTONIC),
         "last_success_at": _last_success_at,
         "packet_history": list(_packet_history[-40:]),
-        "wake_lock_requested": True,
         "viewers": state.get("viewers"),
-        "battery": _device_cache.get("battery"),
-        "network": _device_cache.get("network"),
     }
 
 
@@ -477,7 +347,6 @@ def patched_render_status(state: dict[str, Any]):
             game=game,
             channel=channel,
         )
-        send_notification(f"🔄 {tr('notifications.game_switch')}", f"{_last_game} → {game}")
 
     if (
         _last_channel
@@ -503,7 +372,6 @@ def patched_render_status(state: dict[str, Any]):
             game=game,
             channel=channel,
         )
-        send_notification(f"🎁 {tr('notifications.drop_received')}", f"{game or 'Twitch'}: {localize_runtime_message(claim)}")
 
     points_bonus = str(state.get("points_bonus") or "").strip()
     if points_bonus and any(
@@ -581,73 +449,7 @@ def should_stop_retrying(error: Exception) -> bool:
     return any(marker in text for marker in fatal_markers)
 
 
-def run_once() -> None:
-    asyncio.run(core.main())
 
 
-def main() -> None:
-    attempt = 0
-    update_stats(starts=1)
-    send_notification("▶ NYXOR", "NYXOR запущено")
-
-    while True:
-        try:
-            write_state(running=True, message=tr("notifications.started"))
-            run_once()
-            write_state(running=False, message=tr("events.finished"))
-            return
-
-        except KeyboardInterrupt:
-            write_state(running=False, message=tr("events.stopped_by_user"))
-            return
-
-        except Exception as error:
-            attempt += 1
-            error_text = f"{type(error).__name__}: {error}"
-            add_event("error", error_text)
-
-            if should_stop_retrying(error) or not auto_restart_enabled():
-                write_state(running=False, error=error_text)
-                send_notification(f"❌ {tr('notifications.fatal_stop')}", localize_runtime_message(error_text)[:180])
-                raise
-
-            delay = min(30 * attempt, 300)
-            update_stats(restarts=1)
-            add_event(
-                "restart",
-                tr("events.restart_in", error=localize_runtime_message(error_text[:120]), time=plural("units.second", delay)),
-            )
-            send_notification(
-                f"⚠ {tr('notifications.restarting')}",
-                tr("events.restart_in", error=localize_runtime_message(error_text[:120]), time=plural("units.second", delay)),
-            )
-
-            for remaining in range(delay, 0, -1):
-                write_state(
-                    running=True,
-                    error=error_text,
-                    message=tr("events.restarting_in", time=plural("units.second", remaining)),
-                    restart_in=remaining,
-                )
-                try:
-                    time.sleep(1)
-                except KeyboardInterrupt:
-                    write_state(running=False, message=tr("events.stopped_by_user"))
-                    return
 
 
-def run_entrypoint() -> None:
-    try:
-        main()
-    finally:
-        current = load_json(STATE_PATH, {})
-        meta = current.get("_meta") if isinstance(current, dict) else {}
-        error = meta.get("error") if isinstance(meta, dict) else None
-        message = meta.get("message") if isinstance(meta, dict) else None
-
-        write_state(
-            running=False,
-            error=error,
-            message=localize_runtime_message(message)
-            or "NYXOR process finished",
-        )

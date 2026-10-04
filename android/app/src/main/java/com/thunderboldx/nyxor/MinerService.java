@@ -15,9 +15,10 @@ public class MinerService extends Service {
     private volatile boolean stopping;
     private boolean started;
     private Future<?> monitor;
+    private volatile long nextStatusAt;
     private final BroadcastReceiver screenReceiver = new BroadcastReceiver() {
         @Override public void onReceive(Context context, Intent intent) {
-            if (!stopping && started) executor.execute(() -> refreshStatus());
+            if (!stopping && started) { nextStatusAt = 0; executor.execute(() -> refreshStatus()); }
         }
     };
 
@@ -107,14 +108,18 @@ public class MinerService extends Service {
         stopSelf();
     }
     private void refreshStatus() {
-        if (stopping) return;
+        if (stopping || SystemClock.elapsedRealtime() < nextStatusAt) return;
         try {
             JSONObject data = new JSONObject(engine("{\"action\":\"snapshot\"}")).getJSONObject("data");
             if (stopping) return;
             if (!data.optBoolean("running")) { finishFarming(!data.optString("error").isEmpty()); return; }
             synchronized (this) {
                 if (stopping) return;
-                wakeLock.acquire(10 * 60 * 1000L);
+                JSONObject settings = data.optJSONObject("settings");
+                boolean saver = settings != null && settings.optBoolean("energy_saver");
+                nextStatusAt = SystemClock.elapsedRealtime() + (saver ? 60000 : 15000);
+                if (saver) { if (wakeLock.isHeld()) wakeLock.release(); }
+                else wakeLock.acquire(10 * 60 * 1000L);
                 JSONObject status = data.optJSONObject("notification");
                 getSystemService(NotificationManager.class).notify(71, notification(status == null ? new JSONObject() : status));
             }

@@ -65,7 +65,6 @@ SESSION_STARTED_AT = datetime.now().astimezone().isoformat(timespec="seconds")
 _last_state: dict[str, Any] = {}
 _last_game = ""
 _last_channel = ""
-_last_claim = ""
 _last_message = ""
 _last_success_at: str | None = None
 _packet_history: list[int] = []
@@ -223,38 +222,6 @@ def configure_event_logging() -> None:
 configure_event_logging()
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def meaningful_claim(value: Any) -> str:
-    text = str(value or "").strip()
-    if text in {"", "-", "—", "None", "0"}:
-        return ""
-    return text
-
-
-def append_history(state: dict[str, Any], claim: str) -> None:
-    item = {
-        "timestamp": datetime.now().astimezone().isoformat(timespec="seconds"),
-        "game": state.get("game"),
-        "channel": state.get("channel"),
-        "drop": state.get("drop") or state.get("progress"),
-        "claim": claim,
-    }
-    append_jsonl(HISTORY_PATH, item)
-
-
 def telemetry_payload(state: dict[str, Any]) -> dict[str, Any]:
 
     return {
@@ -295,12 +262,11 @@ def write_state(
 
 
 def patched_render_status(state: dict[str, Any]):
-    global _last_game, _last_channel, _last_claim
+    global _last_game, _last_channel
     global _last_message, _last_success_at, _packet_history
 
     game = str(state.get("game") or "").strip()
     channel = str(state.get("channel") or "").strip()
-    claim = meaningful_claim(state.get("claim"))
     message = localize_runtime_message(state.get("message") or "").strip()
 
     if state.get("success"):
@@ -363,16 +329,6 @@ def patched_render_status(state: dict[str, Any]):
             channel=channel,
         )
 
-    if claim and claim != _last_claim:
-        append_history(state, claim)
-        update_stats(claims=1)
-        add_event(
-            "claim",
-            f"{game or 'Twitch'}: {claim}",
-            game=game,
-            channel=channel,
-        )
-
     points_bonus = str(state.get("points_bonus") or "").strip()
     if points_bonus and any(
         marker in points_bonus.casefold()
@@ -423,9 +379,6 @@ def patched_render_status(state: dict[str, Any]):
     if channel and channel != "—":
         _last_channel = channel
 
-    if claim:
-        _last_claim = claim
-
     if message:
         _last_message = message
 
@@ -447,9 +400,5 @@ def should_stop_retrying(error: Exception) -> bool:
         "oauth",
     )
     return any(marker in text for marker in fatal_markers)
-
-
-
-
 
 

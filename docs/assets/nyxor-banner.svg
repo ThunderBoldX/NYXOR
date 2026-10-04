@@ -9,8 +9,8 @@
   <rect x="1" y="1" width="1278" height="438" rx="32" fill="url(#bg)" stroke="#34293f" stroke-width="2"/>
   <ellipse cx="1000" cy="220" rx="278" ry="214" fill="url(#glow)"/>
   <g fill="none" stroke="#bda0ef" stroke-opacity=".11"><circle cx="1004" cy="215" r="165"/><circle cx="1004" cy="215" r="198"/></g>
-  <g transform="translate(862 68) scale(9)">
-    <path d="M20 3C12 1 4 7 4 16s8 15 17 12c4-2 7-5 8-9-4 3-10 2-13-2S13 7 17 4" fill="url(#moon)"/>
+  <g transform="translate(856 71) scale(9)">
+    <path d="M19.365 3.443A13 13 0 1 0 28.557 19.365A10.5 10.5 0 0 1 19.365 3.443Z" fill="url(#moon)"/>
     <path d="m25 3 1.4 3.6L30 8l-3.6 1.4L25 13l-1.4-3.6L20 8l3.6-1.4Z" fill="#b6ebd5"/>
   </g>
   <g fill="#b6ebd5"><circle cx="817" cy="125" r="3"/><circle cx="1162" cy="326" r="3"/><circle cx="838" cy="321" r="2"/></g>

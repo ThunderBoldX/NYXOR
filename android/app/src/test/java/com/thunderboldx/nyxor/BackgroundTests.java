@@ -49,10 +49,11 @@ public class BackgroundTests {
         assertEquals(MinerService.RESTORE, shadowOf(RuntimeEnvironment.getApplication()).getNextStartedService().getAction());
     }
     public static class FakeService extends MinerService {
+        boolean saver;
         final CountDownLatch stopped = new CountDownLatch(1);
         @Override protected String engine(String payload) {
             if (payload.contains("stop")) stopped.countDown();
-            return "{\"ok\":true,\"data\":{\"running\":true,\"notification\":{\"title\":\"NYXOR\",\"text\":\"Rust\"}}}";
+            return "{\"ok\":true,\"data\":{\"running\":true,\"settings\":{\"energy_saver\":" + saver + "},\"notification\":{\"title\":\"NYXOR\",\"text\":\"Rust\"}}}";
         }
     }
     private void destroy(ServiceController<FakeService> controller) throws Exception {
@@ -104,5 +105,24 @@ public class BackgroundTests {
             assertEquals(24, web.getTop());
             assertEquals(0, web.getPaddingBottom());
         }
+    }
+    @Test public void energySaverReleasesWakeLockAndNormalModeReacquiresIt() throws Exception {
+        ServiceController<FakeService> controller = Robolectric.buildService(FakeService.class).create();
+        FakeService service = controller.get();
+        java.lang.reflect.Method refresh = MinerService.class.getDeclaredMethod("refreshStatus");
+        refresh.setAccessible(true);
+        java.lang.reflect.Field wake = MinerService.class.getDeclaredField("wakeLock");
+        wake.setAccessible(true);
+        java.lang.reflect.Field next = MinerService.class.getDeclaredField("nextStatusAt");
+        next.setAccessible(true);
+        android.os.PowerManager.WakeLock lock = (android.os.PowerManager.WakeLock) wake.get(service);
+        refresh.invoke(service);
+        assertTrue(lock.isHeld());
+        service.saver = true; next.setLong(service, 0); refresh.invoke(service);
+        assertFalse(lock.isHeld());
+        service.saver = false; next.setLong(service, 0); refresh.invoke(service);
+        assertTrue(lock.isHeld());
+        destroy(controller);
+        assertFalse(lock.isHeld());
     }
 }

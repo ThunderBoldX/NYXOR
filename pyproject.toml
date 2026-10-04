@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nyxor-core"
-version = "2.2.0.dev0"
+version = "2.3.1.dev0"
 description = "Shared Twitch Drops and Channel Points engine for NYXOR"
 readme = "README.md"
 requires-python = ">=3.12"

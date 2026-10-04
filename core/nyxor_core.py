@@ -32,6 +32,8 @@ from nyxor_miner import (
 from nyxor_points import ChannelPointsTracker, update_channel_points, fetch_channel_points_context
 from nyxor.points_selection import point_games, pick_points_target, channel_allowed
 from nyxor.channel_history import ChannelHistory, history_path
+from nyxor.drop_history import record_claim, pending_claim
+from nyxor.game_art import game_art
 from nyxor_player import TwitchHLSPlayer
 from nyxor_rewards import TwitchRewardsEngine
 
@@ -619,7 +621,7 @@ async def claim_ready_drops(
             datetime.max.replace(tzinfo=timezone.utc),
         )
 
-        if now >= campaign_end + timedelta(hours=24):
+        if now - timedelta(hours=24) >= campaign_end:
             continue
 
         for drop in campaign.get("timeBasedDrops") or []:
@@ -639,7 +641,11 @@ async def claim_ready_drops(
             )
             claimed = bool(self_data.get("isClaimed"))
 
-            if claimed or current < required:
+            if claimed:
+                if pending_claim(user_id, campaign_id, drop_id):
+                    record_claim(user_id, campaign_id, drop_id, game_name, str(drop.get("name") or "Drop"), recovered=True)
+                continue
+            if current < required:
                 continue
 
             claim_id = str(
@@ -647,6 +653,7 @@ async def claim_ready_drops(
                 or f"{user_id}#{campaign_id}#{drop_id}"
             )
 
+            pending_claim(user_id, campaign_id, drop_id, add=True)
             try:
                 success, status = await claim_one(
                     session,
@@ -662,6 +669,7 @@ async def claim_ready_drops(
             drop_name = str(drop.get("name") or "Drop")
 
             if success:
+                record_claim(user_id, campaign_id, drop_id, game_name, drop_name)
                 messages.append(
                     f"✅ {game_name}: {drop_name}"
                 )
@@ -1043,8 +1051,7 @@ async def wait_live(
             return
 
         state["remaining"] = int(remaining) + 1
-        live.update(render_status(state))
-        await asyncio.sleep(min(1.0, remaining))
+        await asyncio.sleep(min(5.0 if load_settings().get("energy_saver") else 1.0, remaining))
 
 
 
@@ -1176,6 +1183,8 @@ async def main() -> None:
                     preferred = preferred_channels(settings)
                     games_for_points = point_games(settings)
                     points_order = settings.get("points_order", "popular")
+                    energy_saver = bool(settings.get("energy_saver", False))
+                    player.set_power_saver(energy_saver)
                     points_settings = settings.get("channel_points") or {}
                     points_enabled = bool(points_settings.get("enabled", True))
                     points_auto_claim = bool(points_settings.get("auto_claim_bonus", True))
@@ -1387,6 +1396,7 @@ async def main() -> None:
                     state["mode"] = current_mode
                     state["active_drops"] = progress_snapshot(current_state, current_channel)
                     state["game"] = current_game
+                    state["game_art_url"] = await game_art(session, gql_headers, current_game)
                     state["channel"] = str(
                         current_channel.get("display_name")
                         or current_channel.get("login")
@@ -1404,6 +1414,7 @@ async def main() -> None:
                     playback = await player.ensure_active(
                         channel_login,
                         timeout=30,
+                        max_age=90 if energy_saver else 45,
                     )
                     state["player"] = playback.display_text()
                     state["player_http_status"] = playback.http_status
@@ -1485,7 +1496,7 @@ async def main() -> None:
 
                     elapsed = time.monotonic() - cycle_started
                     await wait_live(
-                        WATCH_INTERVAL - elapsed,
+                        (60 if energy_saver else WATCH_INTERVAL) - elapsed,
                         live,
                         state,
                     )
@@ -1494,5 +1505,4 @@ async def main() -> None:
             channel_history.end()
             await rewards.stop()
             await player.stop()
-
 

@@ -320,6 +320,12 @@ class TwitchHLSPlayer:
         self._stopping = False
         self._task: asyncio.Task[None] | None = None
 
+    def set_power_saver(self, enabled: bool) -> None:
+        interval = 60.0 if enabled else DEFAULT_PULSE_INTERVAL
+        if interval != self._pulse_interval:
+            self._pulse_interval = interval
+            self._changed.set()
+
     @property
     def status(self) -> PlaybackStatus:
         return replace(self._status)

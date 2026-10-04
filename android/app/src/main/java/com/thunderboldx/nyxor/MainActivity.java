@@ -35,6 +35,8 @@ public class MainActivity extends Activity {
             }
             @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
+                if ("https".equals(uri.getScheme()) && "static-cdn.jtvnw.net".equals(uri.getHost())
+                        && uri.getPath().startsWith("/ttv-boxart/") && (uri.getPort() == -1 || uri.getPort() == 443)) return null;
                 if (!"https".equals(uri.getScheme()) || !HOST.equals(uri.getHost()))
                     return new WebResourceResponse("text/plain", "UTF-8", new ByteArrayInputStream(new byte[0]));
                 String file = uri.getPath().equals("/") ? "index.html" : uri.getPath().substring(1);

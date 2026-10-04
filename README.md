@@ -6,12 +6,15 @@
 Choose your games and channels, track rewards, and let NYXOR work in the background.
 
 ![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-b6ebd5?style=flat-square&logo=android&logoColor=b6ebd5&labelColor=201c29)
-![Preview 2.2.0](https://img.shields.io/badge/preview-2.2.0-c3a6f5?style=flat-square&labelColor=201c29)
+![Preview 2.3.1](https://img.shields.io/badge/preview-2.3.1-c3a6f5?style=flat-square&labelColor=201c29)
 ![Ukrainian and English](https://img.shields.io/badge/languages-UK%20%2F%20EN-c3a6f5?style=flat-square&labelColor=201c29)
 [![MIT License](https://img.shields.io/badge/license-MIT-b6ebd5?style=flat-square&labelColor=201c29)](LICENSE)
 
 **English** · [🇺🇦 Українська](README_UK.md)<br>
 [Releases & APK](https://github.com/ThunderBoldX/NYXOR/releases) · [Install](#installation) · [Screenshots](#take-a-look) · [Android guide](android/README.md)
+
+
+**[Download Android 2.3.1 preview](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.3.1-preview)**
 
 </div>
 
@@ -29,12 +32,20 @@ A dark palette, moon accents, rounded cards and smooth transitions. One place fo
     <td align="center"><img src="docs/screenshots/en/points.png" alt="Games for points: Rust channels ordered by fewest viewers first" width="320"></td>
   </tr>
   <tr>
-    <td align="center"><strong>A record of every visit</strong><br><sub>Watched channels and credited points</sub></td>
+    <td align="center"><strong>Your history, under control</strong><br><sub>Select channels and remove history entries</sub></td>
     <td align="center"><strong>Something to save for</strong><br><sub>Channel rewards, prices and points still needed</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/en/history.png" alt="Watched channel history showing 320 credited points and a balance of 12450" width="320"></td>
+    <td align="center"><img src="docs/screenshots/en/history.png" alt="Watched history with two selected channels and credited point totals" width="320"></td>
     <td align="center"><img src="docs/screenshots/en/rewards.png" alt="Channel reward catalog with prices and availability" width="320"></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Rewards, by game</strong><br><sub>Filter your latest claimed Drops</sub></td>
+    <td align="center"><strong>Choose your power mode</strong><br><sub>Optional energy saving in Settings</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/en/activity.png" alt="Filter your latest claimed Drops" width="320"></td>
+    <td align="center"><img src="docs/screenshots/en/settings.png" alt="Optional energy saving in Settings" width="320"></td>
   </tr>
 </table>
 
@@ -52,6 +63,14 @@ A dark palette, moon accents, rounded cards and smooth transitions. One place fo
 | 🔁 **Controlled raids** | Raid destinations must match your streamers or games for points. Raids can be disabled. |
 | 🔋 **Background operation** | A status notification with a stop action and optional startup after reboot. |
 | 🌍 **Two languages** | Ukrainian and English, switchable in Settings. |
+
+## New in 2.3.1
+
+- A smooth crescent logo and a properly centered settings shortcut.
+- Twitch game artwork replaces initials on the current-stream card.
+- Hold a watched-channel row to select and delete history entries. Streamer priorities stay unchanged.
+- Activity records each confirmed claim, keeps the latest 500 rewards and filters them by game.
+- Optional **Energy saver** reduces network checks, screen updates and animations. On Android it releases the wake lock, so background farming may pause; turn it off for more consistent farming. Actual battery savings vary by phone and network.
 
 ## Installation
 
@@ -89,7 +108,7 @@ Allow unrestricted battery use for NYXOR if your phone offers that option. Closi
 
 ## A few things to know
 
-- **2.2.0 is a preview.** Local builds and automated checks have passed; extended use, new features and behavior across different phones still need practical testing.
+- **2.3.1 is a preview.** Local builds and automated checks have passed; extended use, new features and behavior across different phones still need practical testing.
 - **Points history starts with version 2.2.** It records observed balance increases while watching. Spending between checks can affect the count.
 - **Rewards are not purchased automatically.** The catalog shows the current channel’s offerings; redemption happens on Twitch.
 - **Your data stays on your device.** The APK stores login data, lists and history in its private app directory. Keep tokens, cookies, logs and signing keys out of the repository.

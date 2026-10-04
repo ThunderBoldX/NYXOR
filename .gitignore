@@ -50,3 +50,6 @@ android/local.properties
 .local/
 .venv/
 *.egg-info/
+
+# Optional screenshot tooling
+node_modules/

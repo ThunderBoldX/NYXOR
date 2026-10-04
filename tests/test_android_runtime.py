@@ -176,3 +176,10 @@ class AndroidRuntimeTests(unittest.IsolatedAsyncioTestCase):
     async def test_unknown_command_is_rejected(self):
         with self.assertRaises(ValueError):
             await runtime.dispatch({"action": "execute", "code": "bad"})
+
+    async def test_energy_setting_persists_and_rejects_non_boolean(self):
+        result = await runtime.dispatch({"action": "settings", "values": {"energy_saver": True}})
+        self.assertTrue(result['settings']['energy_saver'])
+        self.assertTrue(storage.load_settings()['energy_saver'])
+        with self.assertRaises(ValueError):
+            await runtime.dispatch({"action": "settings", "values": {"energy_saver": "false"}})

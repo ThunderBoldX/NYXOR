@@ -63,6 +63,7 @@ def snapshot() -> dict:
     from nyxor.paths import STATE_PATH, HISTORY_PATH, EVENTS_PATH, STATS_PATH
     from nyxor.storage import load_json, load_jsonl, load_settings, load_queue, load_streamers
     settings = load_settings()
+    from nyxor.drop_history import read_claims
     result = {
         "network": connection_state(),
         "running": _miner is not None and not _miner.done(),
@@ -71,11 +72,13 @@ def snapshot() -> dict:
         "state": load_json(STATE_PATH, {}), "stats": load_json(STATS_PATH, {}),
         "queue": load_queue(), "streamers": load_streamers(),
         "points_games": settings.get("points_games", []),
-        "history": load_jsonl(HISTORY_PATH, 100)[::-1],
+        "history": read_claims(account_id()) if account_id() else [],
+        "history_limit": 500, "platform": "android",
         "events": load_jsonl(EVENTS_PATH, 60)[::-1],
         "settings": {"language": settings.get("language", "uk"),
                      "launch_on_boot": settings.get("launch_on_boot", False),
                      "points_order": settings.get("points_order", "popular"),
+                     "energy_saver": settings.get("energy_saver", False),
                      "auto_restart": settings.get("auto_restart", True),
                      "channel_points": settings.get("channel_points", {})},
     }
@@ -85,19 +88,24 @@ def snapshot() -> dict:
     return result
 
 
-def account_history():
+def account_id():
     from constants import COOKIES_PATH, ClientType
-    from nyxor.channel_history import read_history
     import aiohttp
     if not COOKIES_PATH.exists():
-        return []
+        return ""
     try:
         jar = aiohttp.CookieJar()
         jar.load(COOKIES_PATH)
         cookie = jar.filter_cookies(ClientType.ANDROID_APP.CLIENT_URL).get("persistent")
-        return read_history(cookie.value) if cookie else []
+        return cookie.value if cookie else ""
     except Exception:
-        return []
+        return ""
+
+
+def account_history():
+    from nyxor.channel_history import read_history
+    user_id = account_id()
+    return read_history(user_id) if user_id else []
 
 
 async def mine() -> None:
@@ -248,6 +256,16 @@ async def dispatch(data: dict):
         from nyxor.storage import atomic_write_json
         atomic_write_json(STATE_PATH, {})
         _auth, _account = {"status": "idle"}, ""
+    elif action == "delete_history":
+        items = data.get("logins")
+        if not isinstance(items, list) or not 1 <= len(items) <= 5000 or any(
+                not isinstance(item, str) or not re.fullmatch(r"[A-Za-z0-9_]{1,25}", item) for item in items):
+            raise ValueError("Invalid channels")
+        user_id = account_id()
+        if not user_id:
+            raise ValueError("Connect Twitch first")
+        from nyxor.channel_history import delete_history
+        delete_history(user_id, items)
     elif action in {"queue", "streamers", "points_games"}:
         items = data.get("items")
         if not isinstance(items, list) or len(items) > 100:
@@ -272,7 +290,7 @@ async def dispatch(data: dict):
             if key == "language" and value in {"uk", "en"}:
                 settings[key] = value
                 os.environ["NYXOR_LANG"] = value
-            elif key in {"auto_restart", "launch_on_boot"} and isinstance(value, bool):
+            elif key in {"auto_restart", "launch_on_boot", "energy_saver"} and isinstance(value, bool):
                 settings[key] = value
             elif key == "points_order" and value in {"popular", "quiet"}:
                 settings[key] = value
@@ -296,7 +314,7 @@ async def dispatch(data: dict):
     elif action == "search":
         from nyxor.game_search import search_game_categories
         query = str(data.get("query") or "")[:100]
-        return [{"id": item.id, "name": item.name} for item in await search_game_categories(query)]
+        return [{"id": item.id, "name": item.name, "box_art_url": item.box_art_url} for item in await search_game_categories(query)]
     else:
         raise ValueError("Unknown action")
     if action in {"queue", "streamers", "points_games", "settings"} and _miner is not None and not _miner.done():

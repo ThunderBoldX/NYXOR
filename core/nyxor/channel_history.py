@@ -17,8 +17,15 @@ class ChannelHistory:
         login = str(channel.get("login") or "").casefold()
         if not login:
             return
+        self.rows = load_json(self.path, {})
+        if not isinstance(self.rows, dict):
+            self.rows = {}
         now = datetime.now(timezone.utc).isoformat()
-        if login != self.active:
+        # A removed active row stays hidden until this viewing session ends.
+        if login == self.active and login not in self.rows:
+            self.balance = None
+            return
+        if login != self.active or login not in self.rows:
             self.active, self.balance = login, baseline
             row = self.rows.setdefault(login, dict(login=login, earned=0, visits=0, first_seen=now))
             row["visits"] += 1
@@ -30,6 +37,10 @@ class ChannelHistory:
         if login.casefold() != self.active or not self.active:
             return
         balance = max(0, int(balance))
+        self.rows = load_json(self.path, {})
+        if not isinstance(self.rows, dict) or self.active not in self.rows:
+            self.balance = None
+            return
         row = self.rows[self.active]
         if self.balance is not None:
             row["earned"] += max(0, balance - self.balance)
@@ -50,5 +61,16 @@ def history_path(user_id):
 
 def read_history(user_id):
     rows = load_json(history_path(user_id), {})
+    if not isinstance(rows, dict):
+        return []
     return sorted((item for item in rows.values() if isinstance(item, dict)),
                   key=lambda item: item.get("last_seen", ""), reverse=True)
+
+
+def delete_history(user_id, logins):
+    path = history_path(user_id)
+    rows = load_json(path, {})
+    if not isinstance(rows, dict):
+        rows = {}
+    removed = {str(login).casefold() for login in logins}
+    atomic_write_json(path, {key: row for key, row in rows.items() if key.casefold() not in removed})

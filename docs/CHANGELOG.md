@@ -1,3 +1,19 @@
+## Android 2.3.1 preview — smooth moon and refreshed screenshots
+
+- Rebuild the crescent from continuous circular arcs, removing the straight closing edge in the banner and app logo.
+- Center the settings-button moon using grid alignment instead of the inline text baseline.
+- Use the same crescent in the launcher icon and refresh English/Ukrainian screenshots, including reward filters, history selection and energy saving.
+- Publish the Android features listed below; no additional platform project is included.
+
+## 2.3 preview — artwork, history and energy controls
+
+- Resolve the current Twitch category's box art through Helix, cache URLs, and use an icon fallback when unavailable.
+- Add long-press history selection, right-side checkboxes and batch deletion limited to watched history. Prevent active sessions from immediately restoring deleted entries.
+- Persist every confirmed drop by account/campaign/drop identity, recover pending claims from inventory, remove error-only legacy entries and retain the latest 500 rewards.
+- Filter reward activity by game.
+- Add optional energy saving with slower checks and UI refresh, reduced animations and Android wake-lock release.
+- Avoid a date overflow when a campaign has no end date.
+
 ## Android 2.2 preview — moon branding and Channel Points
 
 - Replace the mobile wordmark and N icon with a crescent moon and “Nyxor — grinds while you sleep”. Use a monochrome moon for notifications.

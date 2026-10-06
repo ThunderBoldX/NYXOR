@@ -1068,7 +1068,8 @@ async def main() -> None:
         )
 
     preferred = preferred_channels(settings)
-    client = ClientType.ANDROID_APP
+    from nyxor.browser_auth import stored_client
+    client = stored_client()
 
     if not COOKIES_PATH.exists():
         raise RuntimeError("Не знайдено cookies.jar")
@@ -1505,4 +1506,3 @@ async def main() -> None:
             channel_history.end()
             await rewards.stop()
             await player.stop()
-

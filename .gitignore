@@ -1,5 +1,6 @@
 # NYXOR private data
 cookies.jar
+browser-session.json
 nyxor_settings.json
 .env
 .env.*

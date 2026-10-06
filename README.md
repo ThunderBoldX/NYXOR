@@ -23,7 +23,7 @@ Choose your games and channels, track rewards, and let NYXOR work in the backgro
 
 ### Windows preview
 
-The same style and farming engine in a desktop window, with sidebar navigation, system tray controls and optional startup after Windows login. Requires **Windows 10/11 x64**. The local installer is ready; a public Windows release has not been published yet.
+The same style and farming engine in a desktop window, with sidebar navigation, system tray controls and optional startup after Windows login. Requires **Windows 10/11 x64** and **Google Chrome for Twitch login**. The local 2.3.3 preview installer is ready; a public Windows release has not been published yet.
 
 ![Windows overview with fictional demo data](docs/screenshots/windows/en/overview.png)
 

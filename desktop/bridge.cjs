@@ -1,7 +1,7 @@
 'use strict';
 const {spawn}=require('node:child_process');
 const readline=require('node:readline');
-const ACTIONS=new Set(['snapshot','check_connection','start','stop','restart','auth','logout','delete_history','queue','streamers','points_games','settings','directory','search','open','copy_code','background_settings','notification_settings']);
+const ACTIONS=new Set(['snapshot','check_connection','start','stop','restart','auth','cancel_auth','logout','delete_history','queue','streamers','points_games','settings','directory','search','open','copy_code','background_settings','notification_settings']);
 function validate(payload){
  if(typeof payload!=='string'||Buffer.byteLength(payload)>60000)throw new Error('Invalid request');
  const data=JSON.parse(payload);

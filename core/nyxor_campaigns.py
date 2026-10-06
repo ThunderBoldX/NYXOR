@@ -96,7 +96,8 @@ async def gql_request(
 
 
 async def main() -> None:
-    client = ClientType.ANDROID_APP
+    from nyxor.browser_auth import stored_client
+    client = stored_client()
 
     if not COOKIES_PATH.exists():
         raise RuntimeError("Не знайдено cookies.jar")

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import ipaddress
+import os
 import socket
 
 import aiohttp
@@ -64,10 +65,19 @@ class AndroidResolver(aiohttp.ThreadedResolver):
 def client_session(**kwargs):
     if _android is not None and "connector" not in kwargs:
         kwargs["connector"] = aiohttp.TCPConnector(resolver=AndroidResolver())
+    if os.environ.get("NYXOR_PLATFORM") == "desktop":
+        from nyxor.browser_auth import apply_context, reject_redirect
+        trace = aiohttp.TraceConfig()
+        trace.on_request_start.append(apply_context)
+        trace.on_request_redirect.append(reject_redirect)
+        kwargs["trace_configs"] = [*kwargs.get("trace_configs", []), trace]
     return aiohttp.ClientSession(**kwargs)
 
 
 def error_code(error) -> str:
+    from nyxor.browser_auth import BrowserAuthError
+    if isinstance(error, BrowserAuthError):
+        return error.code
     if isinstance(error, (aiohttp.ClientSSLError, aiohttp.ServerFingerprintMismatch)):
         return "tls"
     if isinstance(error, aiohttp.ClientResponseError):

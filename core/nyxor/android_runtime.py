@@ -69,6 +69,7 @@ def snapshot() -> dict:
         "running": _miner is not None and not _miner.done(),
         "authenticated": COOKIES_PATH.exists(), "account": _account,
         "auth": dict(_auth), "error": _error,
+        "auth_mode": "browser" if os.environ.get("NYXOR_PLATFORM") == "desktop" and _browser_account() else "device",
         "state": load_json(STATE_PATH, {}), "stats": load_json(STATS_PATH, {}),
         "queue": load_queue(), "streamers": load_streamers(),
         "points_games": settings.get("points_games", []),
@@ -100,6 +101,12 @@ def account_id():
         return cookie.value if cookie else ""
     except Exception:
         return ""
+
+
+def _browser_account():
+    from nyxor.browser_auth import stored_client
+    from constants import ClientType
+    return stored_client() is ClientType.WEB
 
 
 def account_history():
@@ -170,6 +177,11 @@ async def authenticate() -> None:
     try:
         async with client_session(cookie_jar=jar, timeout=aiohttp.ClientTimeout(total=25)) as session:
             async with session.post("https://id.twitch.tv/oauth2/device", data={"client_id": client.CLIENT_ID, "scopes": ""}) as response:
+                if response.status == 400:
+                    failure = await response.json()
+                    if isinstance(failure, dict) and str(failure.get("message") or failure.get("error") or "").lower() == "invalid client":
+                        _auth = {"status": "error", "error_code": "auth_client", "http_status": 400, "message": ""}
+                        return
                 response.raise_for_status()
                 data = await response.json()
             verification = str(data["verification_uri"])
@@ -243,6 +255,27 @@ async def dispatch(data: dict):
         if _auth_task is None or _auth_task.done():
             _auth_task = asyncio.create_task(authenticate())
             await asyncio.sleep(0)
+    elif action in {"browser_begin", "browser_import", "browser_error", "browser_cancel"}:
+        if os.environ.get("NYXOR_PLATFORM") != "desktop":
+            raise ValueError("Unknown action")
+        if action == "browser_begin":
+            if _miner is not None and not _miner.done():
+                raise ValueError("Зупини фарм перед зміною акаунта")
+            _auth = {"status": "browser_pending"}
+        elif action == "browser_import":
+            from nyxor.browser_auth import import_context
+            renewal = data.get("renewal") is True
+            if not renewal and _miner is not None and not _miner.done():
+                raise ValueError("Stop farming first")
+            _account = await import_context(data.get("context"), renewal=renewal)
+            _auth = {"status": "connected"}
+        elif action == "browser_cancel":
+            _auth = {"status": "idle"}
+        else:
+            code = data.get("code")
+            allowed = {"browser_missing", "browser_closed", "browser_timeout", "browser_invalid", "browser_rejected",
+                       "browser_catalog", "browser_expired", "browser_account_changed", "connection", "dns", "timeout", "tls"}
+            _auth = {"status": "error", "error_code": code if code in allowed else "browser_invalid", "message": ""}
     elif action == "logout":
         await stop()
         if _auth_task is not None and not _auth_task.done():
@@ -252,6 +285,8 @@ async def dispatch(data: dict):
             except asyncio.CancelledError:
                 pass
         COOKIES_PATH.unlink(missing_ok=True)
+        from nyxor.browser_auth import context_path
+        context_path().unlink(missing_ok=True)
         from nyxor.paths import STATE_PATH
         from nyxor.storage import atomic_write_json
         atomic_write_json(STATE_PATH, {})

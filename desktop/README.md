@@ -2,7 +2,7 @@
 
 [Project](../README.md) · [Українська](README_UK.md)
 
-The same moon, colors, cards, animations and farming engine as Android, adapted to a desktop window with a sidebar. This is the **2.3.2 Windows preview**, for **Windows 10/11 x64**. Other desktop operating systems are not packaged or tested.
+The same moon, colors, cards, animations and farming engine as Android, adapted to a desktop window with a sidebar. This is the **2.3.3 Windows preview**, for **Windows 10/11 x64**. Other desktop operating systems are not packaged or tested.
 
 ![Windows overview, sample data](../docs/screenshots/windows/en/overview.png)
 
@@ -10,8 +10,8 @@ Screenshots show the actual interface in demo mode; channels, balances and rewar
 
 ## Install and use
 
-1. Run `NYXOR-Windows-2.3.2-preview-Setup.exe` and choose your installation directory. Python, Node.js and a separate browser runtime are bundled; you do not install them yourself.
-2. Open NYXOR from Start or the desktop shortcut. In **Settings → Connect Twitch**, request a code, open Twitch and approve it. Enter your password only on Twitch's website.
+1. Run `NYXOR-Windows-2.3.3-preview-Setup.exe` and choose your installation directory. Python and Node.js are bundled. **Google Chrome must be installed for Twitch login.**
+2. Open NYXOR from Start or the desktop shortcut. In **Settings → Connect Twitch**, sign in on Twitch in the separate Chrome window. NYXOR verifies the account and protected Drops catalog before saving the session. Enter your password only on Twitch's website.
 3. Add Drops categories in **Games**, channels in **Streamers**, or categories in **Points → Games for points**. Press **Start farming** on Overview.
 4. Closing the window hides it in the system tray. Double-click the moon to reopen it; right-click for start, stop and quit.
 
@@ -25,6 +25,8 @@ The locally built installer is unsigned. Windows may display an unknown-publishe
 - Normal mode prevents automatic system sleep while farming and still permits the display to turn off. Manual sleep, shutdown or loss of network access pauses farming.
 - **Energy saver** uses the shared engine's slower network checks and screen updates and reduces animations. It also allows Windows to sleep. Savings depend on the hardware and network.
 - Hover over the tray icon for the current game and channel. Selecting **Quit NYXOR** stops the engine and exits.
+
+A separate Chrome profile is stored in `%APPDATA%\NYXOR\twitch-profile`; your personal browser profile is never used. The owned Chrome window is minimized after login and retained for Twitch session renewal. NYXOR closes it when farming is stopped or the app exits, and reopens it minimized on the next start. Signing out clears the owned profile. Existing Android-client sessions are preserved and do not require Chrome while valid.
 
 Account data, lists and history are stored under `%APPDATA%\NYXOR\engine`. Windows and Android accounts/settings are independent; no automatic synchronization is implemented.
 
@@ -63,3 +65,11 @@ The packaged executable accepts `--smoke-dir=ABSOLUTE_PATH` for an isolated inte
 Optional screenshot capture: install Playwright separately, run `node desktop/scripts/prepare-ui.cjs`, then `node tools/capture_desktop_screenshots.cjs`. `BROWSER_EXECUTABLE` can select an installed Chromium browser. It captures English and Ukrainian screens and checks navigation, filters, selection and layout at several widths.
 
 Live Twitch login, real claim completion, tray use over extended sessions, login startup after a reboot and sleep/resume still require practical user testing. The automated checks do not claim those live outcomes.
+
+## Twitch login recovery in 2.3.3
+
+The old Android device-code client currently returns HTTP 400 `invalid client`. Repeated network checks do not fix it. Desktop login now uses native Chrome with a dedicated NYXOR profile, checks both account identity and the protected campaign list, and refreshes the matching web request context before Twitch’s expiry. No password, OAuth token or integrity context is sent to the application renderer. Failed validation preserves the prior saved login.
+
+This approach is informed by the [upstream login investigation](https://github.com/rangermix/TwitchDropsMiner/issues/118). It uses the browser’s issued context, without generating substitute integrity proofs. If Chrome is missing, closed, or a session cannot be refreshed, Settings explains the error and offers reconnect/cancel controls. Live interactive login on this Windows machine and overnight renewal still need user verification.
+
+Run `node desktop/tests/twitch-login-smoke.cjs` to test actual Chrome ownership, separate empty profile and cleanup without an account. Add `--smoke-login` to a packaged `--smoke-dir=...` check to exercise the pending/cancel UI and backend flow.

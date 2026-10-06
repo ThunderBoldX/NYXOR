@@ -177,7 +177,8 @@ async def fetch_channels(
     selected_game: str,
     verbose: bool = True,
 ) -> tuple[str, list[dict[str, Any]]]:
-    client = ClientType.ANDROID_APP
+    from nyxor.browser_auth import stored_client
+    client = stored_client()
 
     if not COOKIES_PATH.exists():
         raise RuntimeError("Не знайдено cookies.jar")

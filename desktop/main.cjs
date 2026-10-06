@@ -2,11 +2,12 @@
 const {app,BrowserWindow,ipcMain,protocol,net,Menu,Tray,nativeImage,shell,clipboard,powerSaveBlocker}=require('electron');
 const path=require('node:path'),fs=require('node:fs'),{pathToFileURL}=require('node:url');
 const {Engine,validate,twitchURL}=require('./bridge.cjs');
+const {TwitchLogin}=require('./twitch-login.cjs');
 const smokeArg=process.argv.find(arg=>arg.startsWith('--smoke-dir='));
 const smokeDir=smokeArg?path.resolve(smokeArg.slice('--smoke-dir='.length)):null;
 if(smokeDir){fs.mkdirSync(smokeDir,{recursive:true});app.setPath('userData',path.join(smokeDir,'user-data'));}
 protocol.registerSchemesAsPrivileged([{scheme:'nyxor',privileges:{standard:true,secure:true,supportFetchAPI:true}}]);
-let window,tray,engine,quitting=false,powerId,refreshTimer,lastSnapshot;
+let window,tray,engine,login,quitting=false,powerId,refreshTimer,lastSnapshot;
 const ui=path.join(__dirname,'generated/ui');
 function show(){window.show();window.restore();window.focus();}
 function syncStatus(data){
@@ -23,7 +24,7 @@ function syncStatus(data){
  tray.setContextMenu(Menu.buildFromTemplate([
   {label:uk?'Відкрити NYXOR':'Open NYXOR',click:show},
   {label:data.running?(uk?'Зупинити фарм':'Stop farming'):(uk?'Запустити фарм':'Start farming'),click:async()=>{
-   const result=await engine.request({action:data.running?'stop':'start'}).catch(error=>({ok:false,error:error.message}));
+   const result=await request({action:data.running?'stop':'start'}).catch(error=>({ok:false,error:error.message}));
    if(result.ok)syncStatus(result.data);else{show();await window.webContents.executeJavaScript(`toast(${JSON.stringify(result.error)})`).catch(()=>{});}
   }},
   {type:'separator'},
@@ -38,6 +39,27 @@ function startup(enabled){
  }
 }
 async function request(data){
+ if(data.action==='auth'){
+  await login.start(true);return engine.request({action:'snapshot'});
+ }
+ if(data.action==='cancel_auth'){
+  await login.close();return engine.request({action:'browser_cancel'});
+ }
+ if(data.action==='logout'){
+  // Clear backend credentials even if Windows delays deleting Chrome's cache.
+  await login.close();const result=await engine.request(data);
+  if(result.ok){
+   try{await login.logout();}catch{throw new Error(lastSnapshot?.settings?.language==='uk'?'Акаунт відключено, але Windows ще утримує профіль Twitch. Закрий вікно Twitch і спробуй підключитися знову.':'Account disconnected, but Windows still holds the Twitch profile. Close its window and try connecting again.');}
+  }
+  return result;
+ }
+ if(['start','restart'].includes(data.action)){
+  const state=await engine.request({action:'snapshot'});
+  if(state.data?.auth_mode==='browser'){
+   try{await login.ensure();}catch{throw new Error(state.data.settings.language==='uk'?'Не вдалося відновити вхід Twitch. Підключи Twitch заново у налаштуваннях.':'Could not restore Twitch login. Connect Twitch again in Settings.');}
+  }
+ }
+ if(data.action==='stop')await login.close();
  if(data.action==='open'){await shell.openExternal(twitchURL(data.url));return {ok:true,data:{}};}
  if(data.action==='copy_code'){
   const status=await engine.request({action:'snapshot'}),auth=status.data?.auth;
@@ -82,6 +104,20 @@ async function smoke(){
   await window.webContents.executeJavaScript("refresh(true).then(()=>navigate('settings'))");
   await new Promise(resolve=>setTimeout(resolve,600));
   fs.writeFileSync(path.join(smokeDir,'first-launch.png'),(await window.webContents.capturePage()).toPNG());
+  if(process.argv.includes('--smoke-login')){
+   const launch=login.launch.bind(login);login.launch=()=>launch(false);
+   const pending=await request({action:'auth'});if(!pending.ok||pending.data.auth.status!=='browser_pending')throw new Error('Browser login did not enter pending state');
+   const until=Date.now()+25000;
+   while(!login.protocol&&Date.now()<until)await new Promise(resolve=>setTimeout(resolve,100));
+   if(!login.protocol)throw new Error('Native login browser did not open');
+   await window.webContents.executeJavaScript("refresh(true).then(()=>navigate('settings'))");
+   await new Promise(resolve=>setTimeout(resolve,400));
+   if(!await window.webContents.executeJavaScript("Boolean(document.querySelector('#cancel-auth'))"))throw new Error('Cancel login control is missing');
+   fs.writeFileSync(path.join(smokeDir,'connect-twitch.png'),(await window.webContents.capturePage()).toPNG());
+   const cancelled=await request({action:'cancel_auth'});
+   if(!cancelled.ok||cancelled.data.auth.status!=='idle'||cancelled.data.authenticated||login.protocol)throw new Error('Browser login cancellation failed');
+   const logout=await request({action:'logout'});if(!logout.ok||fs.existsSync(login.profile))throw new Error('Owned profile logout cleanup failed');
+  }
   await window.loadURL('nyxor://app/index.html?demo=1');
   await window.webContents.executeJavaScript('refresh(true)');
   while(!await window.webContents.executeJavaScript('Boolean(model)'))await new Promise(resolve=>setTimeout(resolve,150));
@@ -100,7 +136,7 @@ async function smoke(){
   const afterClose=await request({action:'snapshot'});
   if(!afterClose.ok)throw new Error('Closing the window stopped the engine');
   if(errors.length)throw new Error('Renderer errors: '+errors.join('; '));
-  fs.writeFileSync(path.join(smokeDir,'result.json'),JSON.stringify({ok:true,layout,errors,engine:status.data.platform,checks:['persistent queue','energy setting','unauthenticated start blocked','six sections','centered moon','no horizontal overflow','tray status','close to tray keeps engine alive','normal power blocker and eco release']},null,2));
+  fs.writeFileSync(path.join(smokeDir,'result.json'),JSON.stringify({ok:true,layout,errors,engine:status.data.platform,checks:['persistent queue','energy setting','unauthenticated start blocked','six sections','centered moon','no horizontal overflow','tray status','close to tray keeps engine alive','normal power blocker and eco release',...(process.argv.includes('--smoke-login')?['native Chrome login pending','cancel login closes owned Chrome','logout removes owned profile']:[])]},null,2));
  }catch(error){fs.writeFileSync(path.join(smokeDir,'result.json'),JSON.stringify({ok:false,error:error.stack,errors},null,2));process.exitCode=1;}
  finally{app.quit();}
 }
@@ -118,6 +154,7 @@ else{
   const dataDirectory=path.join(app.getPath('userData'),'engine');
   if(app.isPackaged)engine=new Engine(path.join(process.resourcesPath,'engine/nyxor-engine.exe'),[dataDirectory],{env:{...process.env,PYTHONUTF8:'1'}});
   else engine=new Engine(process.env.NYXOR_PYTHON||'python',[path.join(__dirname,'backend.py'),dataDirectory],{env:{...process.env,PYTHONUTF8:'1'}});
+  login=new TwitchLogin(app.getPath('userData'),engine);
   ipcMain.handle('nyxor:request',async(event,payload)=>{
    try{
     if(event.sender!==window.webContents||event.senderFrame!==window.webContents.mainFrame||!event.senderFrame.url.startsWith('nyxor://app/index.html'))throw new Error('Untrusted request');
@@ -155,7 +192,7 @@ else{
   if(quitting)return;
   event.preventDefault();quitting=true;clearInterval(refreshTimer);
   if(powerId!==undefined)powerSaveBlocker.stop(powerId);
-  (engine?engine.stop():Promise.resolve()).finally(()=>{tray?.destroy();app.quit();});
+  (async()=>{await login?.close();await engine?.stop();})().finally(()=>{tray?.destroy();app.quit();});
  });
  app.on('window-all-closed',()=>{if(quitting)app.quit();});
  app.on('activate',()=>{if(window)show();});

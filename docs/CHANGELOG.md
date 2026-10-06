@@ -1,3 +1,12 @@
+## Windows 2.3.3 preview — Twitch login recovery
+
+- Replace rejected Android device-code initiation on desktop with native Chrome login in a dedicated NYXOR profile.
+- Validate account and protected campaign access before saving a matching web context; preserve existing logins on failure.
+- Refresh browser-issued proof before expiry, scope headers to Twitch GQL, and reject redirects or account changes.
+- Add pending/cancel/reconnect controls and specific missing-browser, timeout and session errors.
+- Keep existing Android sessions and report HTTP 400 invalid-client clearly.
+- Add context, rollback, expiry, renewal, native browser ownership and cancellation checks. Live Windows account login and overnight renewal remain unverified.
+
 ## Windows 2.3.2 preview — installer process checks
 
 - Match exact app and engine executable paths instead of every process under a directory prefix; exclude setup, uninstallers, siblings and the installer PID.

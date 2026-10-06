@@ -116,7 +116,8 @@ def parse_categories(payload: Any, query: str, limit: int) -> list[GameCategory]
 
 
 def _load_twitch_token() -> tuple[str, Any]:
-    client = ClientType.ANDROID_APP
+    from nyxor.browser_auth import stored_client
+    client = stored_client()
 
     if not COOKIES_PATH.exists():
         raise GameSearchError("auth_missing")

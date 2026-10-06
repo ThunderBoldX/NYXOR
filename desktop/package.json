@@ -1,6 +1,6 @@
 {
   "name": "nyxor-desktop",
-  "version": "2.3.1",
+  "version": "2.3.2",
   "description": "NYXOR — grinds while you sleep. Windows preview.",
   "author": "ThunderBoldX",
   "license": "MIT",
@@ -20,6 +20,6 @@
     "files": ["main.cjs", "preload.cjs", "bridge.cjs", "generated/ui/**/*", "assets/**/*", "package.json"],
     "extraResources": [{"from": "engine/nyxor-engine", "to": "engine"}],
     "win": {"icon": "assets/nyxor.ico", "target": [{"target": "nsis", "arch": ["x64"]}]},
-    "nsis": {"oneClick": false, "perMachine": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "createStartMenuShortcut": true, "runAfterFinish": false, "artifactName": "NYXOR-Windows-${version}-preview-Setup.${ext}"}
+    "nsis": {"include": "installer/custom.nsh", "oneClick": false, "perMachine": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "createStartMenuShortcut": true, "runAfterFinish": false, "artifactName": "NYXOR-Windows-${version}-preview-Setup.${ext}"}
   }
 }

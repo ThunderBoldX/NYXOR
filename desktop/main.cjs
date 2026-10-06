@@ -106,7 +106,9 @@ async function smoke(){
 }
 if(!app.requestSingleInstanceLock())app.quit();
 else{
- app.on('second-instance',()=>{if(window)show();});
+ app.on('second-instance',(_event,args)=>{if(args.includes('--quit-for-update'))app.quit();else if(window)show();});
+ if(process.argv.includes('--quit-for-update'))app.quit();
+ else{
  app.whenReady().then(async()=>{
   protocol.handle('nyxor',incoming=>{
    const url=new URL(incoming.url),name=decodeURIComponent(url.pathname).replace(/^\//,'');
@@ -139,7 +141,8 @@ else{
     const result=await request({action:'start'});if(!result.ok)show();
    }
   }
-  if(smokeDir)await smoke();
+  if(smokeDir&&process.argv.includes('--wait-for-update'))fs.writeFileSync(path.join(smokeDir,'ready.json'),JSON.stringify({pid:process.pid,engine:engine.child.pid}));
+  else if(smokeDir)await smoke();
   else{
    if(!process.argv.includes('--autostart'))show();
    refreshTimer=setInterval(()=>engine.request({action:'snapshot'}).then(result=>{if(result.ok)syncStatus(result.data);}).catch(()=>{
@@ -156,4 +159,5 @@ else{
  });
  app.on('window-all-closed',()=>{if(quitting)app.quit();});
  app.on('activate',()=>{if(window)show();});
+ }
 }

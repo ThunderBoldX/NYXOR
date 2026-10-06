@@ -2,7 +2,7 @@
 
 [Project](../README.md) · [Українська](README_UK.md)
 
-The same moon, colors, cards, animations and farming engine as Android, adapted to a desktop window with a sidebar. This is the **2.3.1 Windows preview**, for **Windows 10/11 x64**. Other desktop operating systems are not packaged or tested.
+The same moon, colors, cards, animations and farming engine as Android, adapted to a desktop window with a sidebar. This is the **2.3.2 Windows preview**, for **Windows 10/11 x64**. Other desktop operating systems are not packaged or tested.
 
 ![Windows overview, sample data](../docs/screenshots/windows/en/overview.png)
 
@@ -10,12 +10,14 @@ Screenshots show the actual interface in demo mode; channels, balances and rewar
 
 ## Install and use
 
-1. Run `NYXOR-Windows-2.3.1-preview-Setup.exe` and choose your installation directory. Python, Node.js and a separate browser runtime are bundled; you do not install them yourself.
+1. Run `NYXOR-Windows-2.3.2-preview-Setup.exe` and choose your installation directory. Python, Node.js and a separate browser runtime are bundled; you do not install them yourself.
 2. Open NYXOR from Start or the desktop shortcut. In **Settings → Connect Twitch**, request a code, open Twitch and approve it. Enter your password only on Twitch's website.
 3. Add Drops categories in **Games**, channels in **Streamers**, or categories in **Points → Games for points**. Press **Start farming** on Overview.
 4. Closing the window hides it in the system tray. Double-click the moon to reopen it; right-click for start, stop and quit.
 
 The locally built installer is unsigned. Windows may display an unknown-publisher confirmation. There is no Windows release download link until the installer is published.
+
+**2.3.2 installer fix:** setup checks only the app and engine executables in the selected installation directory, excluding setup, the uninstaller and unrelated programs. Updates request a graceful shutdown and close orphan engines when needed. A process-inspection or permission error has a separate message. For installation into Program Files, Windows administrator permissions are required.
 
 ## Background and power
 
@@ -49,7 +51,10 @@ For development, build the engine or set `NYXOR_PYTHON` to your Python executabl
 $env:PYTHONPATH = (Resolve-Path core).Path
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 node --test desktop/tests/*.test.cjs
+powershell -NoProfile -ExecutionPolicy Bypass -File desktop/tests/installer-paths.ps1
 ```
+
+After packaging, set `NYXOR_NSIS_COMPILER` to the downloaded `makensis.exe` and run `node desktop/tests/installer-integration.cjs` on Windows. It checks graceful update shutdown and runs the compiled NSIS process-check macro against temporary orphan/unrelated processes in `.local/installer-tests/`; no application installation, registry or shortcut changes are made.
 
 To check the frozen engine too, set `NYXOR_TEST_ENGINE` to the absolute path of `desktop/engine/nyxor-engine/nyxor-engine.exe` and rerun `test_desktop_backend.py`. The tests use temporary data without Twitch credentials.
 

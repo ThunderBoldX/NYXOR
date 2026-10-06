@@ -1,3 +1,11 @@
+## Windows 2.3.2 preview — installer process checks
+
+- Match exact app and engine executable paths instead of every process under a directory prefix; exclude setup, uninstallers, siblings and the installer PID.
+- Pass the target directory through an environment variable so spaces, parentheses and apostrophes stay data.
+- Add graceful update shutdown through the shell's single-instance handler, with scoped fallback cleanup for legacy shells and orphan engines.
+- Distinguish process inspection/permission errors from an app that cannot be closed.
+- Verify a compiled NSIS check against a real orphan engine while another process in the same directory stays alive. Refresh desktop settings screenshots.
+
 ## Windows 2.3.1 preview — desktop app
 
 - Package the shared farming engine and frontend as an autonomous Windows x64 app.

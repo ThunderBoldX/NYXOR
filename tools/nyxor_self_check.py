@@ -29,10 +29,10 @@ def main() -> int:
 
     python_files = sorted(
         path for path in ROOT.rglob("*.py")
-        if not any(part in path.parts for part in ("__pycache__", "build", ".gradle", ".venv", ".local"))
+        if not any(part in path.parts for part in ("__pycache__", "build", ".gradle", ".venv", ".local", "node_modules", "dist", "engine", "generated"))
     )
     for path in python_files:
-        if any(part in path.parts for part in ("__pycache__", "build", ".gradle", ".venv", ".local")):
+        if any(part in path.parts for part in ("__pycache__", "build", ".gradle", ".venv", ".local", "node_modules", "dist", "engine", "generated")):
             continue
         try:
             ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
@@ -40,6 +40,7 @@ def main() -> int:
             errors.append(f"Python: {path.relative_to(ROOT)}: {error}")
 
     json_files = [
+        ROOT / "desktop/package.json",
         ROOT / "core/nyxor/locales/uk.json",
         ROOT / "core/nyxor/locales/en.json",
         ROOT / "docs/nyxor_settings.example.json",
@@ -78,7 +79,7 @@ def main() -> int:
             print(f"  - {error}")
         return 1
 
-    print(f"NYXOR self-check passed: {len(python_files)} Python files, 3 JSON files")
+    print(f"NYXOR self-check passed: {len(python_files)} Python files, {len(json_files)} JSON files")
     return 0
 
 

@@ -1,0 +1,7 @@
+const fs=require('node:fs'),path=require('node:path');
+const root=path.resolve(__dirname,'..'),source=path.resolve(root,'../android/app/src/main/assets/frontend'),target=path.join(root,'generated/ui');
+fs.mkdirSync(target,{recursive:true});fs.cpSync(source,target,{recursive:true});
+let html=fs.readFileSync(path.join(target,'index.html'),'utf8');
+html=html.replace('</head>','<link rel="stylesheet" href="desktop.css"></head>').replace('<body>','<body><div class="desktop-titlebar"><span>NYXOR</span></div>').replace('<script src="app.js"></script>','<script src="app.js"></script><script src="desktop-ui.js"></script>');
+fs.writeFileSync(path.join(target,'index.html'),html);
+for(const name of ['desktop.css','desktop-ui.js'])fs.copyFileSync(path.join(root,'ui',name),path.join(target,name));

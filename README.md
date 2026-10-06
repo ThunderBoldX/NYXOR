@@ -2,10 +2,11 @@
 
 <img src="docs/assets/nyxor-banner.svg" alt="NYXOR — grinds while you sleep. Moon, Twitch Drops and Channel Points." width="100%">
 
-**Twitch Drops and Channel Points on your Android.**<br>
+**Twitch Drops and Channel Points on Android and Windows.**<br>
 Choose your games and channels, track rewards, and let NYXOR work in the background.
 
 ![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-b6ebd5?style=flat-square&logo=android&logoColor=b6ebd5&labelColor=201c29)
+![Windows 10/11 x64](https://img.shields.io/badge/Windows-10%20%2F%2011%20x64-b6ebd5?style=flat-square&labelColor=201c29)
 ![Preview 2.3.1](https://img.shields.io/badge/preview-2.3.1-c3a6f5?style=flat-square&labelColor=201c29)
 ![Ukrainian and English](https://img.shields.io/badge/languages-UK%20%2F%20EN-c3a6f5?style=flat-square&labelColor=201c29)
 [![MIT License](https://img.shields.io/badge/license-MIT-b6ebd5?style=flat-square&labelColor=201c29)](LICENSE)
@@ -19,6 +20,16 @@ Choose your games and channels, track rewards, and let NYXOR work in the backgro
 </div>
 
 ## Take a look
+
+### Windows preview
+
+The same style and farming engine in a desktop window, with sidebar navigation, system tray controls and optional startup after Windows login. Requires **Windows 10/11 x64**. The local installer is ready; a public Windows release has not been published yet.
+
+![Windows overview with fictional demo data](docs/screenshots/windows/en/overview.png)
+
+[Windows installation and build guide](desktop/README.md) · [Desktop settings screenshot](docs/screenshots/windows/en/settings.png)
+
+### Android
 
 A dark palette, moon accents, rounded cards and smooth transitions. One place for your drops, channels and points.
 

@@ -1,3 +1,12 @@
+## Windows 2.3.1 preview — desktop app
+
+- Package the shared farming engine and frontend as an autonomous Windows x64 app.
+- Preserve moon branding, rounded purple/mint cards and animations; add a sidebar and wider dashboard/settings layouts.
+- Add a moon tray icon with game/channel status, start/stop/quit controls and close-to-tray behavior.
+- Add optional startup after Windows login and power management that allows display sleep while preventing automatic system sleep during normal farming.
+- Reuse game artwork, priorities, Channel Points history, reward filters and energy controls from Android.
+- Add English/Ukrainian desktop screenshots and build/install guides. Windows live-account farming and reboot/sleep behavior require practical testing.
+
 ## Android 2.3.1 preview — smooth moon and refreshed screenshots
 
 - Rebuild the crescent from continuous circular arcs, removing the straight closing edge in the banner and app logo.

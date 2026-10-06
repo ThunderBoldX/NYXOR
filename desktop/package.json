@@ -1,0 +1,25 @@
+{
+  "name": "nyxor-desktop",
+  "version": "2.3.1",
+  "description": "NYXOR — grinds while you sleep. Windows preview.",
+  "author": "ThunderBoldX",
+  "license": "MIT",
+  "main": "main.cjs",
+  "scripts": {
+    "prepare:ui": "node scripts/prepare-ui.cjs",
+    "start": "npm run prepare:ui && electron .",
+    "test": "node --test tests/*.test.cjs",
+    "pack": "npm run prepare:ui && electron-builder --dir --win --x64",
+    "dist": "npm run prepare:ui && electron-builder --win nsis --x64"
+  },
+  "devDependencies": {"electron": "44.5.1", "electron-builder": "26.15.3"},
+  "build": {
+    "appId": "com.nyxor.desktop",
+    "productName": "NYXOR",
+    "directories": {"output": "dist"},
+    "files": ["main.cjs", "preload.cjs", "bridge.cjs", "generated/ui/**/*", "assets/**/*", "package.json"],
+    "extraResources": [{"from": "engine/nyxor-engine", "to": "engine"}],
+    "win": {"icon": "assets/nyxor.ico", "target": [{"target": "nsis", "arch": ["x64"]}]},
+    "nsis": {"oneClick": false, "perMachine": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "createStartMenuShortcut": true, "runAfterFinish": false, "artifactName": "NYXOR-Windows-${version}-preview-Setup.${ext}"}
+  }
+}

@@ -53,3 +53,8 @@ android/local.properties
 
 # Optional screenshot tooling
 node_modules/
+
+# Desktop generated UI, embedded engine and installers
+desktop/generated/
+desktop/build/
+desktop/engine/

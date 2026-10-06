@@ -2,10 +2,11 @@
 
 <img src="docs/assets/nyxor-banner.svg" alt="NYXOR — grinds while you sleep. Місяць, Twitch Drops та Channel Points." width="100%">
 
-**Twitch Drops і Channel Points у твоєму Android.**<br>
+**Twitch Drops і Channel Points на Android та Windows.**<br>
 Обирай ігри та канали, стеж за нагородами й залишай NYXOR працювати у фоні.
 
 ![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-b6ebd5?style=flat-square&logo=android&logoColor=b6ebd5&labelColor=201c29)
+![Windows 10/11 x64](https://img.shields.io/badge/Windows-10%20%2F%2011%20x64-b6ebd5?style=flat-square&labelColor=201c29)
 ![Preview 2.3.1](https://img.shields.io/badge/preview-2.3.1-c3a6f5?style=flat-square&labelColor=201c29)
 ![Українська та English](https://img.shields.io/badge/languages-UK%20%2F%20EN-c3a6f5?style=flat-square&labelColor=201c29)
 [![MIT License](https://img.shields.io/badge/license-MIT-b6ebd5?style=flat-square&labelColor=201c29)](LICENSE)
@@ -19,6 +20,16 @@
 </div>
 
 ## Зазирни всередину
+
+### Windows preview
+
+Той самий стиль і ядро у вікні для ПК: бічне меню, керування з трея та автозапуск після входу у Windows. Потрібна **Windows 10/11 x64**. Локальний інсталятор готовий; публічний Windows-реліз ще не опублікований.
+
+![Огляд Windows із вигаданими демонстраційними даними](docs/screenshots/windows/uk/overview.png)
+
+[Встановлення Windows-версії](desktop/README_UK.md) · [Скриншот налаштувань ПК](docs/screenshots/windows/uk/settings.png)
+
+### Android
 
 Темна палітра, місячні акценти, округлі картки та плавні переходи. Один простір для дропів, каналів і поїнтів.
 

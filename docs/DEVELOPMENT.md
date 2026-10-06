@@ -4,6 +4,7 @@
 
 ```text
 android/           Android app, embedded UI, native tests and Gradle wrapper
+desktop/           Windows Electron shell and packaged Python engine
 core/              Shared Python farming engine
   nyxor/           Runtime adapter, selection, storage and localization
     locales/       English and Ukrainian engine messages
@@ -41,7 +42,11 @@ PYTHONPATH=core .venv/bin/python -m unittest discover -s tests -v
 .venv/bin/python tools/nyxor_self_check.py
 ```
 
-These commands run developer checks; the available user application is the Android APK.
+These commands run developer checks. User applications are the Android APK and the Windows preview installer.
+
+## Windows build
+
+See [desktop/README.md](../desktop/README.md#build-from-source). The Windows shell uses the same frontend and core, with isolated IPC to a bundled Python process. It adds desktop layout, tray controls and login startup. Private Windows data is stored in `%APPDATA%\NYXOR\engine`.
 
 ## Android build
 

@@ -73,7 +73,7 @@ def snapshot() -> dict:
         "queue": load_queue(), "streamers": load_streamers(),
         "points_games": settings.get("points_games", []),
         "history": read_claims(account_id()) if account_id() else [],
-        "history_limit": 500, "platform": "android",
+        "history_limit": 500, "platform": "desktop" if os.environ.get("NYXOR_PLATFORM") == "desktop" else "android",
         "events": load_jsonl(EVENTS_PATH, 60)[::-1],
         "settings": {"language": settings.get("language", "uk"),
                      "launch_on_boot": settings.get("launch_on_boot", False),

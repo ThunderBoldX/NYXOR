@@ -24,8 +24,8 @@
       <text x="150" y="337" text-anchor="middle">Twitch Drops</text>
       <rect x="236" y="311" width="168" height="40" rx="20" fill="#25202e" stroke="#42354f"/>
       <text x="320" y="337" text-anchor="middle">Channel Points</text>
-      <rect x="416" y="311" width="122" height="40" rx="20" fill="#1d2a27" stroke="#33483f"/>
-      <text x="477" y="337" text-anchor="middle" fill="#b6ebd5">Android</text>
+      <rect x="416" y="311" width="194" height="40" rx="20" fill="#1d2a27" stroke="#33483f"/>
+      <text x="513" y="337" text-anchor="middle" fill="#b6ebd5">Android · Windows</text>
     </g>
   </g>
 </svg>

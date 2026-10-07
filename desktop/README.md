@@ -2,7 +2,7 @@
 
 [Project](../README.md) · [Українська](README_UK.md)
 
-The same moon, colors, cards, animations and farming engine as Android, adapted to a desktop window with a sidebar. This is the **2.3.4 Windows preview**, for **Windows 10/11 x64**. Other desktop operating systems are not packaged or tested.
+The same moon, colors, cards, animations and farming engine as Android, adapted to a desktop window with a sidebar. This is the **2.3.5 Windows preview**, for **Windows 10/11 x64**. Other desktop operating systems are not packaged or tested.
 
 ![Windows overview, sample data](../docs/screenshots/windows/en/overview.png)
 
@@ -10,12 +10,14 @@ Screenshots show the actual interface in demo mode; channels, balances and rewar
 
 ## Install and use
 
-1. Run `NYXOR-Windows-2.3.4-preview-Setup.exe` and choose your installation directory. Python and Node.js are bundled. **Google Chrome must be installed for Twitch login.**
+1. Run `NYXOR-Windows-2.3.5-preview-Setup.exe` and choose your installation directory. Python and Node.js are bundled. **Google Chrome must be installed for Twitch login.**
 2. Open NYXOR from Start or the desktop shortcut. In **Settings → Connect Twitch**, sign in on Twitch in the separate Chrome window. NYXOR verifies the account and protected Drops catalog before saving the session. Enter your password only on Twitch's website.
 3. Add Drops categories in **Games**, channels in **Streamers**, or categories in **Points → Games for points**. Press **Start farming** on Overview.
 4. Closing the window hides it in the system tray. Double-click the moon to reopen it; right-click for start, stop and quit.
 
 The locally built installer is unsigned. Windows may display an unknown-publisher confirmation. There is no Windows release download link until the installer is published.
+
+**2.3.5 installer fix:** setup checks write access to the selected folder and previous installation folders before attempting an update. A per-user installation under Program Files still requires administrator permissions. If access is denied, setup stops before changing installed files and explains how to restart it with **Run as administrator**, rather than repeatedly reporting that NYXOR cannot be closed. Account data remains in its existing separate directory.
 
 **2.3.4:** the status and moon shortcut sit beside each other. Opening NYXOR maximizes it on the display under the cursor, using Windows' work area and display scaling so the taskbar remains accessible. You can restore and resize the window normally.
 

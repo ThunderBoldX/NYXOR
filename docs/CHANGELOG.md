@@ -1,3 +1,10 @@
+## Windows 2.3.5 preview — protected-folder update check
+
+- Check write access to the selected installation folder and previous installation folders before closing processes or launching an old uninstaller.
+- Detect the permission failure of a per-user installation under Program Files and explain Run as administrator, instead of reaching the generic repeated cannot-close warning.
+- Use a random, automatically deleted access probe; do not change installed files or user data during the check.
+- Verify writable/fresh/protected folders, compiled NSIS permission handling, graceful update shutdown and scoped orphan-engine cleanup with isolated fixtures.
+
 ## Windows 2.3.4 preview — layout, startup modes and game search
 
 - Place the status and moon settings shortcut beside each other without overlap, including paused state.

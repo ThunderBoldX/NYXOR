@@ -1,4 +1,4 @@
-param([ValidateSet('Check', 'Close')][string]$Mode = 'Check')
+param([ValidateSet('Check', 'Close', 'Access')][string]$Mode = 'Check')
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
@@ -23,6 +23,27 @@ try {
     $root = [Environment]::GetEnvironmentVariable('NYXOR_INSTALL_TARGET', 'Process')
     if ([string]::IsNullOrWhiteSpace($root)) { throw 'Missing installation directory' }
     $root = [IO.Path]::GetFullPath($root)
+    if ($Mode -eq 'Access') {
+        # Check the selected directory, or its nearest existing parent for a
+        # fresh install, before launching any old uninstaller. The random
+        # probe is removed by Windows when its handle closes.
+        $directory = $root
+        while (!(Test-Path -LiteralPath $directory -PathType Container)) {
+            $parent = [IO.Directory]::GetParent($directory)
+            if ($null -eq $parent) { throw 'No existing installation parent' }
+            $directory = $parent.FullName
+        }
+        $probe = Join-Path $directory ('.nyxor-access-' + [Guid]::NewGuid().ToString('N') + '.tmp')
+        try {
+            $stream = [IO.FileStream]::new($probe, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write,
+                [IO.FileShare]::None, 1, [IO.FileOptions]::DeleteOnClose)
+            $stream.Dispose()
+            exit 0
+        } catch [UnauthorizedAccessException] {
+            Write-Output 'Administrator permissions are required to update this installation folder.'
+            exit 4
+        }
+    }
     $appFile = Join-Path $root 'NYXOR.exe'
     $engineFile = Join-Path $root 'resources/engine/nyxor-engine.exe'
     $installerId = 0

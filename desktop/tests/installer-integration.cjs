@@ -10,6 +10,9 @@ async function within(promise,ms){let timer;try{return await Promise.race([promi
 function alive(pid){try{process.kill(pid,0);return true;}catch{return false;}}
 (async()=>{
  const checks=[];
+ const record=checks.push.bind(checks);checks.push=(...messages)=>{console.log(messages.join('\n'));return record(...messages);};
+ const access=await within(launch(ps,['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',path.join(root,'desktop/tests/installer-access.ps1'),'-TestRoot',path.join(testRoot,'access-fixtures')]).done,15000);
+ assert.equal(access.code,0,access.output);checks.push('Writable/fresh/protected folder access and temporary probe cleanup');
  const data=path.join(testRoot,'update-ipc-test');fs.mkdirSync(data,{recursive:true});
  const first=launch(app,['--smoke-dir='+data,'--wait-for-update']);
  const deadline=Date.now()+20000;
@@ -33,8 +36,9 @@ function alive(pid){try{process.kill(pid,0);return true;}catch{return false;}}
   assert.equal(checked.code,0,checked.output);checks.push('A real orphan engine is detected');
   const compiler=process.env.NYXOR_NSIS_COMPILER;assert(compiler&&fs.existsSync(compiler),'Set NYXOR_NSIS_COMPILER to makensis.exe');
   const output=path.join(fixture,'NYXOR Setup Check.exe'),script=path.join(testRoot,'installer-check.nsi');
-  fs.writeFileSync(script,`Unicode true\nName "NYXOR Installer Check"\nOutFile "${output}"\nRequestExecutionLevel user\nSilentInstall silent\n!include "LogicLib.nsh"\n!include "${path.join(root,'desktop/installer/custom.nsh')}"\nVar PowerShellPath\nSection\nStrCpy $INSTDIR "$EXEDIR"\nStrCpy $PowerShellPath "$SYSDIR\\WindowsPowerShell\\v1.0\\powershell.exe"\n!insertmacro customCheckAppRunning\nSetErrorLevel 0\nSectionEnd\n`);
+  fs.writeFileSync(script,`Unicode true\nName "NYXOR Installer Check"\nOutFile "${output}"\nRequestExecutionLevel user\nSilentInstall silent\n!include "LogicLib.nsh"\n!include "${path.join(root,'desktop/installer/custom.nsh')}"\nVar PowerShellPath\nSection\nReadEnvStr $INSTDIR "NYXOR_ACCESS_FIXTURE"\n\${If} $INSTDIR == ""\nStrCpy $INSTDIR "$EXEDIR"\n\${EndIf}\nStrCpy $PowerShellPath "$SYSDIR\\WindowsPowerShell\\v1.0\\powershell.exe"\n!insertmacro customCheckAppRunning\nSetErrorLevel 0\nSectionEnd\n`);
   const compiled=await within(launch(compiler,['/V2',script]).done,15000);assert.equal(compiled.code,0,compiled.output);
+  const blocked=await within(launch(ps,['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',path.join(root,'desktop/tests/installer-access.ps1'),'-TestRoot',path.join(testRoot,'native-access-fixtures'),'-NativeCheckExe',output]).done,120000);assert.equal(blocked.code,0,blocked.output);checks.push('Compiled NSIS stops on denied access before changing protected fixture');
   const checkMacro=await within(launch(output,[]).done,25000);assert.equal(checkMacro.code,0,checkMacro.output);
   await within(orphan.closed,10000);assert(alive(helper.child.pid),'Unrelated helper was stopped');
   checks.push('Compiled NSIS macro closes the real orphan and leaves unrelated processes alive');

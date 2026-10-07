@@ -9,17 +9,18 @@
 .desktop-app .brand-copy strong{font-size:19px;letter-spacing:.4px}
 .desktop-app .brand-copy strong span{display:none}
 .desktop-app .brand-copy small{font-size:10px;white-space:nowrap;color:#aaa0b7}
-.desktop-app .avatar{position:fixed;right:40px;top:58px;width:40px;height:40px;z-index:12;display:grid;place-items:center}
+.desktop-app .avatar{position:static;width:40px;height:40px;z-index:12;display:grid;place-items:center}
 .desktop-app .dock{position:fixed;left:0;top:158px;bottom:0;width:var(--sidebar);max-width:none;transform:none;border:0;border-right:1px solid #ffffff08;border-radius:0;background:#100e15;backdrop-filter:none;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:7px;padding:18px 16px;box-shadow:none}
 .desktop-app .nav-item{flex:none;width:100%;min-height:52px;padding:14px 18px;display:flex;flex-direction:row;justify-content:flex-start;align-items:center;gap:14px;border-radius:17px;font-size:14px;transition:background .2s,color .2s,transform .2s}
 .desktop-app .nav-item svg{width:21px;height:21px}
 .desktop-app .nav-item.active{background:linear-gradient(110deg,#bda1fb22,#bda1fb0e);color:#dcc8ff}
 .desktop-app .nav-item:hover:not(.active){background:#ffffff06;color:var(--text)}
 .desktop-app #main{max-width:1180px;margin:34px auto 0}
-.desktop-app .page-head{padding-right:56px;margin-bottom:32px;align-items:center}
+.desktop-app .page-head{padding-right:0;margin-bottom:32px;align-items:center;gap:20px;flex-wrap:wrap}
+.desktop-app .page-actions{display:flex;align-items:center;gap:16px;flex-shrink:0;margin-left:auto}
 .desktop-app h1{font-size:36px}
 .desktop-app .eyebrow{font-size:11px;letter-spacing:2px;margin-bottom:8px}
-.desktop-app .page-head .status{margin-right:-56px}
+.desktop-app .page-head .status{margin-right:0}
 .desktop-app .desktop-summary{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(210px,1fr);gap:20px;align-items:stretch;margin-bottom:28px}
 .desktop-app .desktop-summary>.hero,.desktop-app .desktop-summary>.empty{margin:0;min-height:264px}
 .desktop-app .hero{padding:28px;border-radius:30px}
@@ -47,6 +48,8 @@
 .desktop-app .settings-label{font-size:14px}
 .desktop-app .settings-layout .list-row{padding:20px;gap:14px}
 .desktop-app .settings-layout .language{max-width:145px}
+.desktop-app .settings-layout #startup-mode{max-width:230px;font-size:13px}
+.desktop-app #startup-mode:disabled{opacity:.5}
 .desktop-app .auth-card{padding:28px}
 .desktop-app .browser-auth-actions{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
 .desktop-app #demo-label{margin:26px auto 0;max-width:1180px;padding-right:64px;text-align:right;font-size:11px;color:#8d819e}

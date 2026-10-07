@@ -46,7 +46,7 @@ These commands run developer checks. User applications are the Android APK and t
 
 ## Windows build
 
-See [desktop/README.md](../desktop/README.md#build-from-source). The Windows shell uses the same frontend and core, with isolated IPC to a bundled Python process. It adds desktop layout, tray controls and login startup. Private Windows data is stored in `%APPDATA%\NYXOR\engine`.
+See [desktop/README.md](../desktop/README.md#build-from-source). The Windows shell uses the same frontend and core, with isolated IPC to a bundled Python process. It adds desktop layout, tray controls and login startup. Private Windows data is stored in `%APPDATA%\nyxor-desktop\engine`.
 
 ## Android build
 

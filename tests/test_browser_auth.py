@@ -111,7 +111,10 @@ class BrowserAuthTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(browser_auth.BrowserAuthError):
             browser_auth.validate_context(value)
         browser_auth.atomic_save(browser_auth.context_path(), value)
-        params=SimpleNamespace(url=URL('https://gql.twitch.tv/gql'),headers=CIMultiDict({'Client-Id':constants.ClientType.WEB.CLIENT_ID}))
+        public=SimpleNamespace(url=URL('https://gql.twitch.tv/gql'),headers=CIMultiDict({'Client-Id':constants.ClientType.WEB.CLIENT_ID}))
+        await browser_auth.apply_context(None,None,public)
+        self.assertNotIn('Client-Integrity',public.headers)
+        params=SimpleNamespace(url=public.url,headers=CIMultiDict({'Client-Id':constants.ClientType.WEB.CLIENT_ID,'Authorization':'OAuth fixturetoken'}))
         with self.assertRaises(browser_auth.BrowserAuthError) as caught:
             await browser_auth.apply_context(None,None,params)
         self.assertEqual(caught.exception.code,'browser_expired')

@@ -1,3 +1,13 @@
+## Windows 2.3.4 preview — layout, startup modes and game search
+
+- Place the status and moon settings shortcut beside each other without overlap, including paused state.
+- Open maximized on the display under the cursor; respect its work area, taskbar and Windows scaling, with resize limits capped to small displays.
+- Add app-only and app-plus-farming Windows startup modes. Preserve farming for previously enabled startup; require a valid account and saved lists before automatic farming.
+- Search Twitch's public website category catalog on desktop. Match canonical names such as World of Tanks regardless of input case, without requiring account credentials.
+- Use the same public catalog for game artwork and paginated live channel discovery for points, retaining viewer sorting and partial scan indications.
+- Distinguish empty results, network failures, Twitch errors and rate limits; ignore stale search replies.
+- Refresh English/Ukrainian desktop screenshots. Verify live World of Tanks search, artwork and channels, isolated packaged search/add flows, saved startup modes and six UI sizes. Actual farming and startup after reboot still require practical testing.
+
 ## Windows 2.3.3 preview — Twitch login recovery
 
 - Replace rejected Android device-code initiation on desktop with native Chrome login in a dedicated NYXOR profile.

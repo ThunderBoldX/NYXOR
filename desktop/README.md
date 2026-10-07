@@ -2,7 +2,7 @@
 
 [Project](../README.md) · [Українська](README_UK.md)
 
-The same moon, colors, cards, animations and farming engine as Android, adapted to a desktop window with a sidebar. This is the **2.3.3 Windows preview**, for **Windows 10/11 x64**. Other desktop operating systems are not packaged or tested.
+The same moon, colors, cards, animations and farming engine as Android, adapted to a desktop window with a sidebar. This is the **2.3.4 Windows preview**, for **Windows 10/11 x64**. Other desktop operating systems are not packaged or tested.
 
 ![Windows overview, sample data](../docs/screenshots/windows/en/overview.png)
 
@@ -10,25 +10,29 @@ Screenshots show the actual interface in demo mode; channels, balances and rewar
 
 ## Install and use
 
-1. Run `NYXOR-Windows-2.3.3-preview-Setup.exe` and choose your installation directory. Python and Node.js are bundled. **Google Chrome must be installed for Twitch login.**
+1. Run `NYXOR-Windows-2.3.4-preview-Setup.exe` and choose your installation directory. Python and Node.js are bundled. **Google Chrome must be installed for Twitch login.**
 2. Open NYXOR from Start or the desktop shortcut. In **Settings → Connect Twitch**, sign in on Twitch in the separate Chrome window. NYXOR verifies the account and protected Drops catalog before saving the session. Enter your password only on Twitch's website.
 3. Add Drops categories in **Games**, channels in **Streamers**, or categories in **Points → Games for points**. Press **Start farming** on Overview.
 4. Closing the window hides it in the system tray. Double-click the moon to reopen it; right-click for start, stop and quit.
 
 The locally built installer is unsigned. Windows may display an unknown-publisher confirmation. There is no Windows release download link until the installer is published.
 
+**2.3.4:** the status and moon shortcut sit beside each other. Opening NYXOR maximizes it on the display under the cursor, using Windows' work area and display scaling so the taskbar remains accessible. You can restore and resize the window normally.
+
+Both **Games** and **Points → Games for points** search Twitch's public catalog without requiring a saved login. For example, `World Of Tanks` finds the canonical `World of Tanks` category. Desktop artwork and live channel discovery also use Twitch's website catalog. Farming still requires a connected account. Search distinguishes no matches, offline requests, rate limits and Twitch errors.
+
 **2.3.2 installer fix:** setup checks only the app and engine executables in the selected installation directory, excluding setup, the uninstaller and unrelated programs. Updates request a graceful shutdown and close orphan engines when needed. A process-inspection or permission error has a separate message. For installation into Program Files, Windows administrator permissions are required.
 
 ## Background and power
 
-- **Start with Windows** is off by default. After signing in, an installed app can open in the tray and start farming if Twitch is connected and at least one list is saved. This is Windows login startup, not a service running before login.
+- **Start with Windows** is off by default. Enable it and choose **After startup → Start NYXOR only** or **Start NYXOR and farm**. Both open the installed app in the tray after Windows login; farming additionally requires Twitch to be connected and at least one saved list. Previously enabled startup keeps its farming behavior. This is Windows login startup, not a service running before login.
 - Normal mode prevents automatic system sleep while farming and still permits the display to turn off. Manual sleep, shutdown or loss of network access pauses farming.
 - **Energy saver** uses the shared engine's slower network checks and screen updates and reduces animations. It also allows Windows to sleep. Savings depend on the hardware and network.
 - Hover over the tray icon for the current game and channel. Selecting **Quit NYXOR** stops the engine and exits.
 
-A separate Chrome profile is stored in `%APPDATA%\NYXOR\twitch-profile`; your personal browser profile is never used. The owned Chrome window is minimized after login and retained for Twitch session renewal. NYXOR closes it when farming is stopped or the app exits, and reopens it minimized on the next start. Signing out clears the owned profile. Existing Android-client sessions are preserved and do not require Chrome while valid.
+A separate Chrome profile is stored in `%APPDATA%\nyxor-desktop\twitch-profile`; your personal browser profile is never used. The owned Chrome window is minimized after login and retained for Twitch session renewal. NYXOR closes it when farming is stopped or the app exits, and reopens it minimized on the next start. Signing out clears the owned profile. Existing Android-client sessions are preserved and do not require Chrome while valid.
 
-Account data, lists and history are stored under `%APPDATA%\NYXOR\engine`. Windows and Android accounts/settings are independent; no automatic synchronization is implemented.
+Account data, lists and history are stored under `%APPDATA%\nyxor-desktop\engine`. This update keeps the existing data directory. Windows and Android accounts/settings are independent; no automatic synchronization is implemented.
 
 ## Build from source
 
@@ -61,6 +65,8 @@ After packaging, set `NYXOR_NSIS_COMPILER` to the downloaded `makensis.exe` and 
 To check the frozen engine too, set `NYXOR_TEST_ENGINE` to the absolute path of `desktop/engine/nyxor-engine/nyxor-engine.exe` and rerun `test_desktop_backend.py`. The tests use temporary data without Twitch credentials.
 
 The packaged executable accepts `--smoke-dir=ABSOLUTE_PATH` for an isolated integration check. It writes a result and screenshots, makes no Windows startup changes, and exits. This checks the native bridge, embedded engine, saved lists/settings and window layout, without connecting a real account.
+
+Add `--smoke-catalog` to check live `World Of Tanks` search and adding its canonical category in both Games and Points, without using account credentials. The 2.3.4 checks also cover work-area sizing, separate header controls, both saved startup modes and public catalog pagination/artwork. Automated fixtures cover six screen sizes, including display scaling and a small work area.
 
 Optional screenshot capture: install Playwright separately, run `node desktop/scripts/prepare-ui.cjs`, then `node tools/capture_desktop_screenshots.cjs`. `BROWSER_EXECUTABLE` can select an installed Chromium browser. It captures English and Ukrainian screens and checks navigation, filters, selection and layout at several widths.
 

@@ -1,15 +1,16 @@
 'use strict';
-const {app,BrowserWindow,ipcMain,protocol,net,Menu,Tray,nativeImage,shell,clipboard,powerSaveBlocker}=require('electron');
+const {app,BrowserWindow,ipcMain,protocol,net,Menu,Tray,nativeImage,shell,clipboard,powerSaveBlocker,screen}=require('electron');
 const path=require('node:path'),fs=require('node:fs'),{pathToFileURL}=require('node:url');
 const {Engine,validate,twitchURL}=require('./bridge.cjs');
 const {TwitchLogin}=require('./twitch-login.cjs');
+const {displayBounds,shouldStartFarming}=require('./window-options.cjs');
 const smokeArg=process.argv.find(arg=>arg.startsWith('--smoke-dir='));
 const smokeDir=smokeArg?path.resolve(smokeArg.slice('--smoke-dir='.length)):null;
 if(smokeDir){fs.mkdirSync(smokeDir,{recursive:true});app.setPath('userData',path.join(smokeDir,'user-data'));}
 protocol.registerSchemesAsPrivileged([{scheme:'nyxor',privileges:{standard:true,secure:true,supportFetchAPI:true}}]);
 let window,tray,engine,login,quitting=false,powerId,refreshTimer,lastSnapshot;
 const ui=path.join(__dirname,'generated/ui');
-function show(){window.show();window.restore();window.focus();}
+function show(){if(!window.isVisible())window.maximize();if(window.isMinimized())window.restore();window.show();window.focus();}
 function syncStatus(data){
  if(!data?.settings)return;
  lastSnapshot=data;
@@ -85,10 +86,14 @@ async function smoke(){
  const errors=[];
  window.webContents.on('console-message',(_event,details)=>{if(details.level==='error')errors.push(details.message);});
  try{
+  show();
+  await new Promise(resolve=>setTimeout(resolve,300));
   await window.webContents.executeJavaScript('refresh(true)');
   const deadline=Date.now()+30000;
   while(Date.now()<deadline&&!await window.webContents.executeJavaScript('Boolean(model)'))await new Promise(resolve=>setTimeout(resolve,200));
   if(!await window.webContents.executeJavaScript('Boolean(model)'))throw new Error('UI did not receive engine state');
+  const nativeArea=screen.getDisplayMatching(window.getBounds()).workArea,content=window.getContentBounds();
+  if(content.width>nativeArea.width||content.height>nativeArea.height||content.x<nativeArea.x||content.y<nativeArea.y||content.x+content.width>nativeArea.x+nativeArea.width||content.y+content.height>nativeArea.y+nativeArea.height)throw new Error('Window content exceeds the display work area: '+JSON.stringify({nativeArea,content,bounds:window.getBounds()}));
   const status=await request({action:'snapshot'});
   if(!status.ok||status.data.platform!=='desktop'||status.data.authenticated)throw new Error('Unexpected first launch state');
   syncStatus({...status.data,running:true,settings:{...status.data.settings,energy_saver:false}});
@@ -99,8 +104,20 @@ async function smoke(){
   if(tray.isDestroyed())throw new Error('Tray was not created');
   const queue=await request({action:'queue',items:['Rust']});if(!queue.ok||queue.data.queue[0]!=='Rust')throw new Error('Queue persistence failed');
   const power=await request({action:'settings',values:{energy_saver:true,language:'en'}});if(!power.ok||!power.data.settings.energy_saver)throw new Error('Settings failed');
+  for(const startup_mode of ['app','farm']){const mode=await request({action:'settings',values:{startup_mode}});if(!mode.ok||mode.data.settings.startup_mode!==startup_mode)throw new Error('Startup mode persistence failed');}
   const start=await request({action:'start'});if(start.ok)throw new Error('Unauthenticated farming must be blocked');
   await request({action:'queue',items:[]});
+  if(process.argv.includes('--smoke-catalog')){
+   for(const route of ['games','pointsPage']){
+    await window.webContents.executeJavaScript(`refresh(true).then(async()=>{navigate(${JSON.stringify(route)});document.querySelector('#add-input').value='World Of Tanks';await search('World Of Tanks');})`);
+    const first=await window.webContents.executeJavaScript("document.querySelector('[data-suggestion=\"0\"]')?.textContent");
+    if(first!=='World of Tanks')throw new Error('Live category search failed in '+route);
+    await window.webContents.executeJavaScript('addItem(suggestions[0].name)');
+    const snapshot=await engine.request({action:'snapshot'}),key=route==='games'?'queue':'points_games';
+    if(!snapshot.data[key].includes('World of Tanks'))throw new Error('Adding game failed in '+route);
+   }
+   await request({action:'queue',items:[]});await request({action:'points_games',items:[]});
+  }
   await window.webContents.executeJavaScript("refresh(true).then(()=>navigate('settings'))");
   await new Promise(resolve=>setTimeout(resolve,600));
   fs.writeFileSync(path.join(smokeDir,'first-launch.png'),(await window.webContents.capturePage()).toPNG());
@@ -123,8 +140,8 @@ async function smoke(){
   while(!await window.webContents.executeJavaScript('Boolean(model)'))await new Promise(resolve=>setTimeout(resolve,150));
   await window.webContents.executeJavaScript(`demoState.settings.language='en';demoState.state.game_art_url='https://static-cdn.jtvnw.net/ttv-boxart/263490-144x192.jpg';refresh(true);`);
   await new Promise(resolve=>setTimeout(resolve,2000));
-  const layout=await window.webContents.executeJavaScript(`({overflow:document.documentElement.scrollWidth>innerWidth,desktop:document.documentElement.classList.contains('desktop-app'),sidebar:document.querySelector('#nav').getBoundingClientRect().width,moon:(()=>{const b=document.querySelector('#account-button').getBoundingClientRect(),i=document.querySelector('#account-button svg').getBoundingClientRect();return Math.abs(b.top+b.height/2-i.top-i.height/2)<1})()})`);
-  if(layout.overflow||!layout.desktop||!layout.moon||layout.sidebar<200)throw new Error('Desktop layout check failed: '+JSON.stringify(layout));
+  const layout=await window.webContents.executeJavaScript(`({overflow:document.documentElement.scrollWidth>innerWidth,desktop:document.documentElement.classList.contains('desktop-app'),sidebar:document.querySelector('#nav').getBoundingClientRect().width,separate:(()=>{const b=document.querySelector('#account-button').getBoundingClientRect(),s=document.querySelector('.page-head .status').getBoundingClientRect();return s.right+12<=b.left})(),moon:(()=>{const b=document.querySelector('#account-button').getBoundingClientRect(),i=document.querySelector('#account-button svg').getBoundingClientRect();return Math.abs(b.top+b.height/2-i.top-i.height/2)<1})()})`);
+  if(layout.overflow||!layout.desktop||!layout.moon||!layout.separate||layout.sidebar<200)throw new Error('Desktop layout check failed: '+JSON.stringify(layout));
   fs.writeFileSync(path.join(smokeDir,'overview.png'),(await window.webContents.capturePage()).toPNG());
   for(const section of ['games','streamers','pointsPage','activity','settings']){
    await window.webContents.executeJavaScript(`navigate(${JSON.stringify(section)})`);
@@ -136,7 +153,7 @@ async function smoke(){
   const afterClose=await request({action:'snapshot'});
   if(!afterClose.ok)throw new Error('Closing the window stopped the engine');
   if(errors.length)throw new Error('Renderer errors: '+errors.join('; '));
-  fs.writeFileSync(path.join(smokeDir,'result.json'),JSON.stringify({ok:true,layout,errors,engine:status.data.platform,checks:['persistent queue','energy setting','unauthenticated start blocked','six sections','centered moon','no horizontal overflow','tray status','close to tray keeps engine alive','normal power blocker and eco release',...(process.argv.includes('--smoke-login')?['native Chrome login pending','cancel login closes owned Chrome','logout removes owned profile']:[])]},null,2));
+  fs.writeFileSync(path.join(smokeDir,'result.json'),JSON.stringify({ok:true,layout,errors,window:{workArea:nativeArea,content},engine:status.data.platform,checks:['window content fits selected display work area','startup modes persist','persistent queue','energy setting','unauthenticated start blocked','six sections','centered moon','status/settings controls separated','no horizontal overflow','tray status','close to tray keeps engine alive','normal power blocker and eco release',...(process.argv.includes('--smoke-login')?['native Chrome login pending','cancel login closes owned Chrome','logout removes owned profile']:[]),...(process.argv.includes('--smoke-catalog')?['live World of Tanks search and add in Games and Points without an account']:[])]},null,2));
  }catch(error){fs.writeFileSync(path.join(smokeDir,'result.json'),JSON.stringify({ok:false,error:error.stack,errors},null,2));process.exitCode=1;}
  finally{app.quit();}
 }
@@ -161,7 +178,8 @@ else{
     return await request(validate(payload));
    }catch(error){return {ok:false,error:error.message};}
   });
-  window=new BrowserWindow({width:1320,height:940,minWidth:860,minHeight:640,show:false,backgroundColor:'#0c0b10',title:'NYXOR',icon:path.join(__dirname,'assets/nyxor.ico'),titleBarStyle:'hidden',titleBarOverlay:{color:'#0c0b10',symbolColor:'#c3b4d6',height:36},webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true}});
+  const area=screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
+  window=new BrowserWindow({...displayBounds(area),show:false,backgroundColor:'#0c0b10',title:'NYXOR',icon:path.join(__dirname,'assets/nyxor.ico'),titleBarStyle:'hidden',titleBarOverlay:{color:'#0c0b10',symbolColor:'#c3b4d6',height:36},webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true}});
   Menu.setApplicationMenu(null);
   window.webContents.setWindowOpenHandler(()=>({action:'deny'}));
   window.webContents.on('will-navigate',(event,url)=>{if(!url.startsWith('nyxor://app/index.html'))event.preventDefault();});
@@ -174,7 +192,7 @@ else{
    syncStatus(initial.data);
    // Reconcile persisted preference with the actual installed Windows application.
    try{startup(initial.data.settings.launch_on_boot===true);}catch{}
-   if(process.argv.includes('--autostart')&&initial.data.settings.launch_on_boot&&initial.data.authenticated&&(initial.data.queue.length||initial.data.streamers.length||initial.data.points_games.length)){
+   if(shouldStartFarming(process.argv,initial.data)){
     const result=await request({action:'start'});if(!result.ok)show();
    }
   }

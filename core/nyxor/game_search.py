@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+import os
 from dataclasses import dataclass
 from typing import Any
 
@@ -146,7 +147,8 @@ async def search_game_categories(
     if len(cleaned) < 2:
         return []
 
-    cache_key = cleaned.casefold()
+    desktop = os.environ.get("NYXOR_PLATFORM") == "desktop"
+    cache_key = ("web:" if desktop else "helix:") + cleaned.casefold()
     cached = _CACHE.get(cache_key)
     now = time.monotonic()
 
@@ -155,6 +157,23 @@ async def search_game_categories(
         if now - cached_at <= CACHE_TTL_SECONDS:
             return list(categories[:limit])
         _CACHE.pop(cache_key, None)
+
+    if desktop:
+        from nyxor.twitch_catalog import search_categories, CatalogError
+        try:
+            async with client_session(timeout=aiohttp.ClientTimeout(sock_connect=10, total=20), cookie_jar=aiohttp.DummyCookieJar()) as session:
+                payload = await search_categories(session, cleaned)
+        except CatalogError as error:
+            raise GameSearchError(error.code) from None
+        except (aiohttp.ClientError, TimeoutError):
+            raise GameSearchError("network") from None
+        except Exception:
+            raise GameSearchError("twitch_error") from None
+        categories = parse_categories(payload, cleaned, MAX_TWITCH_RESULTS)
+        if len(_CACHE) >= 200:
+            _CACHE.pop(next(iter(_CACHE)))
+        _CACHE[cache_key] = (now, tuple(categories))
+        return categories[:limit]
 
     token, client = _load_twitch_token()
     headers = {

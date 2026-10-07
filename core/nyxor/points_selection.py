@@ -27,6 +27,28 @@ async def category_channels(session, headers, game, order="popular"):
     cached = _directories.get(key)
     if cached and time.monotonic() - cached[0] < 60:
         return cached[1]
+    from constants import ClientType
+    if headers.get("Client-Id") == ClientType.WEB.CLIENT_ID:
+        from nyxor.twitch_catalog import directory_page
+        items, complete, cursor, seen = {}, False, None, set()
+        try:
+            async with asyncio.timeout(18):
+                for _ in range(100):
+                    page = await directory_page(session, game, cursor)
+                    for item in page["items"]:
+                        items[item["login"]] = item
+                    cursor, complete = page["cursor"], page["complete"]
+                    if complete or not cursor or cursor in seen or order == "popular":
+                        break
+                    seen.add(cursor)
+        except TimeoutError:
+            if not items:
+                raise
+        result = dict(items=sorted_channels(list(items.values()), order), complete=complete)
+        if len(_directories) > 100:
+            _directories.clear()
+        _directories[key] = (time.monotonic(), result)
+        return result
     helix = {"Authorization": headers.get("Authorization", "").replace("OAuth ", "Bearer ", 1),
              "Client-Id": headers.get("Client-Id", "")}
     items, complete = {}, False

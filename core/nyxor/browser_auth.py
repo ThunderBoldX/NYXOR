@@ -146,7 +146,8 @@ def atomic_save(path, data):
 async def apply_context(_session, _context, params):
     """Refresh every GQL request; do not send browser secrets to other hosts."""
     from constants import ClientType
-    if str(params.url) != "https://gql.twitch.tv/gql" or params.headers.get("Client-Id") != ClientType.WEB.CLIENT_ID:
+    if (str(params.url) != "https://gql.twitch.tv/gql" or params.headers.get("Client-Id") != ClientType.WEB.CLIENT_ID
+            or not params.headers.get("Authorization", "").startswith("OAuth ")):
         return
     # Import validation supplies its own complete context, not the saved one.
     if "Client-Integrity" in params.headers:

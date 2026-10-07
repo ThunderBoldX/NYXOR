@@ -54,7 +54,11 @@ def request(payload: str) -> str:
         future.cancel()
         return json.dumps({"ok": False, "error": "Connection timed out. Please retry."})
     except Exception as error:
-        return json.dumps({"ok": False, "error": str(error)[:240]}, ensure_ascii=False)
+        code = getattr(error, "code", "")
+        result = {"ok": False, "error": str(error)[:240]}
+        if code in {"auth_missing", "auth_invalid", "rate_limited", "network", "twitch_error", "unknown"}:
+            result["error_code"] = code
+        return json.dumps(result, ensure_ascii=False)
 
 
 def snapshot() -> dict:
@@ -78,6 +82,7 @@ def snapshot() -> dict:
         "events": load_jsonl(EVENTS_PATH, 60)[::-1],
         "settings": {"language": settings.get("language", "uk"),
                      "launch_on_boot": settings.get("launch_on_boot", False),
+                     "startup_mode": settings.get("startup_mode", "farm"),
                      "points_order": settings.get("points_order", "popular"),
                      "energy_saver": settings.get("energy_saver", False),
                      "auto_restart": settings.get("auto_restart", True),
@@ -328,6 +333,8 @@ async def dispatch(data: dict):
             elif key in {"auto_restart", "launch_on_boot", "energy_saver"} and isinstance(value, bool):
                 settings[key] = value
             elif key == "points_order" and value in {"popular", "quiet"}:
+                settings[key] = value
+            elif key == "startup_mode" and value in {"app", "farm"}:
                 settings[key] = value
             elif key in {"enabled", "auto_claim_bonus", "follow_raids", "claim_moments"} and isinstance(value, bool):
                 settings.setdefault("channel_points", {})[key] = value

@@ -183,3 +183,13 @@ class AndroidRuntimeTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(storage.load_settings()['energy_saver'])
         with self.assertRaises(ValueError):
             await runtime.dispatch({"action": "settings", "values": {"energy_saver": "false"}})
+
+    async def test_startup_mode_persists_without_changing_boot_switch(self):
+        await runtime.dispatch({'action':'settings','values':{'launch_on_boot':True}})
+        self.assertEqual(runtime.snapshot()['settings']['startup_mode'],'farm')
+        for mode in ['app','farm']:
+            result=await runtime.dispatch({'action':'settings','values':{'startup_mode':mode}})
+            self.assertEqual(result['settings']['startup_mode'],mode)
+            self.assertTrue(result['settings']['launch_on_boot'])
+        with self.assertRaises(ValueError):
+            await runtime.dispatch({'action':'settings','values':{'startup_mode':'anything'}})

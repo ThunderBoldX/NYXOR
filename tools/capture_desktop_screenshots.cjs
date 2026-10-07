@@ -30,6 +30,8 @@ const server=http.createServer((request,response)=>{
     await page.screenshot({path:path.join(output,name+'.png')});
    }
    await capture('overview');
+   await page.evaluate(async()=>{demoState.running=false;await refresh(true);});await capture('overview-paused');
+   await page.evaluate(async()=>{demoState.running=true;await refresh(true);});
    await page.locator('[data-go=pointsPage]').click();await page.locator('#points-order').selectOption('quiet');
    await page.locator('[data-directory=Rust]').click();await page.getByText('A quiet night',{exact:true}).waitFor();
    await page.locator('#toast.visible').waitFor({state:'detached'});await capture('points');
@@ -42,17 +44,28 @@ const server=http.createServer((request,response)=>{
    await page.locator('#toast.visible').waitFor({state:'detached'});await capture('activity');
    await page.locator('[data-go=settings]').click();await page.locator('[data-setting=energy_saver]').click();
    await page.waitForFunction(()=>document.documentElement.classList.contains('energy-saver'));
+   assert(await page.locator('#startup-mode').isDisabled());
+   await page.locator('[data-setting=launch_on_boot]').click();
+   await page.waitForFunction(()=>!document.querySelector('#startup-mode').disabled);
+   await page.locator('#startup-mode').selectOption('app');await page.waitForFunction(()=>model.settings.startup_mode==='app');
    await page.locator('#toast.visible').waitFor({state:'detached'});await capture('settings');
-   for(const width of [860,1024,1440,1920]){
-    await page.setViewportSize({width,height:1060});
+   for(const [width,height] of [[800,560],[860,640],[1093,574],[1366,728],[1440,900],[1920,1040]]){
+    await page.setViewportSize({width,height});
     for(const route of ['home','games','streamers','pointsPage','activity','settings']){
      await page.evaluate(route=>navigate(route),route);
      assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Overflow '+width+'/'+route);
+     assert.equal(await page.locator('#account-button').count(),1);
     }
+    for(const running of [true,false]){
+     await page.evaluate(async running=>{demoState.running=running;await refresh(true);navigate('home');},running);
+     const separate=await page.evaluate(()=>{const a=document.querySelector('#account-button').getBoundingClientRect(),s=document.querySelector('.page-head .status').getBoundingClientRect();return s.right+12<=a.left&&a.right<=innerWidth;});
+     assert(separate,'Status/settings overlap at '+width+'px, running='+running);
+    }
+    await page.locator('#account-button').click();await page.locator('#startup-mode').waitFor();
     const centered=await page.locator('#account-button').evaluate(button=>{const b=button.getBoundingClientRect(),i=button.querySelector('svg').getBoundingClientRect();return Math.abs(b.top+b.height/2-i.top-i.height/2)<1&&Math.abs(b.left+b.width/2-i.left-i.width/2)<1;});assert(centered);
    }
    await page.setViewportSize({width:1440,height:1060});
   }
-  assert.deepEqual(errors,[]);console.log('10 desktop screenshots; 6 routes at 860/1024/1440/1920px, selection deletion, filters, energy switch and centered moon passed.');
+  assert.deepEqual(errors,[]);console.log('12 desktop screenshots; 6 routes at 800/860/1093/1366/1440/1920px; paused/running controls separated, settings shortcut, startup modes, filters and history checks passed.');
  }finally{await browser.close();server.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;server.close();});

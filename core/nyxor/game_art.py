@@ -25,6 +25,16 @@ async def game_art(session, headers, name):
     if cached and cached[0] > time.monotonic():
         return cached[1]
     try:
+        from constants import ClientType
+        if headers.get('Client-Id') == ClientType.WEB.CLIENT_ID:
+            from nyxor.twitch_catalog import public_request, ART_QUERY
+            payload = await public_request(session, ART_QUERY, {'name': name})
+            game = payload.get('game') or {}
+            url = safe_art_url(game.get('boxArtURL')) if str(game.get('name', '')).casefold() == key else ''
+            _cache[key] = (time.monotonic() + (86400 if url else 60), url)
+            if len(_cache) > 100:
+                _cache.pop(next(iter(_cache)))
+            return url
         async with session.get('https://api.twitch.tv/helix/games', params={'name': name},
                                headers={'Client-Id': headers['Client-Id'],
                                         'Authorization': headers['Authorization'].replace('OAuth ', 'Bearer ', 1)},

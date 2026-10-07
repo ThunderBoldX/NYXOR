@@ -1,22 +1,24 @@
 'use strict';
 Object.assign(text.uk,{
- launchOnBoot:'Запускати разом із Windows',bootHint:'Після входу у Windows NYXOR запуститься у треї та відновить фарм. Потрібні підключений Twitch та збережені списки.',
+ launchOnBoot:'Запускати разом із Windows',bootHint:'Після входу у Windows NYXOR запуститься у треї. Нижче обери, чи починати фарм автоматично. Для фарму потрібні підключений Twitch і збережені списки.',
+ startupMode:'Дія після автозапуску',startupApp:'Лише запускати NYXOR',startupFarm:'Запускати NYXOR і фарм',
  background:'NYXOR працює у системному треї. Закриття вікна залишає фарм увімкненим. Щоб завершити програму, обери «Вийти з NYXOR» у треї.',
  backgroundHint:'Хрестик згортає NYXOR у трей поруч із годинником. Подвійне натискання на місяць відкриває вікно; праве — показує запуск, зупинку та вихід.',
  lockHint:'Статус гри й каналу доступний при наведенні на значок у треї. Фарм працює із заблокованим екраном, поки ПК увімкнений і підключений до інтернету.',
  forceStopHint:'Вимкнений або приспаний комп’ютер не фармить. Звичайний режим запобігає автоматичному сну під час фарму, але дозволяє вимкнення екрана.',
  energyHint:'Менше мережевих перевірок, оновлень екрана та анімацій. У цьому режимі Windows може приспати ПК, що призупинить фарм. Вимкни його для безперервної роботи.',
- batterySettings:'Налаштування живлення Windows',notificationSettings:'Сповіщення Windows',nativeOnlyText:'Цей інтерфейс підключається до ядра, вбудованого у Windows-застосунок.',about:'NYXOR 2.3.3 · Windows preview',
+ batterySettings:'Налаштування живлення Windows',notificationSettings:'Сповіщення Windows',nativeOnlyText:'Цей інтерфейс підключається до ядра, вбудованого у Windows-застосунок.',about:'NYXOR 2.3.4 · Windows preview',
  net_offline:'Немає з’єднання. Перевір Wi-Fi або Ethernet.',net_dns:'Не вдалося знайти адресу Twitch. Перевір мережу, VPN та DNS.',net_tls:'Не вдалося перевірити з’єднання. Перевір час Windows та VPN.',net_connection:'Не вдалося підключитися до Twitch. Перевір мережу та доступ програми до інтернету.'
 });
 Object.assign(text.en,{
- launchOnBoot:'Start with Windows',bootHint:'After signing in to Windows, NYXOR starts in the tray and resumes farming. Requires a connected Twitch account and saved lists.',
+ launchOnBoot:'Start with Windows',bootHint:'After signing in to Windows, NYXOR starts in the tray. Choose below whether to farm automatically. Farming requires a connected Twitch account and saved lists.',
+ startupMode:'After startup',startupApp:'Start NYXOR only',startupFarm:'Start NYXOR and farm',
  background:'NYXOR runs in the system tray. Closing the window keeps farming active. Choose “Quit NYXOR” in the tray to exit.',
  backgroundHint:'The close button hides NYXOR beside the clock. Double-click the moon to open it; right-click for start, stop and quit.',
  lockHint:'Hover over the tray icon for the current game and channel. Farming continues with a locked screen while your PC is awake and online.',
  forceStopHint:'Farming pauses when the PC sleeps or shuts down. Normal mode prevents automatic sleep while farming, while allowing the display to turn off.',
  energyHint:'Fewer network checks, screen updates and animations. Windows may put your PC to sleep in this mode, pausing farming. Turn it off for continuous operation.',
- batterySettings:'Windows power settings',notificationSettings:'Windows notifications',nativeOnlyText:'This interface connects to the engine built into the Windows app.',about:'NYXOR 2.3.3 · Windows preview',
+ batterySettings:'Windows power settings',notificationSettings:'Windows notifications',nativeOnlyText:'This interface connects to the engine built into the Windows app.',about:'NYXOR 2.3.4 · Windows preview',
  net_offline:'No connection. Check Wi-Fi or Ethernet.',net_dns:'Could not resolve Twitch’s address. Check your network, VPN and DNS.',net_tls:'Could not verify the connection. Check the Windows clock and VPN.',net_connection:'Could not connect to Twitch. Check your network and internet access for NYXOR.'
 });
 Object.assign(text.uk,{
@@ -53,10 +55,18 @@ document.addEventListener('click',async event=>{
   try{model=await call('cancel_auth');render();}catch(error){toast(error.message);}
  }
 });
+document.addEventListener('change',event=>{
+ if(event.target.id==='startup-mode')update('settings',{values:{startup_mode:event.target.value}});
+});
+const desktopAccountButton=document.querySelector('#account-button');
 const mobileRender=render;
 render=function(animate=false){
+ // Keep the actual button and its handler while #main is replaced on each render.
+ document.querySelector('.topbar')?.append(desktopAccountButton);
  mobileRender(animate);
  const page=document.querySelector('#main>div');if(!page)return;
+ const heading=page.querySelector('.page-head');
+ if(heading){const actions=document.createElement('div');actions.className='page-actions';const status=heading.querySelector('.status');if(status)actions.append(status);actions.append(desktopAccountButton);heading.append(actions);}
  if(route==='home'){
   const metric=page.querySelector('.metric-grid'),hero=metric?.previousElementSibling;
   if(metric&&hero){const summary=document.createElement('div');summary.className='desktop-summary';hero.before(summary);summary.append(hero,metric);}
@@ -64,6 +74,8 @@ render=function(animate=false){
   if(rewards.length){const grid=document.createElement('div');grid.className='reward-grid';rewards[0].before(grid);grid.append(...rewards);}
  }
  if(route==='settings'){
+  const bootCard=page.querySelector('[data-setting="launch_on_boot"]')?.closest('.list-card');
+  if(bootCard){const row=document.createElement('div');row.className='list-row';row.innerHTML=`<label class="settings-label" for="startup-mode">${t('startupMode')}</label><select class="language" id="startup-mode" ${model.settings.launch_on_boot?'':'disabled'}><option value="app" ${model.settings.startup_mode==='app'?'selected':''}>${t('startupApp')}</option><option value="farm" ${model.settings.startup_mode!=='app'?'selected':''}>${t('startupFarm')}</option></select>`;bootCard.append(row);}
   if(model.authenticated&&(model.auth?.error_code||model.auth?.status==='browser_pending')){
    const accountCard=page.querySelector('.list-card'),notice=document.createElement('div');
    notice.className='empty auth-card';notice.innerHTML=authContent(model.auth);accountCard?.after(notice);

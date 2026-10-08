@@ -86,6 +86,7 @@ def snapshot() -> dict:
                      "startup_mode": settings.get("startup_mode", "farm"),
                      "points_order": settings.get("points_order", "popular"),
                      "energy_saver": settings.get("energy_saver", False),
+                     "low_resource": settings.get("low_resource", False) if os.environ.get("NYXOR_PLATFORM") == "desktop" else False,
                      "auto_restart": settings.get("auto_restart", True),
                      "channel_points": settings.get("channel_points", {})},
     }
@@ -334,6 +335,8 @@ async def dispatch(data: dict):
                 settings[key] = value
                 os.environ["NYXOR_LANG"] = value
             elif key in {"auto_restart", "launch_on_boot", "energy_saver"} and isinstance(value, bool):
+                settings[key] = value
+            elif key == "low_resource" and isinstance(value, bool) and os.environ.get("NYXOR_PLATFORM") == "desktop":
                 settings[key] = value
             elif key == "points_order" and value in {"popular", "quiet"}:
                 settings[key] = value

@@ -1051,7 +1051,8 @@ async def wait_live(
             return
 
         state["remaining"] = int(remaining) + 1
-        await asyncio.sleep(min(5.0 if load_settings().get("energy_saver") else 1.0, remaining))
+        idle_settings = load_settings()
+        await asyncio.sleep(min(5.0 if idle_settings.get("energy_saver") or idle_settings.get("low_resource") else 1.0, remaining))
 
 
 
@@ -1184,7 +1185,7 @@ async def main() -> None:
                     preferred = preferred_channels(settings)
                     games_for_points = point_games(settings)
                     points_order = settings.get("points_order", "popular")
-                    energy_saver = bool(settings.get("energy_saver", False))
+                    energy_saver = bool(settings.get("energy_saver", False) or settings.get("low_resource", False))
                     player.set_power_saver(energy_saver)
                     points_settings = settings.get("channel_points") or {}
                     points_enabled = bool(points_settings.get("enabled", True))

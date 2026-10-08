@@ -3,26 +3,26 @@ Object.assign(text.uk,{
  launchOnBoot:'Запускати разом із Windows',bootHint:'Після входу у Windows NYXOR запуститься у треї. Нижче обери, чи починати фарм автоматично. Для фарму потрібні підключений Twitch і збережені списки.',
  startupMode:'Дія після автозапуску',startupApp:'Лише запускати NYXOR',startupFarm:'Запускати NYXOR і фарм',
  background:'NYXOR працює у системному треї. Закриття вікна залишає фарм увімкненим. Щоб завершити програму, обери «Вийти з NYXOR» у треї.',
- backgroundHint:'Хрестик згортає NYXOR у трей поруч із годинником. Подвійне натискання на місяць відкриває вікно; праве — показує запуск, зупинку та вихід.',
+ backgroundHint:'Хрестик і кнопка згортання прибирають NYXOR у трей поруч із годинником. Один клік лівою кнопкою на місяць повертає вікно; права кнопка показує меню.',
  lockHint:'Статус гри й каналу доступний при наведенні на значок у треї. Фарм працює із заблокованим екраном, поки ПК увімкнений і підключений до інтернету.',
  forceStopHint:'Вимкнений або приспаний комп’ютер не фармить. Звичайний режим запобігає автоматичному сну під час фарму, але дозволяє вимкнення екрана.',
  energyHint:'Менше мережевих перевірок, оновлень екрана та анімацій. У цьому режимі Windows може приспати ПК, що призупинить фарм. Вимкни його для безперервної роботи.',
- batterySettings:'Налаштування живлення Windows',notificationSettings:'Сповіщення Windows',nativeOnlyText:'Цей інтерфейс підключається до ядра, вбудованого у Windows-застосунок.',about:'NYXOR 2.4.0 · Windows preview',
+ batterySettings:'Налаштування живлення Windows',notificationSettings:'Сповіщення Windows',nativeOnlyText:'Цей інтерфейс підключається до ядра, вбудованого у Windows-застосунок.',about:'NYXOR 2.4.1 · Windows preview',
  net_offline:'Немає з’єднання. Перевір Wi-Fi або Ethernet.',net_dns:'Не вдалося знайти адресу Twitch. Перевір мережу, VPN та DNS.',net_tls:'Не вдалося перевірити з’єднання. Перевір час Windows та VPN.',net_connection:'Не вдалося підключитися до Twitch. Перевір мережу та доступ програми до інтернету.'
 });
 Object.assign(text.en,{
  launchOnBoot:'Start with Windows',bootHint:'After signing in to Windows, NYXOR starts in the tray. Choose below whether to farm automatically. Farming requires a connected Twitch account and saved lists.',
  startupMode:'After startup',startupApp:'Start NYXOR only',startupFarm:'Start NYXOR and farm',
  background:'NYXOR runs in the system tray. Closing the window keeps farming active. Choose “Quit NYXOR” in the tray to exit.',
- backgroundHint:'The close button hides NYXOR beside the clock. Double-click the moon to open it; right-click for start, stop and quit.',
+ backgroundHint:'Close or minimize to hide NYXOR beside the clock. Single-click the moon to restore the window; right-click for start, stop and quit.',
  lockHint:'Hover over the tray icon for the current game and channel. Farming continues with a locked screen while your PC is awake and online.',
  forceStopHint:'Farming pauses when the PC sleeps or shuts down. Normal mode prevents automatic sleep while farming, while allowing the display to turn off.',
  energyHint:'Fewer network checks, screen updates and animations. Windows may put your PC to sleep in this mode, pausing farming. Turn it off for continuous operation.',
- batterySettings:'Windows power settings',notificationSettings:'Windows notifications',nativeOnlyText:'This interface connects to the engine built into the Windows app.',about:'NYXOR 2.4.0 · Windows preview',
+ batterySettings:'Windows power settings',notificationSettings:'Windows notifications',nativeOnlyText:'This interface connects to the engine built into the Windows app.',about:'NYXOR 2.4.1 · Windows preview',
  net_offline:'No connection. Check Wi-Fi or Ethernet.',net_dns:'Could not resolve Twitch’s address. Check your network, VPN and DNS.',net_tls:'Could not verify the connection. Check the Windows clock and VPN.',net_connection:'Could not connect to Twitch. Check your network and internet access for NYXOR.'
 });
 Object.assign(text.uk,{
- loginText:'Вхід відкриється на сайті Twitch в окремому вікні Chrome. Потрібен встановлений Google Chrome; твої звичайні вкладки залишаться окремо.',
+ loginText:'Chrome відкривається лише для входу та закривається після підключення. NYXOR фармить без браузера. Якщо сеанс закінчиться, підключи Twitch повторно.',
  browserWaiting:'Увійди у Twitch у відкритому вікні. NYXOR перевірить акаунт і кампанії, а потім підключиться автоматично.',
  net_browser_missing:'Для входу потрібен Google Chrome. Встанови його й натисни «Підключити Twitch» знову.',
  net_browser_closed:'Вікно Twitch закрито. Натисни «Підключити Twitch», щоб продовжити.',
@@ -34,7 +34,7 @@ Object.assign(text.uk,{
  net_browser_account_changed:'Акаунт у вікні Twitch змінився. Зупини фарм і підключи потрібний акаунт.'
 });
 Object.assign(text.en,{
- loginText:'Sign in on Twitch in a separate Chrome window. Google Chrome must be installed; your regular tabs stay separate.',
+ loginText:'Chrome opens only for login and closes after connecting. NYXOR farms without a browser. Reconnect Twitch if the saved session expires.',
  browserWaiting:'Sign in to Twitch in the opened window. NYXOR checks your account and campaigns, then connects automatically.',
  net_browser_missing:'Google Chrome is required for login. Install it, then click “Connect Twitch” again.',
  net_browser_closed:'The Twitch window was closed. Click “Connect Twitch” to continue.',
@@ -90,8 +90,8 @@ render=function(animate=false){
 };
 if(model)render();
 
-Object.assign(text.uk,{accounts:'Акаунти',addAccount:'Додати акаунт',accountHint:'Окремі входи, списки, прогрес та історія. Перемикання не зупиняє фарм інших акаунтів.',mainAccount:'Основний акаунт',newAccount:'Новий акаунт',viewAccount:'Перегляд',selectedAccount:'Обраний',chooseAccount:'Вибрати',accountStartup:'Фарм при автозапуску',farmingAccounts:'Зараз фармлять',renewing:'Поновлюємо сеанс Twitch…',disconnectAccount:'Відключити акаунт',parallelHint:'Кожен активний акаунт використовує окремий процес і браузерний профіль. Більше акаунтів — більше пам’яті та мережевих запитів.'});
-Object.assign(text.en,{accounts:'Accounts',addAccount:'Add account',accountHint:'Separate logins, lists, progress and history. Switching keeps other accounts farming.',mainAccount:'Main account',newAccount:'New account',viewAccount:'Viewing',selectedAccount:'Selected',chooseAccount:'Select',accountStartup:'Farm on Windows startup',farmingAccounts:'Farming now',renewing:'Renewing Twitch session…',disconnectAccount:'Disconnect account',parallelHint:'Each active account uses its own process and browser profile. More accounts use more memory and network requests.'});
+Object.assign(text.uk,{accounts:'Акаунти',addAccount:'Додати акаунт',accountHint:'Окремі входи, списки, прогрес та історія. Перемикання не зупиняє фарм інших акаунтів.',mainAccount:'Основний акаунт',newAccount:'Новий акаунт',viewAccount:'Перегляд',selectedAccount:'Обраний',chooseAccount:'Вибрати',accountStartup:'Фарм при автозапуску',farmingAccounts:'Зараз фармлять',renewing:'Поновлюємо сеанс Twitch…',disconnectAccount:'Відключити акаунт',parallelHint:'Кожен активний акаунт використовує окремий процес. Chrome потрібен лише для входу. Більше акаунтів — більше пам’яті та мережевих запитів.'});
+Object.assign(text.en,{accounts:'Accounts',addAccount:'Add account',accountHint:'Separate logins, lists, progress and history. Switching keeps other accounts farming.',mainAccount:'Main account',newAccount:'New account',viewAccount:'Viewing',selectedAccount:'Selected',chooseAccount:'Select',accountStartup:'Farm on Windows startup',farmingAccounts:'Farming now',renewing:'Renewing Twitch session…',disconnectAccount:'Disconnect account',parallelHint:'Each active account uses its own process. Chrome is needed only for login. More accounts use more memory and network requests.'});
 paths.accounts=paths.account;
 const desktopCall=call,desktopNavigate=navigate,accountsBaseRender=render,desktopRefresh=refresh;
 let accountEpoch=0;
@@ -108,6 +108,12 @@ call=async function(action,values={}){
   if(action==='account_select'){demoActive.id=target;return demoAccountView();}
   if(action==='account_autostart'){demoProfiles.get(target).auto_farm=values.enabled;return demoAccountView();}
   if(['start','restart','stop','auth','logout'].includes(action)&&target!==demoActive.id){const s=demoProfiles.get(target);if(action==='auth')throw new Error(t('demoLogin'));s.running=action==='start'||action==='restart';if(action==='logout'){s.authenticated=false;s.account='';}return demoAccountView();}
+  if(action==='settings'&&'low_resource' in (values.values||{})){
+   for(const s of demoProfiles.values())s.settings.low_resource=values.values.low_resource;
+   demoState.settings.low_resource=values.values.low_resource;
+   values={...values,values:Object.fromEntries(Object.entries(values.values).filter(([key])=>key!=='low_resource'))};
+   if(!Object.keys(values.values).length)return demoAccountView();
+  }
   const result=await desktopCall(action,values);
   if(result?.settings){const {accounts:unused,active_account_id:unusedId,...clean}=result;demoProfiles.set(demoActive.id,clean);return demoAccountView();}
   return result;
@@ -151,4 +157,24 @@ document.addEventListener('click',event=>{
  if(button.dataset.accountSelect)accountAction('account_select',{account_id:button.dataset.accountSelect});
  if(button.dataset.accountAction){const action=button.dataset.accountAction,values={account_id:button.dataset.accountId};if(action==='logout')confirmAction(t('disconnectAccount'),t('logoutText'),()=>accountAction(action,values));else accountAction(action,values);}
 });
+if(model)render();
+
+Object.assign(text.uk,{performance:'Продуктивність',lowResource:'Мінімальне навантаження',lowResourceHint:'Менше фонових перевірок, оновлення інтерфейсу раз на 15 секунд, спрощені анімації та нижчий пріоритет процесів фарму. У треї екран не оновлюється. Прогрес може з’являтися із затримкою; сам цей режим не дозволяє ПК заснути.'});
+Object.assign(text.en,{performance:'Performance',lowResource:'Minimal resource use',lowResourceHint:'Fewer background checks, interface updates every 15 seconds, reduced animations and lower farming process priority. No screen updates in the tray. Progress may appear later; this mode alone does not allow the PC to sleep.'});
+const performanceRender=render;
+render=function(animate=false){
+ window.NyxorDropdowns.close();performanceRender(animate);if(!model)return;
+ document.documentElement.classList.toggle('low-resource',model.settings.low_resource===true);
+ if(route==='settings'){
+  const left=document.querySelector('.settings-layout>section');
+  left?.insertAdjacentHTML('beforeend',`<div class="section-head"><h2>${t('performance')}</h2></div><div class="list-card"><div class="list-row"><span class="settings-label" id="label-low-resource">${t('lowResource')}</span><button class="switch" role="switch" aria-labelledby="label-low-resource" aria-checked="${model.settings.low_resource===true}" data-low-resource ${busy?'disabled':''}></button></div><p class="performance-hint">${t('lowResourceHint')}</p></div>`);
+ }
+ window.NyxorDropdowns.enhance();
+};
+document.addEventListener('click',event=>{if(event.target.closest('[data-low-resource]'))update('settings',{values:{low_resource:!model.settings.low_resource}});});
+const performanceRefresh=refresh;let lastVisibleRefresh=0;
+refresh=async function(force=false){
+ if(!force&&(document.hidden||window.NyxorDropdowns.isOpen()||model?.settings?.low_resource&&Date.now()-lastVisibleRefresh<15000))return;
+ lastVisibleRefresh=Date.now();return performanceRefresh(force);
+};
 if(model)render();

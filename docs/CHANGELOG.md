@@ -1,3 +1,11 @@
+## Windows 2.4.1 preview — browser-free farming, dropdowns and resource controls
+
+- Close the owned Chrome process immediately after verified login. Farming reuses the saved context; no renewal timer or farming start automatically launches Chrome. An expired profile pauses and requests explicit reconnection.
+- Replace desktop native dropdown menus with rounded animated portals, selected checks, keyboard navigation, typeahead, Escape/outside-click dismissal and bounded viewport placement.
+- Add a global minimal-resource switch: lower backend process priority, reduced interface/image animations, slower visible refresh/background checks and slower playback pulses. Keep Windows sleep prevention separate from energy saver.
+- Hide the app in the tray when minimized, restore with one left click, and preserve farming when the window is hidden.
+- Refresh English/Ukrainian screenshots and guides; verify browser release/no automatic reopening, expiry isolation, dropdown interaction, saved resource preferences and packaged tray/priority behavior. Real-account long-running farming still requires practical testing.
+
 ## Windows 2.4.0 preview — accounts, session renewal and administrator setup
 
 - Add Accounts navigation, isolated saved logins, per-account lists/history/progress and parallel backend processes. Switching views leaves other accounts farming.

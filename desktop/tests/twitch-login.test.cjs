@@ -27,13 +27,34 @@ test('A cached previously issued proof still requires a fresh successful catalog
  seen.body('fresh','https://gql.twitch.tv/gql',{data:{currentUser:{dropCampaigns:[]}}});assert.equal(seen.bundle('Chrome').expires_at,previous.expires_at);
  assert.equal(new Observation({...previous,expires_at:0}).issued.size,0);
 });
-test('Transient renewal keeps the browser and retries; cancellation clears the retry',async()=>{
- const messages=[],login=new TwitchLogin('C:/fixture/renewal',{request:async p=>{messages.push(p);return {ok:true,data:{}};}});
- const protocol={closed:false,command:async()=>{},close(){this.closed=true;}};login.protocol=protocol;
- login.capture=async()=>{const error=new Error('timeout');error.code='browser_timeout';throw error;};
- await login.start(false);await login.work;
- assert.equal(messages[0].action,'browser_renewing');assert.equal(messages[1].code,'browser_timeout');assert.equal(login.protocol,protocol);assert(login.retryAt>Date.now());
- await login.close();assert(protocol.closed);assert.equal(login.retryAt,0);assert.equal(login.work,null);
+test('Farming reuses a valid saved context without a browser; expiry never launches Chrome',async()=>{
+ const messages=[],login=new TwitchLogin('C:/fixture/no-browser',{request:async p=>{messages.push(p);return {ok:true,data:{}};}});
+ login.accepted={headers:{'client-id':headers['Client-Id']},expires_at:Date.now()/1000+3600};
+ login.launch=async()=>{throw new Error('Unexpected browser launch');};
+ await login.ensure();assert.equal(login.child,undefined);assert.equal(messages.length,0);
+ login.accepted.expires_at=0;await assert.rejects(login.ensure(),error=>error.code==='browser_expired');
+ assert.equal(messages[0].code,'browser_expired');await assert.rejects(login.start(false),error=>error.code==='browser_expired');
+ assert.equal(login.renewTimer,null);assert.equal(login.child,undefined);
+});
+test('Successful verified login closes the owned Chrome and schedules no automatic reopen',async()=>{
+ const {EventEmitter}=require('node:events');const messages=[];
+ const login=new TwitchLogin('C:/fixture/login-only',{request:async p=>{messages.push(p);return {ok:true,data:{}};}});
+ const protocol=new EventEmitter(),child={exitCode:null};login.child=child;login.protocol=protocol;login.session='test';login.userAgent='Chrome';login.launch=async()=>{};
+ protocol.closed=false;protocol.close=()=>{protocol.closed=true;};
+ const emit=(method,params)=>protocol.emit('event',{sessionId:'test',method,params});
+ protocol.command=async(method,p)=>{
+  if(method==='Page.reload'){
+   emit('Network.requestWillBeSent',{requestId:'catalog',request:{url:'https://gql.twitch.tv/gql',headers}});
+   for(const [id,url] of [['proof','https://gql.twitch.tv/integrity'],['catalog','https://gql.twitch.tv/gql']]){emit('Network.responseReceived',{requestId:id,response:{url,status:200}});emit('Network.loadingFinished',{requestId:id});}
+  }
+  if(method==='Network.getResponseBody')return {body:JSON.stringify(p.requestId==='proof'?{token:'fixtureproof',expiration:Date.now()+3600000}:{data:{currentUser:{dropCampaigns:[]}}})};
+  if(method==='Network.getCookies')return {cookies:[]};
+  if(method==='Browser.close')child.exitCode=0;
+  return {};
+ };
+ await login.capture(true,login.generation);assert.equal(messages[0].action,'browser_import');
+ assert(protocol.closed);assert.equal(login.child,null);assert.equal(login.protocol,null);assert(login.accepted.expires_at>Date.now()/1000);assert.equal(login.renewTimer,null);
+ await login.ensure();assert.equal(messages.length,1);
 });
 test('DevTools can only connect to the launched local browser port',()=>{
  assert.equal(localSocket('ws://127.0.0.1:1234/devtools/browser/fixture',1234),'ws://127.0.0.1:1234/devtools/browser/fixture');

@@ -23,13 +23,13 @@ Choose your games and channels, track rewards, and let NYXOR work in the backgro
 
 ### Windows preview
 
-The same style and farming engine in a desktop window, with sidebar navigation, system tray controls and optional startup after Windows login. Requires **Windows 10/11 x64** and **Google Chrome for Twitch login**. The local 2.4.0 preview installer is ready; a public Windows release has not been published yet.
+The same style and farming engine in a desktop window, with sidebar navigation, system tray controls and optional startup after Windows login. Requires **Windows 10/11 x64** and **Google Chrome for Twitch login**. The local 2.4.1 preview installer is ready; a public Windows release has not been published yet.
 
 The window opens maximized within the current display's work area. Startup can open only NYXOR or also start farming. Game search uses Twitch's public catalog, with matching artwork and live channels for points.
 
 ![Windows overview with fictional demo data](docs/screenshots/windows/en/overview.png)
 
-Multiple Twitch accounts can farm concurrently, with separate logins, lists, progress and history. The Accounts page and account selector identify which profile you are viewing. Setup requests administrator permission automatically.
+Multiple Twitch accounts can farm concurrently, with separate logins, lists, progress and history. The Accounts page and account selector identify which profile you are viewing. Setup requests administrator permission automatically. Chrome closes after login; farming uses the saved session. A minimal-resource mode reduces background checks, and minimize hides the window in the tray for single-click restoration.
 
 ![Windows Accounts page with fictional demo data](docs/screenshots/windows/en/accounts.png)
 

@@ -12,6 +12,17 @@ function fixture(){
  const manager=new Accounts(root,factory);return {root,made,manager,cleanup:()=>fs.rmSync(root,{recursive:true,force:true})};
 }
 const execute=(slot,p)=>slot.engine.request(p);
+test('Resource mode applies to every loaded account; an expired profile pauses without opening a browser',async()=>{
+ const f=fixture();try{
+  await f.manager.initialize();await f.manager.route({action:'account_add'},execute);
+  await f.manager.route({action:'settings',values:{low_resource:true}},execute);
+  assert(f.made.every(s=>s.state.settings.low_resource));
+  f.made[0].state.running=true;f.made[0].state.auth_mode='browser';f.made[1].state.running=true;
+  f.made[0].login.ensure=async()=>{throw new Error('expired');};let expired=false;
+  f.made[0].login.status=async code=>{expired=code==='browser_expired';};
+  await f.manager.snapshot();await f.manager.maintain();assert(expired);assert(!f.made[0].state.running);assert(f.made[1].state.running);
+ }finally{f.cleanup();}
+});
 test('Legacy data stays in place; new accounts have independent engines, queues and Chrome roots',async()=>{
  const f=fixture();try{
   await f.manager.initialize();await f.manager.route({action:'queue',items:['Rust']},execute);

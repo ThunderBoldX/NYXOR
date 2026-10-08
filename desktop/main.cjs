@@ -1,6 +1,7 @@
 'use strict';
 const {app,BrowserWindow,ipcMain,protocol,net,Menu,Tray,nativeImage,shell,clipboard,powerSaveBlocker,screen}=require('electron');
 const path=require('node:path'),fs=require('node:fs'),{pathToFileURL}=require('node:url');
+const os=require('node:os');
 const {Engine,validate,twitchURL}=require('./bridge.cjs');
 const {TwitchLogin}=require('./twitch-login.cjs');
 const {Accounts}=require('./accounts.cjs');
@@ -15,6 +16,11 @@ function show(){if(!window.isVisible())window.maximize();if(window.isMinimized()
 function syncStatus(data){
  if(!data?.settings)return;
  lastSnapshot=data;
+ const low=data.settings.low_resource===true;
+ window?.webContents.setImageAnimationPolicy(low?'noAnimation':'animate');
+ for(const slot of accounts?.slots.values()||[])if(slot.priorityLow!==low&&slot.engine.child?.pid){
+  try{os.setPriority(slot.engine.child.pid,low?os.constants.priority.PRIORITY_BELOW_NORMAL:os.constants.priority.PRIORITY_NORMAL);slot.priorityLow=low;}catch{}
+ }
  const prevent=data.accounts?data.accounts.some(row=>row.running&&!accounts.get(row.id).data?.settings.energy_saver):data.running&&!data.settings.energy_saver;
  if(prevent&&powerId===undefined)powerId=powerSaveBlocker.start('prevent-app-suspension');
  if(!prevent&&powerId!==undefined){powerSaveBlocker.stop(powerId);powerId=undefined;}
@@ -112,6 +118,10 @@ async function smoke(){
   if(tray.isDestroyed())throw new Error('Tray was not created');
   const queue=await request({action:'queue',items:['Rust']});if(!queue.ok||queue.data.queue[0]!=='Rust')throw new Error('Queue persistence failed');
   const power=await request({action:'settings',values:{energy_saver:true,language:'en'}});if(!power.ok||!power.data.settings.energy_saver)throw new Error('Settings failed');
+  const minimal=await request({action:'settings',values:{low_resource:true}});
+  if(!minimal.data.settings.low_resource||os.getPriority(engine.child.pid)!==os.constants.priority.PRIORITY_BELOW_NORMAL)throw new Error('Resource mode did not lower engine priority: '+os.getPriority(engine.child.pid));
+  await request({action:'settings',values:{low_resource:false}});
+  if(os.getPriority(engine.child.pid)!==os.constants.priority.PRIORITY_NORMAL)throw new Error('Resource mode did not restore engine priority');
   for(const startup_mode of ['app','farm']){const mode=await request({action:'settings',values:{startup_mode}});if(!mode.ok||mode.data.settings.startup_mode!==startup_mode)throw new Error('Startup mode persistence failed');}
   const start=await request({action:'start'});if(start.ok)throw new Error('Unauthenticated farming must be blocked');
   const legacyPid=engine.child.pid;
@@ -166,12 +176,16 @@ async function smoke(){
    await new Promise(resolve=>setTimeout(resolve,400));
    if(await window.webContents.executeJavaScript('document.documentElement.scrollWidth>innerWidth'))throw new Error(section+' overflows');
   }
+  window.minimize();await new Promise(resolve=>setTimeout(resolve,300));
+  if(window.isVisible())throw new Error('Minimize did not hide in the tray');
+  tray.emit('click');await new Promise(resolve=>setTimeout(resolve,300));
+  if(!window.isVisible()||window.isMinimized())throw new Error('Single tray click did not restore the window');
   window.close();
   if(window.isDestroyed())throw new Error('Closing the window destroyed the app');
   const afterClose=await request({action:'snapshot'});
   if(!afterClose.ok)throw new Error('Closing the window stopped the engine');
   if(errors.length)throw new Error('Renderer errors: '+errors.join('; '));
-  fs.writeFileSync(path.join(smokeDir,'result.json'),JSON.stringify({ok:true,layout,errors,window:{workArea:nativeArea,content},engine:status.data.platform,accountProcesses:[legacyPid,accounts.get(newId).engine.child.pid],checks:['window content fits selected display work area','startup modes persist','persistent queue','energy setting','unauthenticated start blocked','seven sections','independent account processes and queues','account cards','centered moon','status/settings controls separated','no horizontal overflow','tray status','close to tray keeps engine alive','normal power blocker and eco release',...(process.argv.includes('--smoke-login')?['native Chrome login pending','cancel login closes owned Chrome','logout removes owned profile']:[]),...(process.argv.includes('--smoke-catalog')?['live World of Tanks search and add in Games and Points without an account']:[])]},null,2));
+  fs.writeFileSync(path.join(smokeDir,'result.json'),JSON.stringify({ok:true,layout,errors,window:{workArea:nativeArea,content},engine:status.data.platform,accountProcesses:[legacyPid,accounts.get(newId).engine.child.pid],checks:['window content fits selected display work area','startup modes persist','persistent queue','energy setting','unauthenticated start blocked','seven sections','independent account processes and queues','account cards','centered moon','status/settings controls separated','no horizontal overflow','tray status','minimize to tray and single-click restore','resource mode lowers and restores engine priority','close to tray keeps engine alive','normal power blocker and eco release',...(process.argv.includes('--smoke-login')?['native Chrome login pending','cancel login closes owned Chrome','logout removes owned profile']:[]),...(process.argv.includes('--smoke-catalog')?['live World of Tanks search and add in Games and Points without an account']:[])]},null,2));
  }catch(error){fs.writeFileSync(path.join(smokeDir,'result.json'),JSON.stringify({ok:false,error:error.stack,errors},null,2));process.exitCode=1;}
  finally{app.quit();}
 }
@@ -183,7 +197,7 @@ else{
  app.whenReady().then(async()=>{
   protocol.handle('nyxor',incoming=>{
    const url=new URL(incoming.url),name=decodeURIComponent(url.pathname).replace(/^\//,'');
-   if(url.host!=='app'||!['index.html','style.css','app.js','desktop.css','desktop-ui.js'].includes(name))return new Response('',{status:404});
+   if(url.host!=='app'||!['index.html','style.css','app.js','desktop.css','desktop-ui.js','dropdowns.js'].includes(name))return new Response('',{status:404});
    return net.fetch(pathToFileURL(path.join(ui,name)).href);
   });
   accounts=new Accounts(app.getPath('userData'),root=>({
@@ -204,7 +218,8 @@ else{
   window.webContents.setWindowOpenHandler(()=>({action:'deny'}));
   window.webContents.on('will-navigate',(event,url)=>{if(!url.startsWith('nyxor://app/index.html'))event.preventDefault();});
   window.on('close',event=>{if(!quitting){event.preventDefault();window.hide();}});
-  tray=new Tray(nativeImage.createFromPath(path.join(__dirname,'assets/tray.png')));tray.on('double-click',show);
+  window.on('minimize',()=>{if(!quitting)window.hide();});
+  tray=new Tray(nativeImage.createFromPath(path.join(__dirname,'assets/tray.png')));tray.on('click',show);
   syncStatus({running:false,settings:{language:'uk'}});
   await window.loadURL('nyxor://app/index.html');
   const initial=await request({action:'snapshot'}).catch(()=>null);
@@ -218,10 +233,13 @@ else{
   else if(smokeDir)await smoke();
   else{
    if(!process.argv.includes('--autostart'))show();
-   refreshTimer=setInterval(()=>request({action:'snapshot'}).then(()=>accounts.maintain()).catch(()=>{
-    if(powerId!==undefined){powerSaveBlocker.stop(powerId);powerId=undefined;}
-    tray?.setToolTip('NYXOR · Engine stopped — reopen the app');
-   }),10000);
+   const tick=async()=>{
+    try{await accounts.maintain();await request({action:'snapshot'});}catch{
+     if(powerId!==undefined){powerSaveBlocker.stop(powerId);powerId=undefined;}
+     tray?.setToolTip('NYXOR · Engine stopped — reopen the app');
+    }finally{if(!quitting)refreshTimer=setTimeout(tick,lastSnapshot?.settings?.low_resource?30000:10000);}
+   };
+   refreshTimer=setTimeout(tick,10000);
   }
  }).catch(error=>{if(smokeDir)fs.writeFileSync(path.join(smokeDir,'result.json'),JSON.stringify({ok:false,error:error.stack}));app.quit();});
  app.on('before-quit',event=>{

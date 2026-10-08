@@ -24,7 +24,7 @@ class DesktopBackendTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="NYXOR unicode ґ ") as directory:
             responses = self.run_engine(directory, [
                 {"action": "snapshot"}, {"action": "queue", "items": ["Rust", "Rust", "Warframe"]},
-                {"action": "settings", "values": {"energy_saver": True, "language": "en", "startup_mode": "app"}},
+                {"action": "settings", "values": {"energy_saver": True, "language": "en", "startup_mode": "app", "low_resource": True}},
                 {"action": "streamers", "items": ["invalid login"]}, {"action": "start"},
                 {"action": "exec"}, {"action": "stop"},
                 {"action": "browser_renewing"}, {"action": "browser_cancel"},
@@ -33,6 +33,7 @@ class DesktopBackendTests(unittest.TestCase):
             self.assertFalse(responses[0]["data"]["authenticated"])
             self.assertEqual(responses[1]["data"]["queue"], ["Rust", "Warframe"])
             self.assertTrue(responses[2]["data"]["settings"]["energy_saver"])
+            self.assertTrue(responses[2]["data"]["settings"]["low_resource"])
             self.assertEqual(responses[2]["data"]["settings"]["startup_mode"], "app")
             for index in [3, 4, 5]:
                 self.assertFalse(responses[index]["ok"])
@@ -44,6 +45,7 @@ class DesktopBackendTests(unittest.TestCase):
             self.assertEqual(saved["queue"], ["Rust", "Warframe"])
             self.assertEqual(saved["settings"]["language"], "en")
             self.assertEqual(saved["settings"]["startup_mode"], "app")
+            self.assertTrue(saved["settings"]["low_resource"])
             self.assertTrue((Path(directory) / "locales/en.json").exists())
 
 

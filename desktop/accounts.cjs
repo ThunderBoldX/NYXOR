@@ -2,7 +2,7 @@
 const fs=require('node:fs'),path=require('node:path'),{randomUUID}=require('node:crypto');
 const {shouldStartFarming}=require('./window-options.cjs');
 const ID=/^(?:default|[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/;
-const GLOBAL=new Set(['language','launch_on_boot','startup_mode']);
+const GLOBAL=new Set(['language','launch_on_boot','startup_mode','low_resource']);
 class Accounts{
  constructor(root,factory){
   this.root=path.resolve(root);this.factory=factory;this.slots=new Map();this.file=path.join(this.root,'accounts.json');
@@ -34,6 +34,7 @@ class Accounts{
   const legacy=this.get('default'),result=await legacy.engine.request({action:'snapshot'});
   if(!result.ok)throw new Error(result.error);
   if(!this.index.preferences){const s=result.data.settings;this.index.preferences={language:s.language,launch_on_boot:s.launch_on_boot,startup_mode:s.startup_mode};this.save();}
+  for(const slot of this.slots.values())await slot.engine.request({action:'settings',values:{low_resource:this.index.preferences.low_resource===true}});
   await this.get().engine.request({action:'snapshot'});
  }
  summaries(){return this.index.profiles.map(record=>{
@@ -55,12 +56,12 @@ class Accounts{
   if(action==='account_add'){
    if(this.index.profiles.length>=20)throw new Error('NYXOR supports up to 20 saved accounts');
    const record={id:randomUUID(),auto_farm:false};this.index.profiles.push(record);
-   try{await this.get(record.id).engine.request({action:'settings',values:{language:this.index.preferences.language}});this.index.active=record.id;this.save();}
+   try{await this.get(record.id).engine.request({action:'settings',values:{language:this.index.preferences.language,low_resource:this.index.preferences.low_resource===true}});this.index.active=record.id;this.save();}
    catch(error){this.index.profiles=this.index.profiles.filter(p=>p!==record);throw error;}
    return {ok:true,data:await this.snapshot()};
   }
   const id=payload.account_id||this.index.active,slot=this.get(id);
-  if(action==='account_select'){this.index.active=id;this.save();return {ok:true,data:await this.snapshot()};}
+  if(action==='account_select'){await slot.engine.request({action:'settings',values:{low_resource:this.index.preferences.low_resource===true}});this.index.active=id;this.save();return {ok:true,data:await this.snapshot()};}
   if(action==='account_autostart'){
    if(typeof payload.enabled!=='boolean')throw new Error('Invalid startup setting');
    slot.record.auto_farm=payload.enabled;this.save();return {ok:true,data:await this.snapshot()};
@@ -76,6 +77,7 @@ class Accounts{
   if(action==='settings'){
    const changed=Object.fromEntries(Object.entries(payload.values||{}).filter(([k])=>GLOBAL.has(k)));
    this.index.preferences={...this.index.preferences,...changed};this.save();
+   if('low_resource' in changed)await Promise.all([...this.slots.values()].filter(s=>s!==slot).map(s=>s.engine.request({action:'settings',values:{low_resource:changed.low_resource}})));
   }
   // Search/directory/connection return their own shape; other operations return
   // the currently selected view, even when a background account was changed.
@@ -86,14 +88,18 @@ class Accounts{
   const failures=[];
   for(const record of this.index.profiles){
    if(!record.auto_farm)continue;
-   const slot=this.get(record.id);await slot.engine.request({action:'snapshot'});
+   const slot=this.get(record.id);await slot.engine.request({action:'settings',values:{low_resource:this.index.preferences.low_resource===true}});await slot.engine.request({action:'snapshot'});
    if(shouldStartFarming(args,{...slot.data,settings:{...slot.data.settings,...this.index.preferences}})){
     try{const result=await this.route({action:'start',account_id:record.id},execute);if(!result.ok)throw new Error(result.error);}catch{failures.push(record.id);}
    }
   }
   return failures;
  }
- maintain(){for(const slot of this.slots.values())if(slot.data?.running&&slot.data.auth_mode==='browser'&&!slot.login.work)slot.login.ensure().catch(()=>{});}
+ async maintain(){
+  for(const slot of this.slots.values())if(slot.data?.running&&slot.data.auth_mode==='browser'){
+   try{await slot.login.ensure();}catch{await slot.engine.request({action:'stop'});await slot.login.status('browser_expired');}
+  }
+ }
  async stopAll(){await Promise.all([...this.slots.values()].map(async slot=>{await slot.login.close();await slot.engine.stop();}));}
 }
 module.exports={Accounts};

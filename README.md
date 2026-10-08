@@ -23,11 +23,15 @@ Choose your games and channels, track rewards, and let NYXOR work in the backgro
 
 ### Windows preview
 
-The same style and farming engine in a desktop window, with sidebar navigation, system tray controls and optional startup after Windows login. Requires **Windows 10/11 x64** and **Google Chrome for Twitch login**. The local 2.3.5 preview installer is ready; a public Windows release has not been published yet.
+The same style and farming engine in a desktop window, with sidebar navigation, system tray controls and optional startup after Windows login. Requires **Windows 10/11 x64** and **Google Chrome for Twitch login**. The local 2.4.0 preview installer is ready; a public Windows release has not been published yet.
 
 The window opens maximized within the current display's work area. Startup can open only NYXOR or also start farming. Game search uses Twitch's public catalog, with matching artwork and live channels for points.
 
 ![Windows overview with fictional demo data](docs/screenshots/windows/en/overview.png)
+
+Multiple Twitch accounts can farm concurrently, with separate logins, lists, progress and history. The Accounts page and account selector identify which profile you are viewing. Setup requests administrator permission automatically.
+
+![Windows Accounts page with fictional demo data](docs/screenshots/windows/en/accounts.png)
 
 [Windows installation and build guide](desktop/README.md) · [Desktop settings screenshot](docs/screenshots/windows/en/settings.png)
 
@@ -109,7 +113,7 @@ Your live streamers with Channel Points available
 Live channels in your “Games for points” categories
 ```
 
-NYXOR uses one stream at a time. Drops campaigns determine eligible channels, so a Drops streamer may be outside your **Streamers** list. Points farming stays within your allowed channels or games and checks that points are available.
+NYXOR uses one stream at a time per account. Windows can run several separate accounts concurrently. Drops campaigns determine eligible channels, so a Drops streamer may be outside your **Streamers** list. Points farming stays within your allowed channels or games and checks that points are available.
 
 **Most viewers first / Fewest viewers first** controls the search for the next channel. When Twitch returns only part of the directory, the app labels the list as incomplete.
 

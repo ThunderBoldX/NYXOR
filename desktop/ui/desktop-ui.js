@@ -7,7 +7,7 @@ Object.assign(text.uk,{
  lockHint:'Статус гри й каналу доступний при наведенні на значок у треї. Фарм працює із заблокованим екраном, поки ПК увімкнений і підключений до інтернету.',
  forceStopHint:'Вимкнений або приспаний комп’ютер не фармить. Звичайний режим запобігає автоматичному сну під час фарму, але дозволяє вимкнення екрана.',
  energyHint:'Менше мережевих перевірок, оновлень екрана та анімацій. У цьому режимі Windows може приспати ПК, що призупинить фарм. Вимкни його для безперервної роботи.',
- batterySettings:'Налаштування живлення Windows',notificationSettings:'Сповіщення Windows',nativeOnlyText:'Цей інтерфейс підключається до ядра, вбудованого у Windows-застосунок.',about:'NYXOR 2.3.5 · Windows preview',
+ batterySettings:'Налаштування живлення Windows',notificationSettings:'Сповіщення Windows',nativeOnlyText:'Цей інтерфейс підключається до ядра, вбудованого у Windows-застосунок.',about:'NYXOR 2.4.0 · Windows preview',
  net_offline:'Немає з’єднання. Перевір Wi-Fi або Ethernet.',net_dns:'Не вдалося знайти адресу Twitch. Перевір мережу, VPN та DNS.',net_tls:'Не вдалося перевірити з’єднання. Перевір час Windows та VPN.',net_connection:'Не вдалося підключитися до Twitch. Перевір мережу та доступ програми до інтернету.'
 });
 Object.assign(text.en,{
@@ -18,7 +18,7 @@ Object.assign(text.en,{
  lockHint:'Hover over the tray icon for the current game and channel. Farming continues with a locked screen while your PC is awake and online.',
  forceStopHint:'Farming pauses when the PC sleeps or shuts down. Normal mode prevents automatic sleep while farming, while allowing the display to turn off.',
  energyHint:'Fewer network checks, screen updates and animations. Windows may put your PC to sleep in this mode, pausing farming. Turn it off for continuous operation.',
- batterySettings:'Windows power settings',notificationSettings:'Windows notifications',nativeOnlyText:'This interface connects to the engine built into the Windows app.',about:'NYXOR 2.3.5 · Windows preview',
+ batterySettings:'Windows power settings',notificationSettings:'Windows notifications',nativeOnlyText:'This interface connects to the engine built into the Windows app.',about:'NYXOR 2.4.0 · Windows preview',
  net_offline:'No connection. Check Wi-Fi or Ethernet.',net_dns:'Could not resolve Twitch’s address. Check your network, VPN and DNS.',net_tls:'Could not verify the connection. Check the Windows clock and VPN.',net_connection:'Could not connect to Twitch. Check your network and internet access for NYXOR.'
 });
 Object.assign(text.uk,{
@@ -47,6 +47,7 @@ Object.assign(text.en,{
 });
 const deviceAuthContent=authContent;
 authContent=function(auth){
+ if(auth.status==='browser_renewing')return `<span class="loader"></span><p role="status">${t('renewing')}</p>`;
  if(auth.status==='browser_pending')return `<span class="loader"></span><p role="status">${t('browserWaiting')}</p><div class="browser-auth-actions"><button class="text-link" id="auth">${t('openTwitch')}</button><button class="text-link" id="cancel-auth">${t('cancel')}</button></div>`;
  return deviceAuthContent(auth);
 };
@@ -87,4 +88,67 @@ render=function(animate=false){
   heads[0].before(layout);left.append(...preferences);right.append(...account,...background);layout.append(left,right);
  }
 };
+if(model)render();
+
+Object.assign(text.uk,{accounts:'Акаунти',addAccount:'Додати акаунт',accountHint:'Окремі входи, списки, прогрес та історія. Перемикання не зупиняє фарм інших акаунтів.',mainAccount:'Основний акаунт',newAccount:'Новий акаунт',viewAccount:'Перегляд',selectedAccount:'Обраний',chooseAccount:'Вибрати',accountStartup:'Фарм при автозапуску',farmingAccounts:'Зараз фармлять',renewing:'Поновлюємо сеанс Twitch…',disconnectAccount:'Відключити акаунт',parallelHint:'Кожен активний акаунт використовує окремий процес і браузерний профіль. Більше акаунтів — більше пам’яті та мережевих запитів.'});
+Object.assign(text.en,{accounts:'Accounts',addAccount:'Add account',accountHint:'Separate logins, lists, progress and history. Switching keeps other accounts farming.',mainAccount:'Main account',newAccount:'New account',viewAccount:'Viewing',selectedAccount:'Selected',chooseAccount:'Select',accountStartup:'Farm on Windows startup',farmingAccounts:'Farming now',renewing:'Renewing Twitch session…',disconnectAccount:'Disconnect account',parallelHint:'Each active account uses its own process and browser profile. More accounts use more memory and network requests.'});
+paths.accounts=paths.account;
+const desktopCall=call,desktopNavigate=navigate,accountsBaseRender=render,desktopRefresh=refresh;
+let accountEpoch=0;
+const demoProfiles=new Map(),demoActive={id:'default'};
+if(demo)demoProfiles.set('default',structuredClone(demoState));
+function demoAccountView(){
+ const selected=demoProfiles.get(demoActive.id);Object.assign(demoState,structuredClone(selected));
+ return {...structuredClone(selected),active_account_id:demoActive.id,accounts:[...demoProfiles].map(([id,s])=>({id,account:s.account,authenticated:s.authenticated,running:s.running,auto_farm:s.auto_farm!==false,game:s.state?.game,channel:s.state?.channel,points:s.state?.points,drops:s.state?.active_drops||[],auth_status:s.auth?.status}))};
+}
+call=async function(action,values={}){
+ const epoch=accountEpoch,target=values.account_id||model?.active_account_id||'default';
+ if(demo){
+  if(action==='account_add'){const id='demo-'+(demoProfiles.size+1),s=structuredClone(demoProfiles.get('default'));Object.assign(s,{authenticated:false,account:'',running:false,queue:[],streamers:[],points_games:[],history:[],watched:[],events:[],state:{},stats:{},auth:{status:'idle'},auto_farm:false});demoProfiles.set(id,s);demoActive.id=id;return demoAccountView();}
+  if(action==='account_select'){demoActive.id=target;return demoAccountView();}
+  if(action==='account_autostart'){demoProfiles.get(target).auto_farm=values.enabled;return demoAccountView();}
+  if(['start','restart','stop','auth','logout'].includes(action)&&target!==demoActive.id){const s=demoProfiles.get(target);if(action==='auth')throw new Error(t('demoLogin'));s.running=action==='start'||action==='restart';if(action==='logout'){s.authenticated=false;s.account='';}return demoAccountView();}
+  const result=await desktopCall(action,values);
+  if(result?.settings){const {accounts:unused,active_account_id:unusedId,...clean}=result;demoProfiles.set(demoActive.id,clean);return demoAccountView();}
+  return result;
+ }
+ const result=await desktopCall(action,action==='snapshot'||action==='account_add'?values:{account_id:target,...values});
+ if(epoch!==accountEpoch&&result?.settings&&!['account_select','account_add'].includes(action))return desktopCall('snapshot');
+ return result;
+};
+navigate=function(r){if(r!=='accounts')return desktopNavigate(r);historySelection.clear();route=r;clearTimeout(searchTimer);searchSeq++;suggestions=[];render(true);window.scrollTo({top:0,behavior:'instant'});};
+refresh=async function(force=false){const before=model;await desktopRefresh(force);if(route==='accounts'&&JSON.stringify(before?.accounts)!==JSON.stringify(model?.accounts))render();};
+function accountName(row){return row.account?'@'+row.account:t(row.id==='default'?'mainAccount':'newAccount');}
+function accountsPage(){
+ return head('accounts')+`<p class="hint">${t('accountHint')}</p><button class="primary account-add" id="add-account" ${busy?'disabled':''}>${icon('plus')}${t('addAccount')}</button><div class="account-grid">${(model.accounts||[]).map(row=>{
+  const selected=row.id===model.active_account_id,renewing=row.auth_status==='browser_renewing';
+  return `<article class="account-card ${selected?'selected':''}"><div class="account-card-head"><div class="reward-icon">${icon('account')}</div><div class="row-main"><h2>${e(accountName(row))}</h2><p class="row-sub">${selected?t('selectedAccount'):t('chooseAccount')}</p></div><span class="status ${row.running?'running':'idle'}">${renewing?t('renewing'):t(row.running?'running':'stopped')}</span></div><p class="hint">${e([row.game,row.channel].filter(v=>v&&v!=='—').join(' · ')||t(row.authenticated?'ready':'notConnected'))}</p>${row.running?`<p class="positive">${t('points')}: ${e(row.points||'—')}</p>`:''}${(row.drops||[]).map(d=>`<p class="row-sub">${e(d.drop)} · ${e(d.current)} / ${e(d.required)} ${t('min')}</p>`).join('')}${row.auth_error?`<p class="error-banner">${e(t('net_'+row.auth_error))}</p>`:''}<div class="account-controls"><button class="secondary" data-account-select="${e(row.id)}" ${selected||busy?'disabled':''}>${t('chooseAccount')}</button><button class="primary" data-account-action="${row.running?'stop':row.authenticated?'start':'auth'}" data-account-id="${e(row.id)}" ${busy?'disabled':''}>${icon(row.running?'stop':row.authenticated?'play':'link')}${t(row.running?'stop':row.authenticated?'start':'connect')}</button>${row.authenticated?`<button class="text-link" data-account-action="logout" data-account-id="${e(row.id)}" ${busy?'disabled':''}>${t('disconnectAccount')}</button>`:''}</div><label class="account-startup"><input type="checkbox" data-account-startup="${e(row.id)}" ${row.auto_farm?'checked':''} ${busy?'disabled':''}>${t('accountStartup')}</label></article>`;
+ }).join('')}</div><p class="hint">${t('parallelHint')}</p>`;
+}
+render=function(animate=false){
+ accountsBaseRender(animate);if(!model)return;
+ const nav=$('#nav');nav.insertAdjacentHTML('beforeend',`<button class="nav-item ${route==='accounts'?'active':''}" data-go="accounts" ${route==='accounts'?'aria-current="page"':''}>${icon('accounts')}<span>${t('accounts')}</span></button>`);
+ const page=$('#main>div');if(!page)return;
+ if(route==='accounts'){page.innerHTML=accountsPage();const actions=document.createElement('div');actions.className='page-actions';actions.append(desktopAccountButton);page.querySelector('.page-head').append(actions);}
+ const heading=page.querySelector('.page-head>div');
+ if(heading&&(model.accounts||[]).length){heading.insertAdjacentHTML('beforeend',`<label class="account-view">${t('viewAccount')}<select id="view-account" aria-label="${t('viewAccount')}" ${busy?'disabled':''}>${model.accounts.map(row=>`<option value="${e(row.id)}" ${row.id===model.active_account_id?'selected':''}>${e(accountName(row))}</option>`).join('')}</select></label>`);}
+ if(route==='home'){
+  const active=(model.accounts||[]).filter(row=>row.running);
+  if(active.length){const strip=document.createElement('div');strip.className='farming-accounts';strip.innerHTML=`<span>${t('farmingAccounts')}</span>${active.map(row=>`<button class="pill" data-account-select="${e(row.id)}">${e(accountName(row))} · ${e(row.game&&row.game!=='—'?row.game:t('ready'))}</button>`).join('')}`;page.querySelector('.page-head').after(strip);}
+ }
+};
+async function accountAction(action,values={}){
+ if(busy)return;busy=true;if(['account_select','account_add'].includes(action)){accountEpoch++;oldProgress.clear();directory=null;directorySeq++;directoryBusy=false;historySelection.clear();rewardGame='';searchSeq++;suggestions=[];}
+ render();try{model=await call(action,values);locale=model.settings?.language||locale;}catch(error){toast(error.message);}finally{busy=false;render();}
+}
+document.addEventListener('change',event=>{
+ if(event.target.id==='view-account')accountAction('account_select',{account_id:event.target.value});
+ if(event.target.dataset.accountStartup)accountAction('account_autostart',{account_id:event.target.dataset.accountStartup,enabled:event.target.checked});
+});
+document.addEventListener('click',event=>{
+ const button=event.target.closest('button');if(!button||button.disabled)return;
+ if(button.id==='add-account')accountAction('account_add');
+ if(button.dataset.accountSelect)accountAction('account_select',{account_id:button.dataset.accountSelect});
+ if(button.dataset.accountAction){const action=button.dataset.accountAction,values={account_id:button.dataset.accountId};if(action==='logout')confirmAction(t('disconnectAccount'),t('logoutText'),()=>accountAction(action,values));else accountAction(action,values);}
+});
 if(model)render();

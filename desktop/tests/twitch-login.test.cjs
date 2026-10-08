@@ -20,6 +20,21 @@ test('No capture from foreign URLs, client IDs or expired proof',()=>{
  seen.request('2','https://gql.twitch.tv/gql',{...headers,'Client-Id':'other'});assert.equal(seen.requests.size,0);
  seen.body('proof','https://gql.twitch.tv/integrity',{token:'fixtureproof',expiration:Date.now()-1});assert.equal(seen.issued.size,0);
 });
+test('A cached previously issued proof still requires a fresh successful catalog response',()=>{
+ const previous={headers:{'client-id':headers['Client-Id'],'client-integrity':'fixtureproof'},expires_at:Date.now()/1000+3600};
+ const seen=new Observation(previous);assert.equal(seen.bundle('Chrome'),null);
+ seen.request('fresh','https://gql.twitch.tv/gql',headers);assert.equal(seen.bundle('Chrome'),null);
+ seen.body('fresh','https://gql.twitch.tv/gql',{data:{currentUser:{dropCampaigns:[]}}});assert.equal(seen.bundle('Chrome').expires_at,previous.expires_at);
+ assert.equal(new Observation({...previous,expires_at:0}).issued.size,0);
+});
+test('Transient renewal keeps the browser and retries; cancellation clears the retry',async()=>{
+ const messages=[],login=new TwitchLogin('C:/fixture/renewal',{request:async p=>{messages.push(p);return {ok:true,data:{}};}});
+ const protocol={closed:false,command:async()=>{},close(){this.closed=true;}};login.protocol=protocol;
+ login.capture=async()=>{const error=new Error('timeout');error.code='browser_timeout';throw error;};
+ await login.start(false);await login.work;
+ assert.equal(messages[0].action,'browser_renewing');assert.equal(messages[1].code,'browser_timeout');assert.equal(login.protocol,protocol);assert(login.retryAt>Date.now());
+ await login.close();assert(protocol.closed);assert.equal(login.retryAt,0);assert.equal(login.work,null);
+});
 test('DevTools can only connect to the launched local browser port',()=>{
  assert.equal(localSocket('ws://127.0.0.1:1234/devtools/browser/fixture',1234),'ws://127.0.0.1:1234/devtools/browser/fixture');
  for(const url of ['wss://127.0.0.1:1234/devtools/browser/x','ws://example.com:1234/devtools/browser/x','ws://127.0.0.1:1235/devtools/browser/x','ws://user@127.0.0.1:1234/devtools/browser/x','ws://127.0.0.1:1234/other'])assert.throws(()=>localSocket(url,1234));

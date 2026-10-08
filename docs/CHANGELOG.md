@@ -1,3 +1,13 @@
+## Windows 2.4.0 preview — accounts, session renewal and administrator setup
+
+- Add Accounts navigation, isolated saved logins, per-account lists/history/progress and parallel backend processes. Switching views leaves other accounts farming.
+- Identify the viewed account on every page and show active account badges on Overview, per-account cards and account names in tray status.
+- Keep the original account directories intact; add up to 20 saved profiles with separate Chrome profiles. Reject duplicate connected Twitch identities when starting.
+- Add per-account farming opt-in alongside the global Windows startup mode; new accounts default to no automatic farming.
+- Reuse still-valid browser-issued proof only after a fresh protected catalog request succeeds. Retain the owned browser after transient renewal failures and retry with bounded backoff; replace a disconnected owned Chrome process.
+- Request administrator permission automatically when setup starts, while keeping normal app execution unprivileged. Preserve folder-access and scoped process checks before updating older installations.
+- Refresh English/Ukrainian desktop screenshots. Verify isolated packaged engines and lists, seven routes at six UI sizes, login cancellation, live public game search, installer regressions and the compiled setup privilege manifest. Overnight renewal and parallel farming with real accounts remain unverified.
+
 ## Windows 2.3.5 preview — protected-folder update check
 
 - Check write access to the selected installation folder and previous installation folders before closing processes or launching an old uninstaller.

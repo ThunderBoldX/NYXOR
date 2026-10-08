@@ -14,7 +14,7 @@ if not getattr(sys, "frozen", False):
 
 ACTIONS = {"snapshot", "check_connection", "start", "stop", "auth", "logout", "delete_history",
            "queue", "streamers", "points_games", "settings", "directory", "search",
-           "browser_begin", "browser_import", "browser_error", "browser_cancel"}
+           "browser_begin", "browser_import", "browser_error", "browser_cancel", "browser_renewing"}
 
 
 def main():

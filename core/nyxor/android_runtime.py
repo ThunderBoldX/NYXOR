@@ -56,7 +56,7 @@ def request(payload: str) -> str:
     except Exception as error:
         code = getattr(error, "code", "")
         result = {"ok": False, "error": str(error)[:240]}
-        if code in {"auth_missing", "auth_invalid", "rate_limited", "network", "twitch_error", "unknown"}:
+        if code in {"auth_missing", "auth_invalid", "rate_limited", "network", "twitch_error", "unknown", "browser_account_changed", "browser_expired", "browser_invalid", "browser_catalog", "browser_rejected"}:
             result["error_code"] = code
         return json.dumps(result, ensure_ascii=False)
 
@@ -72,6 +72,7 @@ def snapshot() -> dict:
         "network": connection_state(),
         "running": _miner is not None and not _miner.done(),
         "authenticated": COOKIES_PATH.exists(), "account": _account,
+        "account_user_id": account_id(),
         "auth": dict(_auth), "error": _error,
         "auth_mode": "browser" if os.environ.get("NYXOR_PLATFORM") == "desktop" and _browser_account() else "device",
         "state": load_json(STATE_PATH, {}), "stats": load_json(STATS_PATH, {}),
@@ -260,7 +261,7 @@ async def dispatch(data: dict):
         if _auth_task is None or _auth_task.done():
             _auth_task = asyncio.create_task(authenticate())
             await asyncio.sleep(0)
-    elif action in {"browser_begin", "browser_import", "browser_error", "browser_cancel"}:
+    elif action in {"browser_begin", "browser_import", "browser_error", "browser_cancel", "browser_renewing"}:
         if os.environ.get("NYXOR_PLATFORM") != "desktop":
             raise ValueError("Unknown action")
         if action == "browser_begin":
@@ -276,6 +277,8 @@ async def dispatch(data: dict):
             _auth = {"status": "connected"}
         elif action == "browser_cancel":
             _auth = {"status": "idle"}
+        elif action == "browser_renewing":
+            _auth = {"status": "browser_renewing"}
         else:
             code = data.get("code")
             allowed = {"browser_missing", "browser_closed", "browser_timeout", "browser_invalid", "browser_rejected",

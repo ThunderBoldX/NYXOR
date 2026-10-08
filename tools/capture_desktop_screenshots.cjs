@@ -49,9 +49,19 @@ const server=http.createServer((request,response)=>{
    await page.waitForFunction(()=>!document.querySelector('#startup-mode').disabled);
    await page.locator('#startup-mode').selectOption('app');await page.waitForFunction(()=>model.settings.startup_mode==='app');
    await page.locator('#toast.visible').waitFor({state:'detached'});await capture('settings');
+   await page.evaluate(async()=>{const sample=structuredClone(demoProfiles.get('default'));sample.account='moonrunner';sample.queue=['World of Tanks'];sample.points_games=['World of Tanks'];sample.state.game='World of Tanks';sample.state.channel='TankStreamer';sample.state.points='8 100';sample.state.active_drops=[];sample.running=true;sample.auto_farm=false;demoProfiles.set('demo-2',sample);await refresh(true);});
+   await page.locator('[data-go=accounts]').click();await capture('accounts');
+   await page.locator('[data-account-select="demo-2"]').click();await page.waitForFunction(()=>model.active_account_id==='demo-2');
+   await page.locator('[data-go=games]').click();assert.deepEqual(await page.evaluate(()=>model.queue),['World of Tanks']);
+   await page.locator('[data-go=accounts]').click();await page.locator('[data-account-id="demo-2"][data-account-action=stop]').click();
+   await page.waitForFunction(()=>!model.accounts.find(row=>row.id==='demo-2').running);assert(await page.evaluate(()=>model.accounts.find(row=>row.id==='default').running));
+   await page.locator('[data-account-id="demo-2"][data-account-action=start]').click();await page.waitForFunction(()=>model.accounts.filter(row=>row.running).length===2);
+   await page.locator('#view-account').selectOption('default');await page.waitForFunction(()=>model.active_account_id==='default');
+   await page.locator('#add-account').click();await page.waitForFunction(()=>model.active_account_id==='demo-3');assert.deepEqual(await page.evaluate(()=>model.queue),[]);assert(!await page.evaluate(()=>model.authenticated));
+   await page.locator('#view-account').selectOption('default');await page.waitForFunction(()=>model.active_account_id==='default');
    for(const [width,height] of [[800,560],[860,640],[1093,574],[1366,728],[1440,900],[1920,1040]]){
     await page.setViewportSize({width,height});
-    for(const route of ['home','games','streamers','pointsPage','activity','settings']){
+    for(const route of ['home','games','streamers','pointsPage','activity','settings','accounts']){
      await page.evaluate(route=>navigate(route),route);
      assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Overflow '+width+'/'+route);
      assert.equal(await page.locator('#account-button').count(),1);
@@ -66,6 +76,6 @@ const server=http.createServer((request,response)=>{
    }
    await page.setViewportSize({width:1440,height:1060});
   }
-  assert.deepEqual(errors,[]);console.log('12 desktop screenshots; 6 routes at 800/860/1093/1366/1440/1920px; paused/running controls separated, settings shortcut, startup modes, filters and history checks passed.');
+  assert.deepEqual(errors,[]);console.log('14 desktop screenshots; 7 routes at 800/860/1093/1366/1440/1920px; account switching, independent lists, parallel statuses, add account, startup, filters and history checks passed.');
  }finally{await browser.close();server.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;server.close();});

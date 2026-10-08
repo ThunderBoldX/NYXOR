@@ -27,6 +27,7 @@ class DesktopBackendTests(unittest.TestCase):
                 {"action": "settings", "values": {"energy_saver": True, "language": "en", "startup_mode": "app"}},
                 {"action": "streamers", "items": ["invalid login"]}, {"action": "start"},
                 {"action": "exec"}, {"action": "stop"},
+                {"action": "browser_renewing"}, {"action": "browser_cancel"},
             ])
             self.assertEqual(responses[0]["data"]["platform"], "desktop")
             self.assertFalse(responses[0]["data"]["authenticated"])
@@ -35,6 +36,10 @@ class DesktopBackendTests(unittest.TestCase):
             self.assertEqual(responses[2]["data"]["settings"]["startup_mode"], "app")
             for index in [3, 4, 5]:
                 self.assertFalse(responses[index]["ok"])
+            self.assertEqual(responses[7]["data"]["auth"]["status"], "browser_renewing")
+            self.assertEqual(responses[8]["data"]["auth"]["status"], "idle")
+            self.assertFalse(responses[7]["data"]["authenticated"])
+            self.assertFalse(responses[7]["data"]["account_user_id"])
             saved = self.run_engine(directory, [{"action": "snapshot"}])[0]["data"]
             self.assertEqual(saved["queue"], ["Rust", "Warframe"])
             self.assertEqual(saved["settings"]["language"], "en")

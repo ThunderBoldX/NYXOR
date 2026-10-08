@@ -2,7 +2,7 @@
 
 [Project](../README.md) · [Українська](README_UK.md)
 
-The same moon, colors, cards, animations and farming engine as Android, adapted to a desktop window with a sidebar. This is the **2.3.5 Windows preview**, for **Windows 10/11 x64**. Other desktop operating systems are not packaged or tested.
+The same moon, colors, cards, animations and farming engine as Android, adapted to a desktop window with a sidebar. This is the **2.4.0 Windows preview**, for **Windows 10/11 x64**. Other desktop operating systems are not packaged or tested.
 
 ![Windows overview, sample data](../docs/screenshots/windows/en/overview.png)
 
@@ -10,14 +10,14 @@ Screenshots show the actual interface in demo mode; channels, balances and rewar
 
 ## Install and use
 
-1. Run `NYXOR-Windows-2.3.5-preview-Setup.exe` and choose your installation directory. Python and Node.js are bundled. **Google Chrome must be installed for Twitch login.**
+1. Run `NYXOR-Windows-2.4.0-preview-Setup.exe`, approve the Windows administrator prompt and choose your installation directory. Python and Node.js are bundled. **Google Chrome must be installed for Twitch login.**
 2. Open NYXOR from Start or the desktop shortcut. In **Settings → Connect Twitch**, sign in on Twitch in the separate Chrome window. NYXOR verifies the account and protected Drops catalog before saving the session. Enter your password only on Twitch's website.
 3. Add Drops categories in **Games**, channels in **Streamers**, or categories in **Points → Games for points**. Press **Start farming** on Overview.
 4. Closing the window hides it in the system tray. Double-click the moon to reopen it; right-click for start, stop and quit.
 
 The locally built installer is unsigned. Windows may display an unknown-publisher confirmation. There is no Windows release download link until the installer is published.
 
-**2.3.5 installer fix:** setup checks write access to the selected folder and previous installation folders before attempting an update. A per-user installation under Program Files still requires administrator permissions. If access is denied, setup stops before changing installed files and explains how to restart it with **Run as administrator**, rather than repeatedly reporting that NYXOR cannot be closed. Account data remains in its existing separate directory.
+**2.4.0 setup:** the installer requests administrator permission at launch and installs for all users. It checks selected and previous installation folders before updating, including older per-user installations under Program Files. The app itself runs without administrator privileges. Existing account data remains in its separate user directory.
 
 **2.3.4:** the status and moon shortcut sit beside each other. Opening NYXOR maximizes it on the display under the cursor, using Windows' work area and display scaling so the taskbar remains accessible. You can restore and resize the window normally.
 
@@ -25,16 +25,29 @@ Both **Games** and **Points → Games for points** search Twitch's public catalo
 
 **2.3.2 installer fix:** setup checks only the app and engine executables in the selected installation directory, excluding setup, the uninstaller and unrelated programs. Updates request a graceful shutdown and close orphan engines when needed. A process-inspection or permission error has a separate message. For installation into Program Files, Windows administrator permissions are required.
 
+## Accounts
+
+![Accounts, fictional demo data](../docs/screenshots/windows/en/accounts.png)
+
+1. Open **Accounts → Add account**, then **Connect Twitch** on its card. Each profile uses its own Chrome window and saved login.
+2. Add that account's games or streamers, then press **Start** on its card or Overview. Repeat for another account to farm concurrently.
+3. Use **Select** or the **Viewing account** dropdown to switch profiles. Other accounts keep farming. The Overview badges and Accounts cards show each account's game, channel and progress; lists, history and Activity belong to the selected profile.
+4. **Disconnect account** signs out only that profile. **Quit NYXOR** stops all profiles.
+
+Up to 20 profiles can be saved. A duplicate Twitch identity cannot start farming in two profiles. More active accounts require more memory and network traffic; each has its own backend process and browser profile.
+
+For automatic farming after Windows login, enable **Start with Windows → Start NYXOR and farm**, then check **Farm on Windows startup** on the desired account cards. The original profile keeps its previous startup behavior; newly added profiles are not opted in. **Start NYXOR only** starts no farming profiles.
+
 ## Background and power
 
 - **Start with Windows** is off by default. Enable it and choose **After startup → Start NYXOR only** or **Start NYXOR and farm**. Both open the installed app in the tray after Windows login; farming additionally requires Twitch to be connected and at least one saved list. Previously enabled startup keeps its farming behavior. This is Windows login startup, not a service running before login.
 - Normal mode prevents automatic system sleep while farming and still permits the display to turn off. Manual sleep, shutdown or loss of network access pauses farming.
 - **Energy saver** uses the shared engine's slower network checks and screen updates and reduces animations. It also allows Windows to sleep. Savings depend on the hardware and network.
-- Hover over the tray icon for the current game and channel. Selecting **Quit NYXOR** stops the engine and exits.
+- Hover over the tray icon for active accounts, games and channels. Tray start/stop controls the selected account. Selecting **Quit NYXOR** stops all engines and exits.
 
 A separate Chrome profile is stored in `%APPDATA%\nyxor-desktop\twitch-profile`; your personal browser profile is never used. The owned Chrome window is minimized after login and retained for Twitch session renewal. NYXOR closes it when farming is stopped or the app exits, and reopens it minimized on the next start. Signing out clears the owned profile. Existing Android-client sessions are preserved and do not require Chrome while valid.
 
-Account data, lists and history are stored under `%APPDATA%\nyxor-desktop\engine`. This update keeps the existing data directory. Windows and Android accounts/settings are independent; no automatic synchronization is implemented.
+The original account keeps `%APPDATA%\nyxor-desktop\engine` and its existing Chrome profile. Additional profiles store their data under `%APPDATA%\nyxor-desktop\accounts\<profile-id>\engine`, with a separate `twitch-profile` beside each engine folder. The private `accounts.json` index stores selection, startup preferences and public identity; it does not contain OAuth tokens. Windows and Android accounts/settings are independent; no automatic synchronization is implemented.
 
 ## Build from source
 
@@ -60,6 +73,7 @@ $env:PYTHONPATH = (Resolve-Path core).Path
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 node --test desktop/tests/*.test.cjs
 powershell -NoProfile -ExecutionPolicy Bypass -File desktop/tests/installer-paths.ps1
+.\.venv\Scripts\python.exe desktop/tests/installer-privileges.py
 ```
 
 After packaging, set `NYXOR_NSIS_COMPILER` to the downloaded `makensis.exe` and run `node desktop/tests/installer-integration.cjs` on Windows. It checks graceful update shutdown and runs the compiled NSIS process-check macro against temporary orphan/unrelated processes in `.local/installer-tests/`; no application installation, registry or shortcut changes are made.
@@ -73,6 +87,12 @@ Add `--smoke-catalog` to check live `World Of Tanks` search and adding its canon
 Optional screenshot capture: install Playwright separately, run `node desktop/scripts/prepare-ui.cjs`, then `node tools/capture_desktop_screenshots.cjs`. `BROWSER_EXECUTABLE` can select an installed Chromium browser. It captures English and Ukrainian screens and checks navigation, filters, selection and layout at several widths.
 
 Live Twitch login, real claim completion, tray use over extended sessions, login startup after a reboot and sleep/resume still require practical user testing. The automated checks do not claim those live outcomes.
+
+## Session renewal in 2.4.0
+
+Renewal accepts a still-valid proof already issued to the owned Chrome profile only after observing a fresh successful protected catalog request with matching headers. Transient background failures retain the browser profile and retry with delays from 15 seconds to 2 minutes. A disconnected owned Chrome process is replaced without touching your personal browser. Pending renewal and errors are visible for each account.
+
+If Twitch revokes the login or the owned browser signs in to a different account, reconnect that profile. This cannot guarantee indefinite login or repair a revoked session automatically. Overnight renewal and simultaneous farming with real Twitch accounts still require practical testing.
 
 ## Twitch login recovery in 2.3.3
 

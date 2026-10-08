@@ -46,7 +46,7 @@ These commands run developer checks. User applications are the Android APK and t
 
 ## Windows build
 
-See [desktop/README.md](../desktop/README.md#build-from-source). The Windows shell uses the same frontend and core, with isolated IPC to a bundled Python process. It adds desktop layout, tray controls and login startup. Private Windows data is stored in `%APPDATA%\nyxor-desktop\engine`.
+See [desktop/README.md](../desktop/README.md#build-from-source). The Windows shell uses the same frontend and core, with isolated IPC to a bundled Python process. It adds desktop layout, tray controls and login startup. The original Windows account keeps `%APPDATA%\nyxor-desktop\engine` and `twitch-profile`. Additional accounts use `%APPDATA%\nyxor-desktop\accounts\<UUID>\engine` and their own adjacent Chrome profile. The private `accounts.json` index selects profiles and startup preferences; each active profile has a separate backend process. No installed account data is migrated into the repository.
 
 ## Android build
 

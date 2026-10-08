@@ -3,25 +3,27 @@ const {app,BrowserWindow,ipcMain,protocol,net,Menu,Tray,nativeImage,shell,clipbo
 const path=require('node:path'),fs=require('node:fs'),{pathToFileURL}=require('node:url');
 const {Engine,validate,twitchURL}=require('./bridge.cjs');
 const {TwitchLogin}=require('./twitch-login.cjs');
+const {Accounts}=require('./accounts.cjs');
 const {displayBounds,shouldStartFarming}=require('./window-options.cjs');
 const smokeArg=process.argv.find(arg=>arg.startsWith('--smoke-dir='));
 const smokeDir=smokeArg?path.resolve(smokeArg.slice('--smoke-dir='.length)):null;
 if(smokeDir){fs.mkdirSync(smokeDir,{recursive:true});app.setPath('userData',path.join(smokeDir,'user-data'));}
 protocol.registerSchemesAsPrivileged([{scheme:'nyxor',privileges:{standard:true,secure:true,supportFetchAPI:true}}]);
-let window,tray,engine,login,quitting=false,powerId,refreshTimer,lastSnapshot;
+let window,tray,engine,login,accounts,quitting=false,powerId,refreshTimer,lastSnapshot;
 const ui=path.join(__dirname,'generated/ui');
 function show(){if(!window.isVisible())window.maximize();if(window.isMinimized())window.restore();window.show();window.focus();}
 function syncStatus(data){
  if(!data?.settings)return;
  lastSnapshot=data;
- const prevent=data.running&&!data.settings.energy_saver;
+ const prevent=data.accounts?data.accounts.some(row=>row.running&&!accounts.get(row.id).data?.settings.energy_saver):data.running&&!data.settings.energy_saver;
  if(prevent&&powerId===undefined)powerId=powerSaveBlocker.start('prevent-app-suspension');
  if(!prevent&&powerId!==undefined){powerSaveBlocker.stop(powerId);powerId=undefined;}
  if(!tray)return;
  const uk=data.settings.language==='uk';
  const game=data.state?.game,channel=data.state?.channel;
  const detail=[game,channel].filter(value=>value&&value!=='—').join(' · ');
- tray.setToolTip(('NYXOR · '+(data.running?(uk?'Працює':'Running'):(uk?'На паузі':'Paused'))+(detail?'\n'+detail:'')).slice(0,127));
+ const others=(data.accounts||[]).filter(row=>row.running).map(row=>'@'+(row.account||row.id.slice(0,8))+': '+[row.game,row.channel].filter(v=>v&&v!=='—').join(' · '));
+ tray.setToolTip((others.length?('NYXOR · '+others.join(' | ')):('NYXOR · '+(data.running?(uk?'Працює':'Running'):(uk?'На паузі':'Paused'))+(detail?'\n'+detail:''))).slice(0,127));
  tray.setContextMenu(Menu.buildFromTemplate([
   {label:uk?'Відкрити NYXOR':'Open NYXOR',click:show},
   {label:data.running?(uk?'Зупинити фарм':'Stop farming'):(uk?'Запустити фарм':'Start farming'),click:async()=>{
@@ -40,6 +42,13 @@ function startup(enabled){
  }
 }
 async function request(data){
+ const result=await accounts.route(data,requestFor);
+ const active=accounts.get();engine=active.engine;login=active.login;
+ if(result.ok&&result.data?.settings)syncStatus(result.data);
+ return result;
+}
+async function requestFor(slot,data){
+ const {engine,login}=slot;
  if(data.action==='auth'){
   await login.start(true);return engine.request({action:'snapshot'});
  }
@@ -79,7 +88,6 @@ async function request(data){
   else result=await engine.request(data);
  }catch(error){if(boot)startup(prior);throw error;}
  if(boot&&!result.ok)startup(prior);
- if(result.ok)syncStatus(result.data);
  return result;
 }
 async function smoke(){
@@ -96,9 +104,9 @@ async function smoke(){
   if(content.width>nativeArea.width||content.height>nativeArea.height||content.x<nativeArea.x||content.y<nativeArea.y||content.x+content.width>nativeArea.x+nativeArea.width||content.y+content.height>nativeArea.y+nativeArea.height)throw new Error('Window content exceeds the display work area: '+JSON.stringify({nativeArea,content,bounds:window.getBounds()}));
   const status=await request({action:'snapshot'});
   if(!status.ok||status.data.platform!=='desktop'||status.data.authenticated)throw new Error('Unexpected first launch state');
-  syncStatus({...status.data,running:true,settings:{...status.data.settings,energy_saver:false}});
+  syncStatus({...status.data,accounts:undefined,running:true,settings:{...status.data.settings,energy_saver:false}});
   if(powerId===undefined||!powerSaveBlocker.isStarted(powerId))throw new Error('Normal mode did not prevent sleep');
-  syncStatus({...status.data,running:true,settings:{...status.data.settings,energy_saver:true}});
+  syncStatus({...status.data,accounts:undefined,running:true,settings:{...status.data.settings,energy_saver:true}});
   if(powerId!==undefined)throw new Error('Energy saver did not release the power blocker');
   syncStatus(status.data);
   if(tray.isDestroyed())throw new Error('Tray was not created');
@@ -106,6 +114,16 @@ async function smoke(){
   const power=await request({action:'settings',values:{energy_saver:true,language:'en'}});if(!power.ok||!power.data.settings.energy_saver)throw new Error('Settings failed');
   for(const startup_mode of ['app','farm']){const mode=await request({action:'settings',values:{startup_mode}});if(!mode.ok||mode.data.settings.startup_mode!==startup_mode)throw new Error('Startup mode persistence failed');}
   const start=await request({action:'start'});if(start.ok)throw new Error('Unauthenticated farming must be blocked');
+  const legacyPid=engine.child.pid;
+  const added=await request({action:'account_add'}),newId=added.data?.active_account_id;
+  if(!newId||newId==='default'||engine.child.pid===legacyPid)throw new Error('Independent account process was not created');
+  const ownQueue=await request({action:'queue',items:['World of Tanks']});
+  if(ownQueue.data.queue[0]!=='World of Tanks')throw new Error('New account list failed');
+  await request({action:'account_select',account_id:'default'});
+  const legacy=await request({action:'snapshot'});if(legacy.data.queue[0]!=='Rust'||legacy.data.accounts.length!==2)throw new Error('Account isolation failed');
+  await window.webContents.executeJavaScript("refresh(true).then(()=>navigate('accounts'))");
+  if(await window.webContents.executeJavaScript("document.querySelectorAll('.account-card').length")!==2)throw new Error('Account cards missing');
+  fs.writeFileSync(path.join(smokeDir,'accounts.png'),(await window.webContents.capturePage()).toPNG());
   await request({action:'queue',items:[]});
   if(process.argv.includes('--smoke-catalog')){
    for(const route of ['games','pointsPage']){
@@ -143,7 +161,7 @@ async function smoke(){
   const layout=await window.webContents.executeJavaScript(`({overflow:document.documentElement.scrollWidth>innerWidth,desktop:document.documentElement.classList.contains('desktop-app'),sidebar:document.querySelector('#nav').getBoundingClientRect().width,separate:(()=>{const b=document.querySelector('#account-button').getBoundingClientRect(),s=document.querySelector('.page-head .status').getBoundingClientRect();return s.right+12<=b.left})(),moon:(()=>{const b=document.querySelector('#account-button').getBoundingClientRect(),i=document.querySelector('#account-button svg').getBoundingClientRect();return Math.abs(b.top+b.height/2-i.top-i.height/2)<1})()})`);
   if(layout.overflow||!layout.desktop||!layout.moon||!layout.separate||layout.sidebar<200)throw new Error('Desktop layout check failed: '+JSON.stringify(layout));
   fs.writeFileSync(path.join(smokeDir,'overview.png'),(await window.webContents.capturePage()).toPNG());
-  for(const section of ['games','streamers','pointsPage','activity','settings']){
+  for(const section of ['games','streamers','pointsPage','activity','settings','accounts']){
    await window.webContents.executeJavaScript(`navigate(${JSON.stringify(section)})`);
    await new Promise(resolve=>setTimeout(resolve,400));
    if(await window.webContents.executeJavaScript('document.documentElement.scrollWidth>innerWidth'))throw new Error(section+' overflows');
@@ -153,7 +171,7 @@ async function smoke(){
   const afterClose=await request({action:'snapshot'});
   if(!afterClose.ok)throw new Error('Closing the window stopped the engine');
   if(errors.length)throw new Error('Renderer errors: '+errors.join('; '));
-  fs.writeFileSync(path.join(smokeDir,'result.json'),JSON.stringify({ok:true,layout,errors,window:{workArea:nativeArea,content},engine:status.data.platform,checks:['window content fits selected display work area','startup modes persist','persistent queue','energy setting','unauthenticated start blocked','six sections','centered moon','status/settings controls separated','no horizontal overflow','tray status','close to tray keeps engine alive','normal power blocker and eco release',...(process.argv.includes('--smoke-login')?['native Chrome login pending','cancel login closes owned Chrome','logout removes owned profile']:[]),...(process.argv.includes('--smoke-catalog')?['live World of Tanks search and add in Games and Points without an account']:[])]},null,2));
+  fs.writeFileSync(path.join(smokeDir,'result.json'),JSON.stringify({ok:true,layout,errors,window:{workArea:nativeArea,content},engine:status.data.platform,accountProcesses:[legacyPid,accounts.get(newId).engine.child.pid],checks:['window content fits selected display work area','startup modes persist','persistent queue','energy setting','unauthenticated start blocked','seven sections','independent account processes and queues','account cards','centered moon','status/settings controls separated','no horizontal overflow','tray status','close to tray keeps engine alive','normal power blocker and eco release',...(process.argv.includes('--smoke-login')?['native Chrome login pending','cancel login closes owned Chrome','logout removes owned profile']:[]),...(process.argv.includes('--smoke-catalog')?['live World of Tanks search and add in Games and Points without an account']:[])]},null,2));
  }catch(error){fs.writeFileSync(path.join(smokeDir,'result.json'),JSON.stringify({ok:false,error:error.stack,errors},null,2));process.exitCode=1;}
  finally{app.quit();}
 }
@@ -168,10 +186,12 @@ else{
    if(url.host!=='app'||!['index.html','style.css','app.js','desktop.css','desktop-ui.js'].includes(name))return new Response('',{status:404});
    return net.fetch(pathToFileURL(path.join(ui,name)).href);
   });
-  const dataDirectory=path.join(app.getPath('userData'),'engine');
-  if(app.isPackaged)engine=new Engine(path.join(process.resourcesPath,'engine/nyxor-engine.exe'),[dataDirectory],{env:{...process.env,PYTHONUTF8:'1'}});
-  else engine=new Engine(process.env.NYXOR_PYTHON||'python',[path.join(__dirname,'backend.py'),dataDirectory],{env:{...process.env,PYTHONUTF8:'1'}});
-  login=new TwitchLogin(app.getPath('userData'),engine);
+  accounts=new Accounts(app.getPath('userData'),root=>({
+   engine:app.isPackaged?new Engine(path.join(process.resourcesPath,'engine/nyxor-engine.exe'),[path.join(root,'engine')],{env:{...process.env,PYTHONUTF8:'1'}})
+    :new Engine(process.env.NYXOR_PYTHON||'python',[path.join(__dirname,'backend.py'),path.join(root,'engine')],{env:{...process.env,PYTHONUTF8:'1'}}),
+   createLogin:engine=>new TwitchLogin(root,engine)
+  }));
+  await accounts.initialize();engine=accounts.get().engine;login=accounts.get().login;
   ipcMain.handle('nyxor:request',async(event,payload)=>{
    try{
     if(event.sender!==window.webContents||event.senderFrame!==window.webContents.mainFrame||!event.senderFrame.url.startsWith('nyxor://app/index.html'))throw new Error('Untrusted request');
@@ -187,20 +207,18 @@ else{
   tray=new Tray(nativeImage.createFromPath(path.join(__dirname,'assets/tray.png')));tray.on('double-click',show);
   syncStatus({running:false,settings:{language:'uk'}});
   await window.loadURL('nyxor://app/index.html');
-  const initial=await engine.request({action:'snapshot'}).catch(()=>null);
+  const initial=await request({action:'snapshot'}).catch(()=>null);
   if(initial?.ok){
    syncStatus(initial.data);
    // Reconcile persisted preference with the actual installed Windows application.
    try{startup(initial.data.settings.launch_on_boot===true);}catch{}
-   if(shouldStartFarming(process.argv,initial.data)){
-    const result=await request({action:'start'});if(!result.ok)show();
-   }
+   if((await accounts.autostart(process.argv,requestFor)).length)show();
   }
   if(smokeDir&&process.argv.includes('--wait-for-update'))fs.writeFileSync(path.join(smokeDir,'ready.json'),JSON.stringify({pid:process.pid,engine:engine.child.pid}));
   else if(smokeDir)await smoke();
   else{
    if(!process.argv.includes('--autostart'))show();
-   refreshTimer=setInterval(()=>engine.request({action:'snapshot'}).then(result=>{if(result.ok)syncStatus(result.data);}).catch(()=>{
+   refreshTimer=setInterval(()=>request({action:'snapshot'}).then(()=>accounts.maintain()).catch(()=>{
     if(powerId!==undefined){powerSaveBlocker.stop(powerId);powerId=undefined;}
     tray?.setToolTip('NYXOR · Engine stopped — reopen the app');
    }),10000);
@@ -210,7 +228,7 @@ else{
   if(quitting)return;
   event.preventDefault();quitting=true;clearInterval(refreshTimer);
   if(powerId!==undefined)powerSaveBlocker.stop(powerId);
-  (async()=>{await login?.close();await engine?.stop();})().finally(()=>{tray?.destroy();app.quit();});
+  (async()=>{await accounts?.stopAll();})().finally(()=>{tray?.destroy();app.quit();});
  });
  app.on('window-all-closed',()=>{if(quitting)app.quit();});
  app.on('activate',()=>{if(window)show();});

@@ -47,7 +47,12 @@ class Protocol extends EventEmitter{
  close(){this.socket.close();}
 }
 class Observation{
- constructor(){this.requests=new Map();this.responses=new Map();this.issued=new Map();this.accepted=new Set();}
+ constructor(previous){this.requests=new Map();this.responses=new Map();this.issued=new Map();this.accepted=new Set();
+  // Chrome can reuse a proof already issued to this owned profile without
+  // another /integrity response. Require a fresh successful catalog request.
+  if(previous?.headers?.['client-id']===WEB_CLIENT&&previous.expires_at>Date.now()/1000+30)
+   this.issued.set(previous.headers['client-integrity'],previous.expires_at);
+ }
  request(id,url,raw){
   if(url!==GQL)return;
   const headers=Object.fromEntries(Object.entries(raw||{}).map(([k,v])=>[k.toLowerCase(),v]).filter(([k])=>HEADERS.has(k)));
@@ -76,18 +81,31 @@ class Observation{
 class TwitchLogin{
  constructor(root,engine){
   this.root=path.resolve(root);this.profile=path.join(this.root,'twitch-profile');this.engine=engine;
-  this.generation=0;this.accepted=null;this.renewTimer=null;
+  this.generation=0;this.accepted=null;this.renewTimer=null;this.failures=0;
+  try{const saved=JSON.parse(fs.readFileSync(path.join(this.root,'engine/browser-session.json'),'utf8'));if(saved.headers?.['client-id']===WEB_CLIENT&&saved.expires_at>Date.now()/1000+30)this.accepted=saved;}catch{}
  }
  async status(code){return this.engine.request({action:'browser_error',code}).catch(()=>{});}
  async start(interactive=true){
   if(this.work){if(interactive)await this.focus();return;}
   const generation=++this.generation;
-  if(interactive){const result=await this.engine.request({action:'browser_begin'});if(!result.ok)throw new Error(result.error);}
-  this.work=this.capture(interactive,generation).catch(async error=>{if(generation===this.generation){await this.status(error.code||'browser_invalid');await this.close();}}).finally(()=>{if(generation===this.generation)this.work=null;});
+  let ready,failed;const begun=new Promise((resolve,reject)=>{ready=resolve;failed=reject;});
+  this.work=(async()=>{
+   try{const result=await this.engine.request({action:interactive?'browser_begin':'browser_renewing'});if(!result.ok)throw failure('browser_rejected');ready();}
+   catch(error){failed(error);throw error;}
+   await this.capture(interactive,generation);
+  })().catch(async error=>{if(generation===this.generation){
+   await this.status(error.code||'browser_invalid');
+   if(interactive||error.code==='browser_account_changed')await this.close();
+   else{this.failures++;clearTimeout(this.renewTimer);const delay=Math.min(120000,15000*2**Math.min(3,this.failures-1));this.retryAt=Date.now()+delay;this.renewTimer=setTimeout(()=>this.start(false).catch(()=>{}),delay);}
+  }}).finally(()=>{if(generation===this.generation)this.work=null;});
+  await begun;
   // Login runs asynchronously; the renderer receives only its public status.
  }
  async launch(interactive){
   if(this.protocol&&!this.protocol.closed){if(interactive)await this.focus();return;}
+  if(this.child&&this.child.exitCode===null){
+   const orphan=this.child;orphan.kill();await Promise.race([new Promise(resolve=>orphan.once('exit',resolve)),sleep(2500)]);this.child=null;
+  }
   if(fs.existsSync(path.join(this.profile,'logout-required')))await this.clearProfile();
   const executable=chromePath();fs.mkdirSync(this.profile,{recursive:true});
   const temporary=path.join(this.profile,'tmp');fs.mkdirSync(temporary,{recursive:true});
@@ -122,7 +140,7 @@ class TwitchLogin{
  }
  async capture(interactive,generation){
   clearTimeout(this.renewTimer);await this.launch(interactive);
-  const observation=new Observation();let pageNavigated=false;
+  const observation=new Observation(this.accepted);let pageNavigated=false;
   const protocol=this.protocol,session=this.session;
   const onEvent=event=>{
    if(event.sessionId!==session)return;
@@ -155,13 +173,13 @@ class TwitchLogin{
     const context=observation.bundle(this.userAgent);
     if(context&&generation===this.generation){
      const response=await this.engine.request({action:'browser_import',context,renewal:!interactive});
-     if(!response.ok)throw failure('browser_rejected');
-     this.accepted=context;
+     if(!response.ok)throw failure(response.error_code||'browser_rejected');
+     this.accepted=context;this.failures=0;this.retryAt=0;
      // Keep the owned profile minimized while active: Twitch refreshes its own proof.
      const info=await protocol.command('Browser.getWindowForTarget',{targetId:this.target});
      await protocol.command('Browser.setWindowBounds',{windowId:info.windowId,bounds:{windowState:'minimized'}});
-     const delay=Math.max(30000,(context.expires_at-Date.now()/1000-90)*1000);
-     this.renewTimer=setTimeout(()=>this.start(false),delay);
+     const delay=Math.max(15000,Math.min(600000,(context.expires_at-Date.now()/1000-90)*1000));
+     this.renewTimer=setTimeout(()=>this.start(false).catch(()=>{}),delay);
      return;
     }
     await sleep(750);
@@ -171,11 +189,12 @@ class TwitchLogin{
  }
  async ensure(){
   if(this.accepted&&this.accepted.expires_at>Date.now()/1000+60&&this.protocol&&!this.protocol.closed)return;
+  if(this.retryAt>Date.now())throw failure('browser_expired');
   await this.start(false);await this.work;
   if(!this.accepted||this.accepted.expires_at<=Date.now()/1000+30||!this.protocol||this.protocol.closed)throw failure('browser_expired');
  }
  async close(){
-  ++this.generation;clearTimeout(this.renewTimer);this.accepted=null;
+  ++this.generation;clearTimeout(this.renewTimer);this.accepted=null;this.retryAt=0;this.failures=0;
   const protocol=this.protocol,child=this.child;this.protocol=null;this.child=null;
   if(protocol&&!protocol.closed){await protocol.command('Browser.close').catch(()=>{});protocol.close();}
   if(child&&child.exitCode===null){

@@ -15,7 +15,7 @@
 [Релізи та APK](https://github.com/ThunderBoldX/NYXOR/releases) · [Встановлення](#встановлення) · [Скріншоти](#зазирни-всередину) · [Збірка APK](android/README.md#збірка-з-вихідного-коду)
 
 
-**[Завантажити Android 2.4.0 preview](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.0-preview)**
+**[Завантажити Android 2.4.0 preview](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.0-preview)** · **[Завантажити Windows 2.4.2 preview](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.2-windows-preview)**
 
 </div>
 
@@ -23,7 +23,7 @@
 
 ### Windows preview
 
-Той самий стиль і ядро у вікні для ПК: бічне меню, керування з трея та автозапуск після входу у Windows. Потрібна **Windows 10/11 x64** та **Google Chrome для входу Twitch**. Локальний інсталятор 2.4.2 preview готовий; публічний Windows-реліз ще не опублікований.
+Той самий стиль і ядро у вікні для ПК: бічне меню, керування з трея та автозапуск після входу у Windows. Потрібна **Windows 10/11 x64** та **Google Chrome для входу Twitch**. [Завантажити інсталятор Windows 2.4.2 preview](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.2-windows-preview).
 
 Вікно відкривається розгорнутим у межах робочої області поточного монітора. Для автозапуску можна вибрати лише відкриття NYXOR або ще й запуск фарму. Пошук ігор використовує публічний каталог Twitch, з обкладинками та активними каналами для поїнтів.
 

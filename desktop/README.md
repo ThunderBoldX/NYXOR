@@ -24,7 +24,7 @@ Current Drops and claimed rewards display the benefit images returned by Twitch,
 3. Add Drops categories in **Games**, channels in **Streamers**, or categories in **Points → Games for points**. Press **Start farming** on Overview.
 4. Closing the window hides it in the system tray. Minimizing also hides it in the tray. Single-click the moon to reopen it; right-click for start, stop and quit.
 
-The locally built installer is unsigned. Windows may display an unknown-publisher confirmation. There is no Windows release download link until the installer is published.
+[Download the 2.4.2 preview installer](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.2-windows-preview). The installer is unsigned; Windows may display an unknown-publisher confirmation.
 
 **2.4.2 setup:** the installer requests administrator permission at launch and installs for all users. It checks selected and previous installation folders before updating, including older per-user installations under Program Files. The app itself runs without administrator privileges. Existing account data remains in its separate user directory.
 

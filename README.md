@@ -81,6 +81,17 @@ A dark palette, moon accents, rounded cards and smooth transitions. One place fo
 | 🔋 **Background operation** | A status notification with a stop action and optional startup after reboot. |
 | 🌍 **Two languages** | Ukrainian and English, switchable in Settings. |
 
+## New in Android 2.4.0
+
+- Separate accounts with independent logins, lists, farming, history and Journal. Switch views without stopping other farms.
+- Hold an account card to select and delete several profiles, or cancel selection.
+- Twitch reward images in active Drops and a claimed-reward inventory with a game filter.
+- Rounded animated mobile dropdowns and reduced screen polling in energy saver.
+
+The 2.4.0 APK is built locally and ready for phone testing; the public release link above still points to 2.3.1 until the update is published.
+
+[Account selection screenshot](docs/screenshots/en/accounts-selection.png) · [Android account guide](android/README.md)
+
 ## New in 2.3.1
 
 - A smooth crescent logo and a properly centered settings shortcut.

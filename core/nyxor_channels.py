@@ -16,7 +16,7 @@ from constants import COOKIES_PATH, ClientType, GQL_QUERIES
 from nyxor_campaigns import get_cookie_value, gql_request
 
 
-SETTINGS_PATH = Path("nyxor_settings.json")
+from nyxor.paths import SETTINGS_PATH
 MAX_CHANNELS = 30
 
 console = Console()

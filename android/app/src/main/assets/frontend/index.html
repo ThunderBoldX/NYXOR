@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#0c0b10">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://static-cdn.jtvnw.net; connect-src 'none'; object-src 'none'; base-uri 'none'; frame-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://static-cdn.jtvnw.net https://static.twitchcdn.net; connect-src 'none'; object-src 'none'; base-uri 'none'; frame-src 'none'">
   <title>NYXOR</title><link rel="stylesheet" href="style.css">
-</head>
+<link rel="stylesheet" href="mobile.css"></head>
 <body>
   <div class="app-shell">
     <header class="topbar"><a class="brand" href="#home" aria-label="Nyxor — grinds while you sleep"><span class="brand-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M19.365 3.443A13 13 0 1 0 28.557 19.365A10.5 10.5 0 0 1 19.365 3.443Z" fill="currentColor" stroke="none"/><path d="m25 3 1.4 3.6L30 8l-3.6 1.4L25 13l-1.4-3.6L20 8l3.6-1.4Z" fill="#b6ebd5" stroke="none"/></svg></span><span class="brand-copy"><strong>Nyxor <span>—</span></strong><small>grinds while you sleep</small></span></a><button class="avatar" id="account-button" aria-label="Акаунт"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M19.365 3.443A13 13 0 1 0 28.557 19.365A10.5 10.5 0 0 1 19.365 3.443Z" fill="currentColor" stroke="none"/><path d="m25 3 1.4 3.6L30 8l-3.6 1.4L25 13l-1.4-3.6L20 8l3.6-1.4Z" fill="#b6ebd5" stroke="none"/></svg></button></header>
@@ -15,6 +15,6 @@
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <dialog id="confirm"><h2 id="confirm-title"></h2><p id="confirm-text"></p><div class="dialog-actions"><button id="cancel-confirm" class="secondary">Скасувати</button><button id="accept-confirm" class="primary">Підтвердити</button></div></dialog>
-  <script src="app.js"></script>
+  <script src="app.js"></script><script src="mobile-dropdowns.js"></script><script src="mobile-ui.js"></script>
 </body>
 </html>

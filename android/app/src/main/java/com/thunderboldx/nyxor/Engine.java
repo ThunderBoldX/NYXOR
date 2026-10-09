@@ -25,16 +25,15 @@ final class Engine {
         initialized = true;
     }
     static String request(Context context, String payload) throws IOException {
-        try {
-            String action = new JSONObject(payload).optString("action");
-            if (action.equals("stop") || action.equals("logout")) BackgroundPreferences.setWanted(context, false);
-        } catch (org.json.JSONException ignored) {}
         String response = requestRuntime(context, payload);
         try {
             JSONObject result = new JSONObject(response);
             JSONObject data = result.optJSONObject("data");
             if (result.optBoolean("ok") && data != null && data.optJSONObject("settings") != null)
                 BackgroundPreferences.sync(context, data.getJSONObject("settings"));
+            String action = new JSONObject(payload).optString("action");
+            if (result.optBoolean("ok") && data != null && (action.equals("stop") || action.equals("logout") || action.equals("account_delete")))
+                BackgroundPreferences.setWanted(context, data.optBoolean("any_running", data.optBoolean("running")));
         } catch (org.json.JSONException ignored) {}
         return response;
     }

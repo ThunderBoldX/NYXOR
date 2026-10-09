@@ -56,6 +56,33 @@ public class BackgroundTests {
             return "{\"ok\":true,\"data\":{\"running\":true,\"settings\":{\"energy_saver\":" + saver + "},\"notification\":{\"title\":\"NYXOR\",\"text\":\"Rust\"}}}";
         }
     }
+    public static class OtherAccountService extends MinerService {
+        final CountDownLatch checked = new CountDownLatch(1);
+        @Override protected String engine(String payload) {
+            checked.countDown();
+            if (payload.contains("start")) return "{\"ok\":false,\"error\":\"Duplicate account\"}";
+            return "{\"ok\":true,\"data\":{\"running\":false,\"any_running\":true,\"settings\":{\"energy_saver\":false},\"notification\":{\"title\":\"NYXOR · 1 account\",\"text\":\"@second · Rust\"}}}";
+        }
+    }
+    @Test public void pausedSelectedAccountDoesNotStopOtherFarms() throws Exception {
+        ServiceController<OtherAccountService> controller = Robolectric.buildService(OtherAccountService.class).create();
+        java.lang.reflect.Method refresh = MinerService.class.getDeclaredMethod("refreshStatus");
+        refresh.setAccessible(true);refresh.invoke(controller.get());
+        java.lang.reflect.Field stopping = MinerService.class.getDeclaredField("stopping");
+        stopping.setAccessible(true);assertFalse(stopping.getBoolean(controller.get()));
+        controller.destroy();
+    }
+    @Test public void rejectedAdditionalAccountDoesNotTearDownExistingFarm() throws Exception {
+        ServiceController<OtherAccountService> controller = Robolectric.buildService(OtherAccountService.class).create();
+        controller.get().onStartCommand(new Intent().putExtra("account_id", "second"), 0, 1);
+        assertTrue(controller.get().checked.await(5, TimeUnit.SECONDS));
+        java.lang.reflect.Field stopping = MinerService.class.getDeclaredField("stopping");
+        stopping.setAccessible(true);
+        // Drain the same executor to ensure the failed start and remaining-account check completed.
+        java.lang.reflect.Field executor = MinerService.class.getDeclaredField("executor");executor.setAccessible(true);
+        ((java.util.concurrent.ScheduledExecutorService)executor.get(null)).submit(() -> {}).get(5,TimeUnit.SECONDS);
+        assertFalse(stopping.getBoolean(controller.get()));controller.destroy();
+    }
     private void destroy(ServiceController<FakeService> controller) throws Exception {
         controller.destroy();
         assertTrue(controller.get().stopped.await(5, TimeUnit.SECONDS));

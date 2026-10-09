@@ -35,8 +35,8 @@ public class MainActivity extends Activity {
             }
             @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
-                if ("https".equals(uri.getScheme()) && "static-cdn.jtvnw.net".equals(uri.getHost())
-                        && uri.getPath().startsWith("/ttv-boxart/") && (uri.getPort() == -1 || uri.getPort() == 443)) return null;
+                if ("https".equals(uri.getScheme()) && ("static-cdn.jtvnw.net".equals(uri.getHost()) || "static.twitchcdn.net".equals(uri.getHost()))
+                        && uri.getUserInfo() == null && uri.getFragment() == null && (uri.getPort() == -1 || uri.getPort() == 443)) return null;
                 if (!"https".equals(uri.getScheme()) || !HOST.equals(uri.getHost()))
                     return new WebResourceResponse("text/plain", "UTF-8", new ByteArrayInputStream(new byte[0]));
                 String file = uri.getPath().equals("/") ? "index.html" : uri.getPath().substring(1);
@@ -101,12 +101,16 @@ public class MainActivity extends Activity {
                         });
                         answer = "{\"ok\":true,\"data\":{}}";
                     }
-                    else if (action.equals("stop") || action.equals("logout")) {
+                    else if (action.equals("stop") || action.equals("logout") || action.equals("account_delete")) {
                         answer = Engine.request(MainActivity.this, payload);
-                        uiAction(() -> stopService(new Intent(MainActivity.this, MinerService.class)));
+                        JSONObject result = new JSONObject(answer);
+                        if (result.optBoolean("ok") && !result.getJSONObject("data").optBoolean("any_running"))
+                            uiAction(() -> stopService(new Intent(MainActivity.this, MinerService.class)));
                     }
                     else if (action.equals("start") || action.equals("restart")) {
-                        JSONObject state = new JSONObject(Engine.request(MainActivity.this, "{\"action\":\"snapshot\"}")).getJSONObject("data");
+                        JSONObject query = new JSONObject().put("action", "account_snapshot");
+                        if (data.has("account_id")) query.put("account_id", data.getString("account_id"));
+                        JSONObject state = new JSONObject(Engine.request(MainActivity.this, query.toString())).getJSONObject("data");
                         if (!state.optBoolean("authenticated")) throw new IllegalStateException("Спочатку підключи Twitch");
                         if (state.getJSONArray("queue").length() == 0 && state.getJSONArray("streamers").length() == 0 && state.optJSONArray("points_games").length() == 0)
                             throw new IllegalStateException("Додай гру або стрімера");
@@ -114,6 +118,7 @@ public class MainActivity extends Activity {
                             if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
                                 requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1);
                             Intent service = new Intent(MainActivity.this, MinerService.class);
+                            if (data.has("account_id")) service.putExtra("account_id", data.optString("account_id"));
                             if (action.equals("restart")) service.setAction(MinerService.RESTART);
                             startForegroundService(service);
                         });

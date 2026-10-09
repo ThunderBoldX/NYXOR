@@ -1,3 +1,12 @@
+## Android 2.4.0 preview — accounts and reward artwork
+
+- Preserve the original Android login and files while adding up to 20 saved profiles. Isolate local core modules, paths, authentication, configuration revisions and event logging per profile on the existing event loop.
+- Support parallel farming, account switching, opted-in boot farming and restoration of previously active profiles. Keep the foreground service alive while any profile farms; notification Stop stops every profile.
+- Add account hold selection, checkboxes, cancel and confirmed bulk deletion; preserve other farms and support an empty account list.
+- Show Twitch benefit artwork in progress and claimed inventory; retain game filtering, newest-500 history and missing-image fallback.
+- Add rounded mobile dropdowns, Back dismissal and reduced foreground refresh in energy saver. Update English/Ukrainian screenshots with fictional reward illustrations.
+- Increase Android versionCode from 8 to 9 for in-place updates. Physical-device parallel farming remains to be verified.
+
 ## Windows 2.4.2 preview — account deletion and Drop inventory
 
 - Add long-press and keyboard account selection, right-side checkboxes, selected count, cancel and confirmed bulk deletion. Unticking the last account exits selection mode.

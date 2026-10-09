@@ -32,7 +32,7 @@ MAKE_PREDICTION_HASH = (
     "b44682ecc88358817009f20e69d75081b1e58825bb40aa53d5dbadcc17c881d8"
 )
 
-logger = logging.getLogger("NYXOR.rewards")
+logger = logging.getLogger(("NYXOR." + __name__.split('.')[0] if __name__.startswith('_nyxor_profile_') else "NYXOR") + ".rewards")
 
 
 @dataclass(slots=True)

@@ -20,10 +20,11 @@ _auth = {"status": "idle"}
 _error = ""
 _account = ""
 _last_request_error = ""
+_accounts = None
 
 
 def initialize(directory: str, network=None) -> None:
-    global _loop, _thread
+    global _loop, _thread, _accounts
     with _init_lock:
         if _loop is not None:
             return
@@ -35,6 +36,9 @@ def initialize(directory: str, network=None) -> None:
         ensure_directories()
         from nyxor.network import configure_android
         configure_android(network)
+        if os.environ.get("NYXOR_PLATFORM") != "desktop":
+            from nyxor.android_accounts import AndroidAccounts
+            _accounts = AndroidAccounts(root)
         _loop = asyncio.new_event_loop()
         _thread = threading.Thread(target=_loop.run_forever, name="NYXOR", daemon=True)
         _thread.start()
@@ -47,7 +51,7 @@ def request(payload: str) -> str:
         data = json.loads(payload)
         if not isinstance(data, dict):
             raise ValueError("Invalid request")
-        future = asyncio.run_coroutine_threadsafe(dispatch(data), _loop)
+        future = asyncio.run_coroutine_threadsafe(_accounts.dispatch(data) if _accounts is not None else dispatch(data), _loop)
         result = future.result(timeout=35)
         return json.dumps({"ok": True, "data": result}, ensure_ascii=False, default=str)
     except concurrent.futures.TimeoutError:

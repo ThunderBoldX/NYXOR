@@ -208,7 +208,7 @@ class _EventLogHandler(logging.Handler):
 
 
 def configure_event_logging() -> None:
-    logger = logging.getLogger("NYXOR")
+    logger = core.logger
     logger.setLevel(logging.DEBUG)
     logger.propagate = False
 

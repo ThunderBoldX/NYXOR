@@ -1,0 +1,74 @@
+.mobile-upgrade .account-view{display:flex;align-items:center;gap:10px;margin-top:14px;color:var(--muted);font-size:12px}
+.mobile-upgrade .account-view select{max-width:240px;padding:6px 12px;border:1px solid #ffffff14;border-radius:12px;background:var(--card);color:var(--text);font:inherit}
+.mobile-upgrade .farming-accounts{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:-8px 0 24px;color:var(--mint);font-size:12px}
+.mobile-upgrade .farming-accounts .pill{cursor:pointer;color:var(--mint);border:1px solid #b6ebd520}
+.mobile-upgrade .account-add{width:auto;margin-bottom:24px}
+.mobile-upgrade .account-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,390px),1fr));gap:20px}
+.mobile-upgrade .account-card{background:var(--card);border:1px solid #ffffff0b;border-radius:28px;padding:24px;min-width:0}
+.mobile-upgrade .account-card.selected{border-color:#bda1fb66;background:linear-gradient(140deg,#bda1fb10,var(--card))}
+.mobile-upgrade .account-card.marked{border-color:var(--mint);background:linear-gradient(140deg,#bda1fb22,var(--card));box-shadow:0 0 0 2px #a3e6cf12}
+.mobile-upgrade .account-card:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
+.mobile-upgrade .account-check{margin-left:auto;width:22px;height:22px;flex:0 0 22px;accent-color:var(--lavender);padding:0;cursor:pointer}
+.mobile-upgrade .account-card:has(.account-check){user-select:none}
+.mobile-upgrade .claimed-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,210px),1fr));gap:18px}
+.mobile-upgrade .claimed-card{overflow:hidden;background:var(--card);border:1px solid #ffffff0b;border-radius:24px;min-width:0}
+.mobile-upgrade .drop-gallery{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x proximity}
+.mobile-upgrade .drop-gallery figure{margin:0;min-width:0;flex:1 0 140px;scroll-snap-align:start}
+.mobile-upgrade .drop-art{position:relative;display:grid;place-items:center;height:184px;background:radial-gradient(ellipse at 50% 70%,#bda1fb22,transparent 72%),#121016;overflow:hidden}
+.mobile-upgrade .drop-art>svg{width:46px;height:46px;color:#c3a6f580}
+.mobile-upgrade .drop-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:16px;box-sizing:border-box}
+.mobile-upgrade .drop-gallery figcaption{padding:8px 12px;font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.mobile-upgrade .claimed-details{padding:18px 20px}
+.mobile-upgrade .claimed-details h2{font-size:15px;line-height:1.45;overflow-wrap:anywhere;margin:7px 0}
+.mobile-upgrade .claimed-details .timestamp{font-size:11px;color:var(--muted)}
+.mobile-upgrade .claimed-status{display:flex;align-items:center;gap:7px;color:var(--mint);font-size:12px;border-top:1px solid #ffffff0b;padding-top:14px;margin-top:16px}
+.mobile-upgrade .claimed-status svg{width:17px;height:17px}
+.mobile-upgrade .reward>.drop-gallery{margin:-24px -24px 20px;border-radius:25px 25px 0 0}
+.mobile-upgrade .account-card-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.mobile-upgrade .account-card h2{font-size:20px;overflow-wrap:anywhere}
+.mobile-upgrade .account-card .status{font-size:11px;padding:8px 12px;max-width:100%;white-space:normal}
+.mobile-upgrade .account-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:18px 0}
+.mobile-upgrade .account-controls button{width:auto;padding:12px 16px;min-height:44px;font-size:13px}
+.mobile-upgrade .account-startup{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12px}
+.mobile-upgrade .account-startup input{width:18px;height:18px;accent-color:var(--purple);padding:0}
+.mobile-upgrade .dropdown{position:relative;display:inline-flex;min-width:0;padding:0!important;background:none!important;border:0!important;border-radius:16px;vertical-align:middle}
+.mobile-upgrade .dropdown-native{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:0!important;opacity:0;pointer-events:none;clip-path:inset(50%)}
+.mobile-upgrade .dropdown-trigger{display:flex;align-items:center;justify-content:space-between;gap:14px;min-width:0;width:100%;min-height:42px;padding:10px 15px;border:1px solid #ffffff12;border-radius:15px;background:linear-gradient(140deg,#302737,#251f2d);color:var(--text);font:inherit;text-align:left;cursor:pointer;transition:border-color .18s,background .18s,box-shadow .18s}
+.mobile-upgrade .dropdown-trigger:hover{border-color:#c3a6f544;background:#342b40}
+.mobile-upgrade .dropdown-trigger[aria-expanded=true]{border-color:#c3a6f588;box-shadow:0 0 0 3px #c3a6f510}
+.mobile-upgrade .dropdown-trigger:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
+.mobile-upgrade .dropdown-trigger:disabled{opacity:.45;cursor:default}
+.mobile-upgrade .dropdown-value{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mobile-upgrade .dropdown-arrow{flex-shrink:0;width:8px;height:8px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:translateY(-2px) rotate(45deg);transition:transform .18s}
+.mobile-upgrade .dropdown-trigger[aria-expanded=true] .dropdown-arrow{transform:translateY(2px) rotate(225deg)}
+.mobile-upgrade .dropdown-menu{position:fixed;z-index:80;overflow-y:auto;padding:6px;border:1px solid #c3a6f52b;border-radius:18px;background:#211b2af7;box-shadow:0 18px 46px #0008,0 2px 8px #0005;opacity:0;transform:translateY(-5px) scale(.97);transform-origin:top center;transition:opacity .16s ease,transform .2s cubic-bezier(.2,.8,.2,1);pointer-events:none;font-size:13px}
+.mobile-upgrade .dropdown-menu.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+.mobile-upgrade .dropdown-option{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:40px;padding:10px 12px;border-radius:12px;color:#d5ccdf;cursor:pointer;overflow-wrap:anywhere;transition:background .12s,color .12s}
+.mobile-upgrade .dropdown-option:hover,.mobile-upgrade .dropdown-option.focused{background:#c3a6f51a;color:#f6efff}
+.mobile-upgrade .dropdown-option[aria-selected=true]{background:#c3a6f525;color:#e4d0ff}
+.mobile-upgrade .dropdown-check{flex-shrink:0;color:var(--mint)}
+.mobile-upgrade .settings-layout .dropdown:has(#startup-mode){max-width:250px;font-size:13px}
+.mobile-upgrade .dropdown:has(#startup-mode) .dropdown-value{white-space:normal}
+.mobile-upgrade .account-view .dropdown{max-width:240px;font-size:12px}
+@media(prefers-reduced-motion:reduce){.mobile-upgrade .dropdown-menu,.mobile-upgrade .dropdown-arrow{transition:none}}
+.mobile-upgrade .account-grid{grid-template-columns:1fr;gap:16px}
+.mobile-upgrade .account-card{padding:20px;border-radius:25px}
+.mobile-upgrade .account-card-head{gap:10px}
+.mobile-upgrade .account-card-head .reward-icon{width:36px;height:36px}
+.mobile-upgrade .account-card h2{font-size:17px}
+.mobile-upgrade .account-check{accent-color:#c3a6f5}
+.mobile-upgrade .account-view{margin-top:12px;flex-wrap:wrap;gap:8px}
+.mobile-upgrade .account-view .dropdown{max-width:180px}
+.mobile-upgrade .account-controls{gap:10px;flex-wrap:wrap}
+.mobile-upgrade .account-controls button{font-size:12px}
+.mobile-upgrade .history-toolbar{gap:8px;flex-wrap:wrap}
+.mobile-upgrade .claimed-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.mobile-upgrade .drop-art{height:145px}
+.mobile-upgrade .claimed-details{padding:14px}
+.mobile-upgrade .claimed-details h2{font-size:13px}
+.mobile-upgrade .claimed-details .row-sub{font-size:11px}
+.mobile-upgrade .reward>.drop-gallery{margin:-23px -23px 18px}
+.mobile-upgrade .nav-item{padding-left:2px;padding-right:2px;font-size:8px}
+.mobile-upgrade .farming-accounts{margin:12px 0;gap:6px;flex-wrap:wrap}
+.mobile-upgrade .farming-accounts .pill{font-size:10px}
+.mobile-upgrade #confirm-text{white-space:pre-line}

@@ -53,7 +53,7 @@ GQL_RETRY_DELAYS = (1.5, 3.0, 5.0)
 GQL_FAILURE_WAIT = 15
 DETAIL_CACHE: dict[str, dict[str, Any]] = {}
 console = Console()
-logger = logging.getLogger("NYXOR")
+logger = logging.getLogger("NYXOR." + __name__.split('.')[0] if __name__.startswith('_nyxor_profile_') else "NYXOR")
 
 
 def parse_time(value: Any, fallback: datetime) -> datetime:

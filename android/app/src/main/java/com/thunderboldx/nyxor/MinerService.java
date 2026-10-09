@@ -90,9 +90,19 @@ public class MinerService extends Service {
         executor.execute(() -> {
             if (stopping) return;
             try {
-                if (RESTART.equals(action)) engine("{\"action\":\"stop\"}");
-                JSONObject result = new JSONObject(engine("{\"action\":\"start\"}"));
-                if (!result.optBoolean("ok")) { finishFarming(true); return; }
+                JSONObject command = new JSONObject();
+                if (BOOT.equals(action) || RESTORE.equals(action))
+                    command.put("action", "resume_accounts").put("reason", BOOT.equals(action) ? "boot" : "restore");
+                else {
+                    command.put("action", RESTART.equals(action) ? "restart" : "start");
+                    if (intent != null && intent.hasExtra("account_id")) command.put("account_id", intent.getStringExtra("account_id"));
+                }
+                JSONObject result = new JSONObject(engine(command.toString()));
+                if (!result.optBoolean("ok")) {
+                    JSONObject remaining = new JSONObject(engine("{\"action\":\"snapshot\"}")).getJSONObject("data");
+                    if (!remaining.optBoolean("any_running", remaining.optBoolean("running"))) { finishFarming(true); return; }
+                    notifyStartFailure(this);
+                }
                 synchronized (this) {
                     if (!stopping && monitor == null) monitor = executor.scheduleWithFixedDelay(this::refreshStatus, 0, 15, TimeUnit.SECONDS);
                 }
@@ -112,7 +122,7 @@ public class MinerService extends Service {
         try {
             JSONObject data = new JSONObject(engine("{\"action\":\"snapshot\"}")).getJSONObject("data");
             if (stopping) return;
-            if (!data.optBoolean("running")) { finishFarming(!data.optString("error").isEmpty()); return; }
+            if (!data.optBoolean("any_running", data.optBoolean("running"))) { finishFarming(!data.optString("error").isEmpty()); return; }
             synchronized (this) {
                 if (stopping) return;
                 JSONObject settings = data.optJSONObject("settings");
@@ -130,7 +140,8 @@ public class MinerService extends Service {
         unregisterReceiver(screenReceiver);
         if (monitor != null) monitor.cancel(false);
         // Preserve 'wanted' after system teardown; explicit stop cleared it earlier.
-        executor.execute(() -> { try { engine("{\"action\":\"stop\"}"); } catch (Exception ignored) {} });
+        boolean preserve = BackgroundPreferences.wanted(this);
+        executor.execute(() -> { try { engine("{\"action\":\"stop_all\",\"preserve_wanted\":" + preserve + "}"); } catch (Exception ignored) {} });
         if (wakeLock != null && wakeLock.isHeld()) wakeLock.release();
         stopForeground(STOP_FOREGROUND_REMOVE);
         super.onDestroy();

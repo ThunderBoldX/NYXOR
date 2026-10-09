@@ -7,7 +7,7 @@
 
 ![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-b6ebd5?style=flat-square&logo=android&logoColor=b6ebd5&labelColor=201c29)
 ![Windows 10/11 x64](https://img.shields.io/badge/Windows-10%20%2F%2011%20x64-b6ebd5?style=flat-square&labelColor=201c29)
-![Preview 2.3.1](https://img.shields.io/badge/preview-2.3.1-c3a6f5?style=flat-square&labelColor=201c29)
+![Android preview 2.4.0](https://img.shields.io/badge/Android_preview-2.4.0-c3a6f5?style=flat-square&labelColor=201c29)
 ![Українська та English](https://img.shields.io/badge/languages-UK%20%2F%20EN-c3a6f5?style=flat-square&labelColor=201c29)
 [![MIT License](https://img.shields.io/badge/license-MIT-b6ebd5?style=flat-square&labelColor=201c29)](LICENSE)
 
@@ -15,7 +15,7 @@
 [Релізи та APK](https://github.com/ThunderBoldX/NYXOR/releases) · [Встановлення](#встановлення) · [Скріншоти](#зазирни-всередину) · [Збірка APK](android/README.md#збірка-з-вихідного-коду)
 
 
-**[Завантажити Android 2.3.1 preview](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.3.1-preview)**
+**[Завантажити Android 2.4.0 preview](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.0-preview)**
 
 </div>
 
@@ -64,6 +64,14 @@
     <td align="center"><img src="docs/screenshots/activity.png" alt="Відфільтруй отримані дропи" width="320"></td>
     <td align="center"><img src="docs/screenshots/settings.png" alt="Енергозбереження в налаштуваннях" width="320"></td>
   </tr>
+  <tr>
+    <td align="center"><strong>Окремі акаунти</strong></td>
+    <td align="center"><strong>Вибір і видалення профілів</strong></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/accounts.png" alt="Окремі акаунти" width="320"></td>
+    <td align="center"><img src="docs/screenshots/accounts-selection.png" alt="Вибір і видалення профілів" width="320"></td>
+  </tr>
 </table>
 
 <sub>Скріншоти справжнього інтерфейсу в демонстраційному режимі. Канали, винагороди, баланси й прогрес — вигадані приклади; системні панелі Android не показані.</sub>
@@ -88,7 +96,7 @@
 - Картинки предметів із Twitch у поточних дропах та інвентар отриманих нагород із фільтром гри.
 - Округлі анімовані дропдауни та рідші оновлення екрана в енергозбереженні.
 
-APK 2.4.0 зібрано локально для перевірки на телефоні. Публічне посилання вище поки веде на 2.3.1, до публікації оновлення.
+[Завантажити Android 2.4.0 preview APK](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.0-preview). Встановлюй поверх 2.3.1 без видалення: сертифікат підпису не змінився.
 
 [Скриншот вибору акаунтів](docs/screenshots/accounts-selection.png) · [Інструкція акаунтів Android](android/README.md)
 
@@ -136,7 +144,7 @@ NYXOR використовує один стрім за раз. Для Drops к�
 
 ## Варто знати
 
-- **2.3.1 — preview.** Локальну збірку й автоматичні перевірки виконано; тривала робота, нові функції та поведінка різних телефонів потребують практичного тестування.
+- **Android 2.4.0 — preview.** Локальну збірку й автоматичні перевірки виконано; тривала робота, нові функції та поведінка різних телефонів потребують практичного тестування.
 - **Історія поїнтів починається з версії 2.2.** Вона рахує спостережуване зростання балансу під час перегляду. Витрати між перевірками можуть впливати на точність.
 - **Нагороди не купуються автоматично.** Каталог показує пропозиції поточного каналу, а обмін виконується на Twitch.
 - **Дані зберігаються на пристрої.** Вхід, списки й історія APK лежать у приватній папці застосунку. Не додавай до репозиторію токени, cookies, журнали або ключі підпису.

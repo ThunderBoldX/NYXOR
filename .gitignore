@@ -3,6 +3,7 @@ cookies.jar
 browser-session.json
 user-data/
 accounts.json
+accounts-index.json
 nyxor_settings.json
 .env
 .env.*

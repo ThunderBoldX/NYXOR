@@ -7,7 +7,7 @@ Choose your games and channels, track rewards, and let NYXOR work in the backgro
 
 ![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-b6ebd5?style=flat-square&logo=android&logoColor=b6ebd5&labelColor=201c29)
 ![Windows 10/11 x64](https://img.shields.io/badge/Windows-10%20%2F%2011%20x64-b6ebd5?style=flat-square&labelColor=201c29)
-![Preview 2.3.1](https://img.shields.io/badge/preview-2.3.1-c3a6f5?style=flat-square&labelColor=201c29)
+![Android preview 2.4.0](https://img.shields.io/badge/Android_preview-2.4.0-c3a6f5?style=flat-square&labelColor=201c29)
 ![Ukrainian and English](https://img.shields.io/badge/languages-UK%20%2F%20EN-c3a6f5?style=flat-square&labelColor=201c29)
 [![MIT License](https://img.shields.io/badge/license-MIT-b6ebd5?style=flat-square&labelColor=201c29)](LICENSE)
 
@@ -15,7 +15,7 @@ Choose your games and channels, track rewards, and let NYXOR work in the backgro
 [Releases & APK](https://github.com/ThunderBoldX/NYXOR/releases) · [Install](#installation) · [Screenshots](#take-a-look) · [Android guide](android/README.md)
 
 
-**[Download Android 2.3.1 preview](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.3.1-preview)**
+**[Download Android 2.4.0 preview](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.0-preview)**
 
 </div>
 
@@ -64,6 +64,14 @@ A dark palette, moon accents, rounded cards and smooth transitions. One place fo
     <td align="center"><img src="docs/screenshots/en/activity.png" alt="Filter your latest claimed Drops" width="320"></td>
     <td align="center"><img src="docs/screenshots/en/settings.png" alt="Optional energy saving in Settings" width="320"></td>
   </tr>
+  <tr>
+    <td align="center"><strong>Separate accounts</strong></td>
+    <td align="center"><strong>Select and remove profiles</strong></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/en/accounts.png" alt="Separate accounts" width="320"></td>
+    <td align="center"><img src="docs/screenshots/en/accounts-selection.png" alt="Select and remove profiles" width="320"></td>
+  </tr>
 </table>
 
 <sub>Actual English interface captured in demo mode. Channels, rewards, balances and progress are fictional examples. Android system bars are not shown. Ukrainian screenshots are available in the Ukrainian README.</sub>
@@ -88,7 +96,7 @@ A dark palette, moon accents, rounded cards and smooth transitions. One place fo
 - Twitch reward images in active Drops and a claimed-reward inventory with a game filter.
 - Rounded animated mobile dropdowns and reduced screen polling in energy saver.
 
-The 2.4.0 APK is built locally and ready for phone testing; the public release link above still points to 2.3.1 until the update is published.
+[Download the Android 2.4.0 preview APK](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.0-preview). Install it over 2.3.1 without uninstalling; the signing certificate is unchanged.
 
 [Account selection screenshot](docs/screenshots/en/accounts-selection.png) · [Android account guide](android/README.md)
 
@@ -124,7 +132,7 @@ Your live streamers with Channel Points available
 Live channels in your “Games for points” categories
 ```
 
-NYXOR uses one stream at a time per account. Windows can run several separate accounts concurrently. Drops campaigns determine eligible channels, so a Drops streamer may be outside your **Streamers** list. Points farming stays within your allowed channels or games and checks that points are available.
+NYXOR uses one stream at a time per account. Android and Windows can run several separate accounts concurrently. Drops campaigns determine eligible channels, so a Drops streamer may be outside your **Streamers** list. Points farming stays within your allowed channels or games and checks that points are available.
 
 **Most viewers first / Fewest viewers first** controls the search for the next channel. When Twitch returns only part of the directory, the app labels the list as incomplete.
 
@@ -136,7 +144,7 @@ Allow unrestricted battery use for NYXOR if your phone offers that option. Closi
 
 ## A few things to know
 
-- **2.3.1 is a preview.** Local builds and automated checks have passed; extended use, new features and behavior across different phones still need practical testing.
+- **2.4.0 is an Android preview.** Local builds and automated checks have passed; extended use, new features and behavior across different phones still need practical testing.
 - **Points history starts with version 2.2.** It records observed balance increases while watching. Spending between checks can affect the count.
 - **Rewards are not purchased automatically.** The catalog shows the current channel’s offerings; redemption happens on Twitch.
 - **Your data stays on your device.** The APK stores login data, lists and history in its private app directory. Keep tokens, cookies, logs and signing keys out of the repository.

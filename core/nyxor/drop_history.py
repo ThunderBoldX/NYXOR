@@ -48,14 +48,18 @@ def _write(rows):
     temporary.replace(path)
 
 
-def record_claim(user_id, campaign_id, drop_id, game, name, *, recovered=False):
+def record_claim(user_id, campaign_id, drop_id, game, name, *, recovered=False, benefits=None):
     identity = f'{user_id}:{campaign_id}:{drop_id}'
     rows = _rows()
-    if any(row.get('id') == identity for row in rows):
+    existing = next((row for row in rows if row.get('id') == identity), None)
+    if existing:
+        if benefits and existing.get('benefits') != benefits:
+            existing['benefits'] = benefits
+            _write(rows)
         _clear_pending(identity)
         return False
     rows.append(dict(id=identity, user_id=str(user_id), campaign_id=campaign_id, drop_id=drop_id,
-                     game=game, drop=name, claim=name, confirmed=True, recovered=recovered,
+                     game=game, drop=name, claim=name, confirmed=True, recovered=recovered, benefits=benefits or [],
                      timestamp=datetime.now(timezone.utc).isoformat()))
     _write(rows)
     stats = load_json(paths.STATS_PATH, {})
@@ -65,6 +69,18 @@ def record_claim(user_id, campaign_id, drop_id, game, name, *, recovered=False):
     atomic_write_json(paths.STATS_PATH, stats)
     _clear_pending(identity)
     return True
+
+
+def enrich_claim(user_id, campaign_id, drop_id, benefits):
+    """Refresh artwork only for a known claim; never count old inventory again."""
+    if not benefits:
+        return
+    identity = f'{user_id}:{campaign_id}:{drop_id}'
+    rows = _rows()
+    existing = next((row for row in rows if row.get('id') == identity), None)
+    if existing and existing.get('benefits') != benefits:
+        existing['benefits'] = benefits
+        _write(rows)
 
 
 def _clear_pending(identity):

@@ -59,6 +59,7 @@ def best_coverage_channels(
 def progress_snapshot(state: dict[str, Any] | None, channel: dict[str, Any]) -> list[dict[str, Any]]:
     """JSON-safe progress from Twitch, without locally invented watch minutes."""
     return [
-        {key: drop[key] for key in ("campaign_id", "campaign", "drop_id", "drop", "current", "required")}
+        {**{key: drop[key] for key in ("campaign_id", "campaign", "drop_id", "drop", "current", "required")},
+         "benefits": drop.get("benefits", [])}
         for drop in channel_drops(state, channel)
     ] if state else []

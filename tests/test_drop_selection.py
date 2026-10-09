@@ -38,6 +38,17 @@ def states(*campaigns):
 
 
 class CoverageTests(unittest.TestCase):
+    def test_current_progress_keeps_all_benefit_images(self):
+        value = campaign('a', ['shared'])
+        value['timeBasedDrops'][0]['benefitEdges'] = [
+            {'benefit': {'id': str(i), 'name': f'Item {i}', 'imageAssetURL': f'https://static-cdn.jtvnw.net/reward-{i}.png'}}
+            for i in range(2)
+        ]
+        result = progress_snapshot(states(value)['Rust'], channel('shared'))
+        self.assertEqual(len(result[0]['benefits']), 2)
+        self.assertEqual(result[0]['benefits'][1]['image_url'], 'https://static-cdn.jtvnw.net/reward-1.png')
+        self.assertEqual(result[0]['current'], 10)
+
     def test_shared_channel_wins_over_popularity(self):
         state = states(campaign("a", ["shared"]), campaign("b", ["popular", "shared"]))["Rust"]
         result = best_coverage_channels(state, [channel("popular", viewers=10000), channel("shared")])

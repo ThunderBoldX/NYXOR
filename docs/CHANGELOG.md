@@ -1,3 +1,10 @@
+## Windows 2.4.2 preview — account deletion and Drop inventory
+
+- Add long-press and keyboard account selection, right-side checkboxes, selected count, cancel and confirmed bulk deletion. Unticking the last account exits selection mode.
+- Stop and remove only selected profiles, including their private saved login, lists and history. Preserve other engines, legacy root and global preferences; support an empty account list and adding after deleting all profiles.
+- Read reward benefit images from existing Twitch campaign responses, expose them in current progress and confirmed/recovered claim history, and enrich known old claims without counting untracked inventory.
+- Display claimed Drops as illustrated inventory cards with game filtering, latest-500 retention and missing-image fallback. Refresh English/Ukrainian demo screenshots.
+
 ## Windows 2.4.1 preview — browser-free farming, dropdowns and resource controls
 
 - Close the owned Chrome process immediately after verified login. Farming reuses the saved context; no renewal timer or farming start automatically launches Chrome. An expired profile pauses and requests explicit reconnection.

@@ -32,7 +32,8 @@ from nyxor_miner import (
 from nyxor_points import ChannelPointsTracker, update_channel_points, fetch_channel_points_context
 from nyxor.points_selection import point_games, pick_points_target, channel_allowed
 from nyxor.channel_history import ChannelHistory, history_path
-from nyxor.drop_history import record_claim, pending_claim
+from nyxor.drop_history import record_claim, pending_claim, enrich_claim
+from nyxor.drop_art import benefits as drop_benefits
 from nyxor.game_art import game_art
 from nyxor_player import TwitchHLSPlayer
 from nyxor_rewards import TwitchRewardsEngine
@@ -529,6 +530,7 @@ def build_game_states(
                 "campaign": str(campaign.get("name") or "Без назви"),
                 "drop_id": drop_id,
                 "drop": str(drop.get("name") or "Невідомий Drop"),
+                "benefits": drop_benefits(drop),
                 "current": current,
                 "required": required,
                 "remaining": max(required - current, 0),
@@ -643,7 +645,9 @@ async def claim_ready_drops(
 
             if claimed:
                 if pending_claim(user_id, campaign_id, drop_id):
-                    record_claim(user_id, campaign_id, drop_id, game_name, str(drop.get("name") or "Drop"), recovered=True)
+                    record_claim(user_id, campaign_id, drop_id, game_name, str(drop.get("name") or "Drop"), recovered=True, benefits=drop_benefits(drop))
+                else:
+                    enrich_claim(user_id, campaign_id, drop_id, drop_benefits(drop))
                 continue
             if current < required:
                 continue
@@ -669,7 +673,7 @@ async def claim_ready_drops(
             drop_name = str(drop.get("name") or "Drop")
 
             if success:
-                record_claim(user_id, campaign_id, drop_id, game_name, drop_name)
+                record_claim(user_id, campaign_id, drop_id, game_name, drop_name, benefits=drop_benefits(drop))
                 messages.append(
                     f"✅ {game_name}: {drop_name}"
                 )

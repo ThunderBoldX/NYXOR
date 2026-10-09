@@ -2,22 +2,31 @@
 
 [Project](../README.md) · [Українська](README_UK.md)
 
-The same moon, colors, cards, animations and farming engine as Android, adapted to a desktop window with a sidebar. This is the **2.4.1 Windows preview**, for **Windows 10/11 x64**. Other desktop operating systems are not packaged or tested.
+The same moon, colors, cards, animations and farming engine as Android, adapted to a desktop window with a sidebar. This is the **2.4.2 Windows preview**, for **Windows 10/11 x64**. Other desktop operating systems are not packaged or tested.
 
 ![Windows overview, sample data](../docs/screenshots/windows/en/overview.png)
 
 Screenshots show the actual interface in demo mode; channels, balances and rewards are fictional examples. The installed app starts with an empty account and your own lists.
 
+## Account selection and reward artwork in 2.4.2
+
+Hold an account card for half a second, or click **Select accounts**. Tick the profiles to remove, then choose **Remove** and confirm. **Clear selection**, Escape, or unticking the last account leaves selection mode. Removal stops only selected farms and deletes their saved login, lists and history. Other accounts keep farming. You can delete every profile and add a fresh account later.
+
+Current Drops and claimed rewards display the benefit images returned by Twitch, including multiple benefits in a single Drop. The Rewards tab uses an inventory grid and retains its game filter and latest-500 retention. Existing recorded claims gain images when Twitch returns their campaign again; unavailable images fall back to a gift icon. No extra campaign requests are made to retrieve artwork. Demo screenshots use fictional data and sample reward illustrations.
+
+[Account selection](../docs/screenshots/windows/en/accounts-selection.png) · [Reward inventory](../docs/screenshots/windows/en/activity.png)
+
+
 ## Install and use
 
-1. Run `NYXOR-Windows-2.4.1-preview-Setup.exe`, approve the Windows administrator prompt and choose your installation directory. Python and Node.js are bundled. **Google Chrome must be installed for Twitch login.**
+1. Run `NYXOR-Windows-2.4.2-preview-Setup.exe`, approve the Windows administrator prompt and choose your installation directory. Python and Node.js are bundled. **Google Chrome must be installed for Twitch login.**
 2. Open NYXOR from Start or the desktop shortcut. In **Settings → Connect Twitch**, sign in on Twitch in the separate Chrome window. NYXOR verifies the account and protected Drops catalog before saving the session. Enter your password only on Twitch's website.
 3. Add Drops categories in **Games**, channels in **Streamers**, or categories in **Points → Games for points**. Press **Start farming** on Overview.
 4. Closing the window hides it in the system tray. Minimizing also hides it in the tray. Single-click the moon to reopen it; right-click for start, stop and quit.
 
 The locally built installer is unsigned. Windows may display an unknown-publisher confirmation. There is no Windows release download link until the installer is published.
 
-**2.4.1 setup:** the installer requests administrator permission at launch and installs for all users. It checks selected and previous installation folders before updating, including older per-user installations under Program Files. The app itself runs without administrator privileges. Existing account data remains in its separate user directory.
+**2.4.2 setup:** the installer requests administrator permission at launch and installs for all users. It checks selected and previous installation folders before updating, including older per-user installations under Program Files. The app itself runs without administrator privileges. Existing account data remains in its separate user directory.
 
 **2.3.4:** the status and moon shortcut sit beside each other. Opening NYXOR maximizes it on the display under the cursor, using Windows' work area and display scaling so the taskbar remains accessible. You can restore and resize the window normally.
 

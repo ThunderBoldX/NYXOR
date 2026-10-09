@@ -8,10 +8,43 @@ from contextlib import ExitStack
 import nyxor_core
 from nyxor import paths, drop_history, channel_history
 from nyxor.game_art import safe_art_url
+from nyxor.drop_art import benefits, image_url
 from nyxor.storage import atomic_write_json
 
 
 class HistoryUpdates(unittest.IsolatedAsyncioTestCase):
+    def test_reward_art_uses_only_secure_public_twitch_assets(self):
+        url = 'https://static-cdn.jtvnw.net/twitch-drops/test.png'
+        self.assertEqual(benefits({'benefitEdges': [None, {'benefit': {'id': 'b', 'name': 'Supply', 'imageAssetURL': url}}]}),
+                         [{'id': 'b', 'name': 'Supply', 'image_url': url}])
+        for invalid in ['javascript:alert(1)', 'http://static-cdn.jtvnw.net/test.png', 'https://evil.test/x.png',
+                        'https://u@static-cdn.jtvnw.net/x', 'https://static-cdn.jtvnw.net:bad/x', 'https://[broken', None]:
+            self.assertEqual(image_url(invalid), '')
+
+    async def test_claim_and_recovered_claim_keep_reward_images(self):
+        art = {'benefitEdges': [{'benefit': {'id': 'b', 'name': 'Supply', 'imageAssetURL': 'https://static-cdn.jtvnw.net/reward.png'}}]}
+        drop = dict(id='d', name='Reward', requiredMinutesWatched=10, self={'currentMinutesWatched': 10}, **art)
+        campaign = dict(id='c', game={'name': 'Rust'}, timeBasedDrops=[drop])
+        with patch.object(nyxor_core, 'claim_one', AsyncMock(return_value=(True, 'ELIGIBLE_FOR_ALL'))):
+            await nyxor_core.claim_ready_drops(None, {}, '1', [campaign], {})
+        self.assertEqual(drop_history.read_claims('1')[0]['benefits'], benefits(drop))
+        drop['id'] = 'recovered'
+        drop_history.pending_claim('1', 'c', 'recovered', add=True)
+        drop['self']['isClaimed'] = True
+        await nyxor_core.claim_ready_drops(None, {}, '1', [campaign], {})
+        self.assertEqual(drop_history.read_claims('1')[0]['benefits'], benefits(drop))
+
+    async def test_old_claims_gain_artwork_without_counting_untracked_inventory(self):
+        drop_history.record_claim('1', 'c', 'd', 'Rust', 'Reward')
+        drop = dict(id='d', name='Reward', requiredMinutesWatched=10, self={'isClaimed': True},
+                    benefitEdges=[{'benefit': {'id': 'b', 'imageAssetURL': 'https://static-cdn.jtvnw.net/reward.png'}}])
+        await nyxor_core.claim_ready_drops(None, {}, '1', [{'id': 'c', 'game': {'name': 'Rust'}, 'timeBasedDrops': [drop]}], {})
+        self.assertEqual(drop_history.read_claims('1')[0]['benefits'], benefits(drop))
+        drop_history.enrich_claim('1', 'c', 'unknown', benefits(drop))
+        drop_history.enrich_claim('2', 'c', 'd', benefits(drop))
+        self.assertEqual(len(drop_history.read_claims('1')), 1)
+        self.assertEqual(json.loads(paths.STATS_PATH.read_text())['claims'], 1)
+
     def setUp(self):
         self.stack = ExitStack()
         self.addCleanup(self.stack.close)

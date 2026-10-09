@@ -49,7 +49,7 @@ function startup(enabled){
 }
 async function request(data){
  const result=await accounts.route(data,requestFor);
- const active=accounts.get();engine=active.engine;login=active.login;
+ const active=accounts.index.active?accounts.get():null;engine=active?.engine;login=active?.login;
  if(result.ok&&result.data?.settings)syncStatus(result.data);
  return result;
 }
@@ -184,8 +184,18 @@ async function smoke(){
   if(window.isDestroyed())throw new Error('Closing the window destroyed the app');
   const afterClose=await request({action:'snapshot'});
   if(!afterClose.ok)throw new Error('Closing the window stopped the engine');
+  const accountProcesses=[legacyPid,accounts.get(newId).engine.child.pid];
+  const third=(await request({action:'account_add'})).data.active_account_id;
+  const deleted=await request({action:'account_delete',ids:['default',third]});
+  if(!deleted.ok||deleted.data.accounts.length!==1||deleted.data.active_account_id!==newId||deleted.data.queue[0]!=='World of Tanks')throw new Error('Bulk account deletion affected the surviving profile');
+  if(fs.existsSync(path.join(accounts.root,'engine'))||fs.existsSync(path.join(accounts.root,'accounts',third)))throw new Error('Deleted account retained private data');
+  if(!(await accounts.get(newId).engine.request({action:'snapshot'})).ok)throw new Error('Surviving engine stopped');
+  const emptied=await request({action:'account_delete',ids:[newId]});
+  if(!emptied.ok||emptied.data.accounts.length||emptied.data.active_account_id!==null)throw new Error('Last account deletion failed');
+  const fresh=await request({action:'account_add'});
+  if(!fresh.ok||fresh.data.accounts.length!==1||fresh.data.queue.length||fresh.data.authenticated)throw new Error('New account after deletion reused private data');
   if(errors.length)throw new Error('Renderer errors: '+errors.join('; '));
-  fs.writeFileSync(path.join(smokeDir,'result.json'),JSON.stringify({ok:true,layout,errors,window:{workArea:nativeArea,content},engine:status.data.platform,accountProcesses:[legacyPid,accounts.get(newId).engine.child.pid],checks:['window content fits selected display work area','startup modes persist','persistent queue','energy setting','unauthenticated start blocked','seven sections','independent account processes and queues','account cards','centered moon','status/settings controls separated','no horizontal overflow','tray status','minimize to tray and single-click restore','resource mode lowers and restores engine priority','close to tray keeps engine alive','normal power blocker and eco release',...(process.argv.includes('--smoke-login')?['native Chrome login pending','cancel login closes owned Chrome','logout removes owned profile']:[]),...(process.argv.includes('--smoke-catalog')?['live World of Tanks search and add in Games and Points without an account']:[])]},null,2));
+  fs.writeFileSync(path.join(smokeDir,'result.json'),JSON.stringify({ok:true,layout,errors,window:{workArea:nativeArea,content},engine:status.data.platform,accountProcesses,checks:['bulk deletion preserves surviving account process and private data','last-account deletion and fresh account creation','window content fits selected display work area','startup modes persist','persistent queue','energy setting','unauthenticated start blocked','seven sections','independent account processes and queues','account cards','centered moon','status/settings controls separated','no horizontal overflow','tray status','minimize to tray and single-click restore','resource mode lowers and restores engine priority','close to tray keeps engine alive','normal power blocker and eco release',...(process.argv.includes('--smoke-login')?['native Chrome login pending','cancel login closes owned Chrome','logout removes owned profile']:[]),...(process.argv.includes('--smoke-catalog')?['live World of Tanks search and add in Games and Points without an account']:[])]},null,2));
  }catch(error){fs.writeFileSync(path.join(smokeDir,'result.json'),JSON.stringify({ok:false,error:error.stack,errors},null,2));process.exitCode=1;}
  finally{app.quit();}
 }
@@ -205,7 +215,7 @@ else{
     :new Engine(process.env.NYXOR_PYTHON||'python',[path.join(__dirname,'backend.py'),path.join(root,'engine')],{env:{...process.env,PYTHONUTF8:'1'}}),
    createLogin:engine=>new TwitchLogin(root,engine)
   }));
-  await accounts.initialize();engine=accounts.get().engine;login=accounts.get().login;
+  await accounts.initialize();engine=accounts.index.active?accounts.get().engine:null;login=accounts.index.active?accounts.get().login:null;
   ipcMain.handle('nyxor:request',async(event,payload)=>{
    try{
     if(event.sender!==window.webContents||event.senderFrame!==window.webContents.mainFrame||!event.senderFrame.url.startsWith('nyxor://app/index.html'))throw new Error('Untrusted request');

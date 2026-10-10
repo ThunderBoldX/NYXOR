@@ -116,6 +116,70 @@ class CoverageTests(unittest.TestCase):
 
 
 class TargetTests(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        cache = patch.dict(core.DROP_AVAILABILITY_CACHE, {}, clear=True)
+        cache.start()
+        self.addCleanup(cache.stop)
+
+    async def test_worldoftanks_cyganzor_do_not_ping_pong_on_estimated_coverage(self):
+        value = states(campaign("a", game="World of Tanks"), campaign("b", game="World of Tanks"))
+        current = channel("worldoftanks", game="World of Tanks")
+        directory = AsyncMock(side_effect=lambda game: [channel(
+            "cyganzor" if current["login"] == "worldoftanks" else "worldoftanks", game=game)])
+        live = AsyncMock(side_effect=lambda session, headers, login: channel(login, game="World of Tanks"))
+        # Both channels actually offer only A; the generic Drops directory
+        # contains no per-campaign information and initially appears to offer A+B.
+        available = AsyncMock(return_value={"data": {"channel": {"viewerDropCampaigns": [{"id": "a"}]}}})
+        with patch.object(core, "fetch_channels_retry", directory), \
+             patch.object(core, "fetch_streamer_channel", live), \
+             patch.object(core, "gql_request_retry", available):
+            for _ in range(8):
+                result = await core.pick_target(["World of Tanks"], value, {}, [], "World of Tanks", current["login"], session=object(), headers={}, current_channel=current)
+                self.assertEqual(result[1]["login"], "worldoftanks")
+                current = result[1]
+
+    async def test_verified_shared_stream_improves_coverage_without_bouncing_back(self):
+        value = states(campaign("a"), campaign("b"))
+        async def available(session, query, headers, **kw):
+            return {"data": {"channel": {"viewerDropCampaigns": [{"id": i} for i in (["a", "b"] if query["variables"]["channelID"] == "shared" else ["a"])]}}}
+        current = channel("solo")
+        with patch.object(core, "fetch_channels_retry", AsyncMock(return_value=[channel("solo", viewers=1000), channel("shared")])), \
+             patch.object(core, "gql_request_retry", AsyncMock(side_effect=available)):
+            for _ in range(4):
+                result = await core.pick_target(["Rust"], value, {"Rust": "solo"}, ["solo"], "Rust", current["login"], session=object(), headers={}, current_channel=current)
+                self.assertEqual(result[1]["login"], "shared")
+                self.assertEqual(len(channel_drops(value["Rust"], result[1])), 2)
+                current = result[1]
+
+    async def test_drops_tag_alone_does_not_select_an_unavailable_campaign(self):
+        with patch.object(core, "fetch_channels_retry", AsyncMock(return_value=[channel("tagged")])), \
+             patch.object(core, "gql_request_retry", AsyncMock(return_value={"data": {"channel": {"viewerDropCampaigns": []}}})):
+            result = await core.pick_target(["Rust"], states(campaign("a")), {}, [], "", "", session=object(), headers={})
+        self.assertIsNone(result)
+
+    async def test_availability_cache_is_scoped_to_account_stream_and_freshness(self):
+        response = {"data": {"channel": {"viewerDropCampaigns": [{"id": "a"}]}}}
+        with patch.object(core, "gql_request_retry", AsyncMock(return_value=response)) as request:
+            for _ in range(4):
+                await core.confirmed_drop_channel(object(), {"Authorization": "fixture-one"}, channel("one"))
+            self.assertEqual(request.await_count, 1)
+            await core.confirmed_drop_channel(object(), {"Authorization": "fixture-two"}, channel("one"))
+            await core.confirmed_drop_channel(object(), {"Authorization": "fixture-one"}, {**channel("one"), "stream_id": "new-live"})
+            key = ("fixture-one", "one", "one-live")
+            core.DROP_AVAILABILITY_CACHE[key] = time.monotonic() - core.DROP_AVAILABILITY_CACHE_TTL - 1, ["a"]
+            await core.confirmed_drop_channel(object(), {"Authorization": "fixture-one"}, channel("one"))
+            self.assertEqual(request.await_count, 4)
+
+    async def test_failed_or_malformed_availability_is_not_cached_as_disabled(self):
+        with patch.object(core, "gql_request_retry", AsyncMock(side_effect=[RuntimeError("network"), {"data": {}}, {"data": {"channel": {"viewerDropCampaigns": [{"id": "a"}]}}}])) as request:
+            for _ in range(2):
+                with self.assertRaises(RuntimeError):
+                    await core.confirmed_drop_channel(object(), {}, channel("one"))
+                self.assertFalse(core.DROP_AVAILABILITY_CACHE)
+            result = await core.confirmed_drop_channel(object(), {}, channel("one"))
+            self.assertEqual(result["available_campaign_ids"], ["a"])
+            self.assertEqual(request.await_count, 3)
+
     async def test_current_stream_wins_equal_coverage_over_new_preferences(self):
         with patch.object(core, "fetch_channels_retry", AsyncMock(return_value=[channel("other"), channel("current")])):
             result = await core.pick_target(["Rust"], states(campaign("a")), {"Rust": "other"}, ["other"], "Rust", "current")
@@ -136,17 +200,20 @@ class TargetTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_confirmed_offline_wrong_game_or_disabled_drops_use_replacement(self):
         for fresh, available in [(None, ["a"]), (channel("current", game="Other"), ["a"]), (channel("current"), [])]:
+            core.DROP_AVAILABILITY_CACHE.clear()
             with patch.object(core, "fetch_channels_retry", AsyncMock(return_value=[channel("other")])), \
                  patch.object(core, "fetch_streamer_channel", AsyncMock(return_value=fresh)), \
-                 patch.object(core, "gql_request_retry", AsyncMock(return_value={"data": {"channel": {"viewerDropCampaigns": [{"id": i} for i in available]}}})):
+                 patch.object(core, "gql_request_retry", AsyncMock(side_effect=lambda session, query, headers, **kw: {"data": {"channel": {"viewerDropCampaigns": [{"id": i} for i in (available if query["variables"]["channelID"] == "current" else ["a"])]}}})):
                 result = await core.pick_target(["Rust"], states(campaign("a")), {}, [], "Rust", "current", session=object(), headers={}, current_channel={**channel("current"), "_drop_checked_at": time.monotonic()})
             self.assertEqual(result[1]["login"], "other")
 
     async def test_temporary_probe_failure_has_bounded_grace(self):
         for age, expected in [(0, "current"), (core.DROP_CHANNEL_GRACE + 1, "other")]:
+            core.DROP_AVAILABILITY_CACHE.clear()
             current = {**channel("current"), "_drop_checked_at": time.monotonic() - age}
             with patch.object(core, "fetch_channels_retry", AsyncMock(return_value=[channel("other")])), \
-                 patch.object(core, "fetch_streamer_channel", AsyncMock(side_effect=RuntimeError("network"))):
+                 patch.object(core, "fetch_streamer_channel", AsyncMock(side_effect=RuntimeError("network"))), \
+                 patch.object(core, "gql_request_retry", AsyncMock(return_value={"data": {"channel": {"viewerDropCampaigns": [{"id": "a"}]}}})):
                 result = await core.pick_target(["Rust"], states(campaign("a")), {}, [], "Rust", "current", session=object(), headers={}, current_channel=current)
             self.assertEqual(result[1]["login"], expected)
             if expected == "current":
@@ -194,18 +261,21 @@ class TargetTests(unittest.IsolatedAsyncioTestCase):
     async def test_shared_streamer_outside_directory_and_drops_disabled(self):
         value = states(campaign("a", ["shared"]), campaign("b", ["solo", "shared"]))
         for available, expected in [([{"id": "a"}, {"id": "b"}], "shared"), ([], "solo")]:
+            core.DROP_AVAILABILITY_CACHE.clear()
             with patch.object(core, "fetch_channels_retry", AsyncMock(return_value=[channel("solo")])), \
                  patch.object(core, "fetch_streamer_channel", AsyncMock(return_value=channel("shared"))), \
-                 patch.object(core, "gql_request_retry", AsyncMock(return_value={"data": {"channel": {"viewerDropCampaigns": available}}})):
+                 patch.object(core, "gql_request_retry", AsyncMock(side_effect=lambda session, query, headers, **kw: {"data": {"channel": {"viewerDropCampaigns": available if query["variables"]["channelID"] == "shared" else [{"id": "b"}]}}})):
                 result = await core.pick_target(["Rust"], value, {}, [], "", "", session=object(), headers={})
             self.assertEqual(result[1]["login"], expected)
 
     async def test_offline_extra_and_failed_lookup_preserve_directory_fallback(self):
         value = states(campaign("a", ["shared"]), campaign("b"))
         for response in [None, RuntimeError("offline")]:
+            core.DROP_AVAILABILITY_CACHE.clear()
             fetch = AsyncMock(side_effect=response) if isinstance(response, Exception) else AsyncMock(return_value=response)
             with patch.object(core, "fetch_channels_retry", AsyncMock(return_value=[channel("solo")])), \
-                 patch.object(core, "fetch_streamer_channel", fetch):
+                 patch.object(core, "fetch_streamer_channel", fetch), \
+                 patch.object(core, "gql_request_retry", AsyncMock(return_value={"data": {"channel": {"viewerDropCampaigns": [{"id": "b"}]}}})):
                 result = await core.pick_target(["Rust"], value, {}, [], "", "", session=object(), headers={})
             self.assertEqual(result[1]["login"], "solo")
 

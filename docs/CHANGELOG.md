@@ -1,3 +1,13 @@
+## Android 2.4.2 preview — prevent alternating Drops channels
+
+- Compare confirmed per-channel campaign availability for directory entries and independently resolved streams alike. A generic Drops tag no longer implies every game campaign is available.
+- Reproduce and fix the WorldofTanks/cyganzor ping-pong scenario caused by comparing estimated coverage with confirmed coverage.
+- Preserve a working current stream on equal confirmed coverage. Move to a shared streamer only when its improvement is confirmed.
+- Cache campaign availability per account, channel and broadcast for 60 seconds; failed/malformed requests are not cached as disabled Drops. Check replacement candidates in batches of up to five.
+- Preserve the bounded offline/discovery grace from 2.4.1 without extending it on failed live probes.
+
+This APK is prepared locally; the public Android release remains 2.4.0 until a new release is published. Live Twitch reward crediting has not been verified.
+
 ## Android 2.4.1 preview — stable Drops channels
 
 - Check the current stream directly when it leaves the directory's top results, including campaigns without a channel allow-list.

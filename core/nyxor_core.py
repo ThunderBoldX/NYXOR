@@ -52,6 +52,8 @@ STREAMER_CHECK_DELAY = 0.20
 GQL_RETRY_DELAYS = (1.5, 3.0, 5.0)
 GQL_FAILURE_WAIT = 15
 DROP_CHANNEL_GRACE = 90
+DROP_AVAILABILITY_CACHE_TTL = 60
+DROP_AVAILABILITY_CACHE: dict[tuple[str, str, str], tuple[float, list[str]]] = {}
 DETAIL_CACHE: dict[str, dict[str, Any]] = {}
 console = Console()
 logger = logging.getLogger("NYXOR." + __name__.split('.')[0] if __name__.startswith('_nyxor_profile_') else "NYXOR")
@@ -842,6 +844,31 @@ def watch_mode_text(mode: str) -> str:
     return "—"
 
 
+async def confirmed_drop_channel(session, headers, candidate):
+    """The Drops tag is not proof that this stream offers every game campaign."""
+    key = (str(headers.get("Authorization") or ""), str(candidate["channel_id"]), str(candidate["stream_id"]))
+    cached = DROP_AVAILABILITY_CACHE.get(key)
+    if cached and time.monotonic() - cached[0] < DROP_AVAILABILITY_CACHE_TTL:
+        checked_at, campaign_ids = cached
+    else:
+        response = await gql_request_retry(
+            session, GQL_QUERIES["AvailableDrops"].with_variables({"channelID": candidate["channel_id"]}),
+            headers, attempts=2,
+        )
+        data = response.get("data")
+        if not isinstance(data, dict) or "channel" not in data:
+            raise RuntimeError("Twitch did not return channel Drops availability")
+        channel = data["channel"]
+        if channel is not None and (not isinstance(channel, dict) or not isinstance(channel.get("viewerDropCampaigns"), list)):
+            raise RuntimeError("Twitch did not return channel Drops campaigns")
+        campaign_ids = [str(item.get("id") or "") for item in (channel or {}).get("viewerDropCampaigns") or [] if isinstance(item, dict)]
+        checked_at = time.monotonic()
+        if len(DROP_AVAILABILITY_CACHE) >= 500:
+            DROP_AVAILABILITY_CACHE.clear()
+        DROP_AVAILABILITY_CACHE[key] = checked_at, campaign_ids
+    return {**candidate, "available_campaign_ids": list(campaign_ids), "_drop_checked_at": checked_at}
+
+
 async def pick_target(
     priority_games: list[str],
     states: dict[str, dict[str, Any]],
@@ -886,28 +913,63 @@ async def pick_target(
                         candidate = await fetch_streamer_channel(session, headers, login)
                         if candidate is None or not channel_drops(state, candidate):
                             return None
-                        response = await gql_request_retry(
-                            session,
-                            GQL_QUERIES["AvailableDrops"].with_variables({"channelID": candidate["channel_id"]}),
-                            headers,
-                            attempts=2,
-                        )
-                        data = ((response.get("data") or {}).get("channel") or {})
-                        candidate["available_campaign_ids"] = [
-                            str(item.get("id") or "") for item in data.get("viewerDropCampaigns") or []
-                        ]
-                        return candidate
+                        return await confirmed_drop_channel(session, headers, candidate)
                     except Exception:
                         if (login == current_login.casefold() and current_game == game
                                 and current_channel
                                 and time.monotonic() - current_channel.get("_drop_checked_at", 0) < DROP_CHANNEL_GRACE
                                 and channel_drops(state, current_channel)):
                             logger.warning("Drops: не вдалося перевірити @%s; тимчасово залишаю поточний канал", login)
-                            return dict(current_channel)
+                            return {**current_channel, "_drop_probe_failed": True}
                         return None
 
             extras = await asyncio.gather(*(fetch_extra(login) for login in sorted(extra_logins)))
             channels.extend(item for item in extras if item is not None)
+
+            # Verify the current channel first, then only contenders whose
+            # estimated coverage can beat it. Compare confirmed sets on both
+            # sides; otherwise a directory entry can repeatedly beat a stream
+            # whose real campaign list is known, causing A -> B -> A loops.
+            current = next((item for item in channels if current_game == game
+                            and str(item.get("login") or "").casefold() == current_login.casefold()), None)
+            confirmed = []
+            if current is not None:
+                try:
+                    if "available_campaign_ids" not in current and not current.get("_drop_probe_failed"):
+                        current = await confirmed_drop_channel(session, headers, current)
+                except Exception:
+                    current = retained_drop_target(priority_games, states, game, current_channel)
+                    current = current[1] if current else None
+                if current is not None and channel_drops(state, current):
+                    confirmed.append(current)
+
+            def coverage(item):
+                return len({drop["campaign_id"] for drop in channel_drops(state, item)})
+
+            contenders = sorted(
+                (item for item in channels if not (current_game == game
+                 and str(item.get("login") or "").casefold() == current_login.casefold())),
+                key=lambda item: (coverage(item), int(item.get("viewers") or 0)), reverse=True,
+            )
+
+            async def confirm(item):
+                try:
+                    return item if "available_campaign_ids" in item else await confirmed_drop_channel(session, headers, item)
+                except Exception:
+                    return None
+
+            for offset in range(0, len(contenders), 5):
+                best = max((coverage(item) for item in confirmed), default=0)
+                # On startup, check ties too so the user's channel preferences
+                # remain available. During farming an equal score cannot beat
+                # the current stream and does not require another query.
+                batch = [item for item in contenders[offset:offset + 5]
+                         if coverage(item) > 0 and (coverage(item) > best if current is not None and channel_drops(state, current) else coverage(item) >= best)]
+                if not batch:
+                    break
+                verified = await asyncio.gather(*(confirm(item) for item in batch))
+                confirmed.extend(item for item in verified if item is not None and channel_drops(state, item))
+            channels = confirmed
 
         channels = best_coverage_channels(state, channels)
         channels.sort(key=lambda item: int(item.get("viewers") or 0), reverse=True)

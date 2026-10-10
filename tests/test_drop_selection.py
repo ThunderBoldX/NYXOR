@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import json
+import time
 import unittest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, patch
@@ -115,6 +116,58 @@ class CoverageTests(unittest.TestCase):
 
 
 class TargetTests(unittest.IsolatedAsyncioTestCase):
+    async def test_current_stream_wins_equal_coverage_over_new_preferences(self):
+        with patch.object(core, "fetch_channels_retry", AsyncMock(return_value=[channel("other"), channel("current")])):
+            result = await core.pick_target(["Rust"], states(campaign("a")), {"Rust": "other"}, ["other"], "Rust", "current")
+        self.assertEqual(result[1]["login"], "current")
+
+    async def test_directory_changes_do_not_interrupt_unrestricted_current_stream(self):
+        value = states(campaign("a"))
+        current = channel("current")
+        with patch.object(core, "fetch_channels_retry", AsyncMock(side_effect=[
+                [channel("current"), channel("popular")], [channel("popular")], [], [channel("new")]])), \
+             patch.object(core, "fetch_streamer_channel", AsyncMock(return_value=channel("current"))) as fetch, \
+             patch.object(core, "gql_request_retry", AsyncMock(return_value={"data": {"channel": {"viewerDropCampaigns": [{"id": "a"}]}}})):
+            for _ in range(4):
+                result = await core.pick_target(["Rust"], value, {}, [], "Rust", "current", session=object(), headers={}, current_channel=current)
+                self.assertEqual(result[1]["login"], "current")
+                current = result[1]
+            self.assertEqual(fetch.await_count, 3)
+
+    async def test_confirmed_offline_wrong_game_or_disabled_drops_use_replacement(self):
+        for fresh, available in [(None, ["a"]), (channel("current", game="Other"), ["a"]), (channel("current"), [])]:
+            with patch.object(core, "fetch_channels_retry", AsyncMock(return_value=[channel("other")])), \
+                 patch.object(core, "fetch_streamer_channel", AsyncMock(return_value=fresh)), \
+                 patch.object(core, "gql_request_retry", AsyncMock(return_value={"data": {"channel": {"viewerDropCampaigns": [{"id": i} for i in available]}}})):
+                result = await core.pick_target(["Rust"], states(campaign("a")), {}, [], "Rust", "current", session=object(), headers={}, current_channel={**channel("current"), "_drop_checked_at": time.monotonic()})
+            self.assertEqual(result[1]["login"], "other")
+
+    async def test_temporary_probe_failure_has_bounded_grace(self):
+        for age, expected in [(0, "current"), (core.DROP_CHANNEL_GRACE + 1, "other")]:
+            current = {**channel("current"), "_drop_checked_at": time.monotonic() - age}
+            with patch.object(core, "fetch_channels_retry", AsyncMock(return_value=[channel("other")])), \
+                 patch.object(core, "fetch_streamer_channel", AsyncMock(side_effect=RuntimeError("network"))):
+                result = await core.pick_target(["Rust"], states(campaign("a")), {}, [], "Rust", "current", session=object(), headers={}, current_channel=current)
+            self.assertEqual(result[1]["login"], expected)
+            if expected == "current":
+                self.assertEqual(result[1]["_drop_checked_at"], current["_drop_checked_at"])
+
+    async def test_directory_error_checks_current_directly(self):
+        with patch.object(core, "fetch_channels_retry", AsyncMock(side_effect=RuntimeError("directory failed"))), \
+             patch.object(core, "fetch_streamer_channel", AsyncMock(return_value=channel("current"))), \
+             patch.object(core, "gql_request_retry", AsyncMock(return_value={"data": {"channel": {"viewerDropCampaigns": [{"id": "a"}]}}})):
+            result = await core.pick_target(["Rust"], states(campaign("a")), {}, [], "Rust", "current", session=object(), headers={})
+        self.assertEqual(result[1]["login"], "current")
+
+    def test_discovery_failure_retains_only_recent_eligible_drops(self):
+        value = states(campaign("a"))
+        current = {**channel("current"), "_drop_checked_at": time.monotonic()}
+        self.assertEqual(core.retained_drop_target(["Rust"], value, "Rust", current), ("Rust", current))
+        self.assertIsNone(core.retained_drop_target([], value, "Rust", current))
+        self.assertIsNone(core.retained_drop_target(["Rust"], value, "Rust", {**current, "_drop_checked_at": time.monotonic() - core.DROP_CHANNEL_GRACE - 1}))
+        value["Rust"]["mineable"][0]["ends_at"] = datetime.now(timezone.utc) - timedelta(seconds=1)
+        self.assertIsNone(core.retained_drop_target(["Rust"], value, "Rust", current))
+
     async def test_overlap_beats_preferred_current_and_streamer_list(self):
         value = states(campaign("a", ["shared"]), campaign("b", ["solo", "shared"]))
         with patch.object(core, "fetch_channels_retry", AsyncMock(return_value=[channel("solo"), channel("shared")])):

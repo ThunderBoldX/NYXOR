@@ -51,6 +51,7 @@ DETAIL_FETCH_DELAY = 0.30
 STREAMER_CHECK_DELAY = 0.20
 GQL_RETRY_DELAYS = (1.5, 3.0, 5.0)
 GQL_FAILURE_WAIT = 15
+DROP_CHANNEL_GRACE = 90
 DETAIL_CACHE: dict[str, dict[str, Any]] = {}
 console = Console()
 logger = logging.getLogger("NYXOR." + __name__.split('.')[0] if __name__.startswith('_nyxor_profile_') else "NYXOR")
@@ -850,6 +851,7 @@ async def pick_target(
     current_login: str,
     session: aiohttp.ClientSession | None = None,
     headers: dict[str, str] | None = None,
+    current_channel: dict[str, Any] | None = None,
 ) -> tuple[str, dict[str, Any]] | None:
     for game in priority_games:
         state = states.get(game)
@@ -871,6 +873,11 @@ async def pick_target(
                 for item in drop.get("allowed_channels") or []
                 if item.get("login")
             } - known
+            # The directory is only the top channels, not an online/offline check.
+            # Probe the current stream even for campaigns with no allow-list.
+            if current_game == game and current_login:
+                extra_logins.add(current_login.casefold())
+                extra_logins -= known
             semaphore = asyncio.Semaphore(5)
 
             async def fetch_extra(login: str) -> dict[str, Any] | None:
@@ -891,6 +898,12 @@ async def pick_target(
                         ]
                         return candidate
                     except Exception:
+                        if (login == current_login.casefold() and current_game == game
+                                and current_channel
+                                and time.monotonic() - current_channel.get("_drop_checked_at", 0) < DROP_CHANNEL_GRACE
+                                and channel_drops(state, current_channel)):
+                            logger.warning("Drops: не вдалося перевірити @%s; тимчасово залишаю поточний канал", login)
+                            return dict(current_channel)
                         return None
 
             extras = await asyncio.gather(*(fetch_extra(login) for login in sorted(extra_logins)))
@@ -904,7 +917,13 @@ async def pick_target(
 
         channel = None
 
-        if streamer_logins:
+        # Preserve a working stream on equal campaign coverage. Preferences are
+        # used to choose a replacement, not to interrupt an ongoing watch.
+        if current_game == game and current_login:
+            channel = next((item for item in channels
+                            if str(item.get("login") or "").casefold() == current_login.casefold()), None)
+
+        if channel is None and streamer_logins:
             channels_by_login = {
                 str(item.get("login") or "").casefold(): item
                 for item in channels
@@ -924,8 +943,22 @@ async def pick_target(
             )
 
         if channel is not None:
+            channel = dict(channel)
+            # A grace fallback keeps its original timestamp; failed probes must
+            # not indefinitely renew a stale stream's online status.
+            if "_drop_checked_at" not in channel:
+                channel["_drop_checked_at"] = time.monotonic()
             return game, channel
 
+    return None
+
+
+def retained_drop_target(priority_games, states, current_game, current_channel):
+    """Bounded continuation on discovery errors, never for expired rewards."""
+    if (current_game in priority_games and current_channel
+            and time.monotonic() - current_channel.get("_drop_checked_at", 0) < DROP_CHANNEL_GRACE
+            and channel_drops(states.get(current_game) or {}, current_channel)):
+        return current_game, current_channel
     return None
 
 
@@ -1201,7 +1234,6 @@ async def main() -> None:
                     live.update(render_status(state))
 
                     try:
-                        drop_failed = False
                         try:
                             if priority_games:
                                 campaigns, inventory_drops, claimed_benefits = (
@@ -1261,12 +1293,15 @@ async def main() -> None:
                                 ),
                                 session=session,
                                 headers=gql_headers,
+                                current_channel=current_channel if current_mode == "drops" else None,
                             )
 
                         except Exception as drop_error:
-                            logger.warning("Drop discovery failed; checking points channels: %s", drop_error)
-                            drop_target = None
-                            drop_failed = True
+                            logger.warning("Drop discovery failed: %s", drop_error)
+                            drop_target = retained_drop_target(
+                                priority_games, states, current_game,
+                                current_channel if current_mode == "drops" else None,
+                            )
 
                         if drop_target is not None:
                             # Drops always win over raids and ordinary point farming.
@@ -1282,8 +1317,6 @@ async def main() -> None:
                                     session, gql_headers, streamer_logins, games_for_points,
                                     points_order, raid_login=raid_login)
                             target = ("points", str(points_channel.get("game") or "Без категорії"), points_channel) if points_channel else None
-                            if target is None and drop_failed and current_mode == "drops" and current_channel and current_game in priority_games:
-                                target = (current_mode, current_game, current_channel)
 
                     except Exception as error:
                         # Twitch GQL / persisted queries іноді тимчасово падають.
@@ -1307,7 +1340,7 @@ async def main() -> None:
                             )
                             continue
 
-                        allowed = (current_game in priority_games if current_mode == "drops" else
+                        allowed = (bool(retained_drop_target(priority_games, states, current_game, current_channel)) if current_mode == "drops" else
                                    points_enabled and channel_allowed(current_channel, streamer_logins, games_for_points))
                         target = (current_mode, current_game, current_channel) if allowed else None
 
@@ -1355,6 +1388,11 @@ async def main() -> None:
                     )
 
                     if changed:
+                        if current_channel:
+                            logger.warning(
+                                "Зміна каналу: @%s → @%s (%s → %s). Поточний стрім відсутній серед найкращих доступних каналів або змінилася гра/трансляція.",
+                                current_channel.get("login"), target_channel.get("login"), current_mode, target_mode,
+                            )
                         channel_history.end()
                         state["points_rewards"] = []
                         if points_enabled:

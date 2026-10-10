@@ -1,3 +1,13 @@
+## Android 2.4.1 preview — stable Drops channels
+
+- Check the current stream directly when it leaves the directory's top results, including campaigns without a channel allow-list.
+- Keep the current channel on equal campaign coverage rather than interrupting it for a newly available preferred streamer.
+- Keep a recently verified eligible Drops stream for up to 90 seconds on transient discovery/probe errors, before attempting points-only fallback. Never renew the grace period on failed checks or continue an expired reward.
+- Record stream changes and temporary channel-check failures in the account journal.
+- Initial selection still prefers a shared streamer covering more campaigns; confirmed offline streams, changed categories and unavailable campaigns can trigger replacements.
+
+The Android APK is prepared locally. The public Android download remains 2.4.0 until this fix is published. Real-device watch crediting has not been verified.
+
 ## Android 2.4.0 preview — accounts and reward artwork
 
 - Preserve the original Android login and files while adding up to 20 saved profiles. Isolate local core modules, paths, authentication, configuration revisions and event logging per profile on the existing event loop.

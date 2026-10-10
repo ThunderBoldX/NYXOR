@@ -1,3 +1,14 @@
+## Android 2.4.3 preview — screen-off farming
+
+- Keep the partial CPU wake lock while any account farms, including in energy saver. Energy saver still reduces network polling, interface refresh and animations.
+- Renew the bounded CPU lease on a separate Android main-thread heartbeat, independent of Python snapshots. Remove renewal and release the lock when the service is destroyed.
+- Force a notification/status refresh on screen off as well as screen on and unlock, without stopping or restarting the farming session.
+- Show Android battery optimization, background restriction and system battery-saver state in Settings. Request a Doze exemption only after the user taps Allow background farming; retain app-settings fallback.
+- Record screen, unlock, Doze and battery-saver changes in active profiles' journals with captured CPU/access state; skip paused profiles and validate event payloads.
+- Retain the confirmed campaign selection and stable channel fixes from Android 2.4.1/2.4.2.
+
+Prepared locally; public Android download remains 2.4.0. Lifecycle tests simulate screen changes and failed snapshots; real screen-off Twitch credit on a physical phone remains unverified.
+
 ## Android 2.4.2 preview — prevent alternating Drops channels
 
 - Compare confirmed per-channel campaign availability for directory entries and independently resolved streams alike. A generic Drops tag no longer implies every game campaign is available.

@@ -1,6 +1,8 @@
 'use strict';
 (()=>{
 if(window.NyxorNative?.platform==='desktop')return;
+Object.assign(text.uk,{lockedFarming:'Фарм із заблокованим екраном',backgroundAllowed:'Фоновий доступ дозволений',backgroundLimited:'Android може обмежувати фарм під час сну',backgroundPermissionHint:'Дозволь роботу у фоні в системному запиті. Екран можна залишати вимкненим.',allowBackground:'Дозволити роботу у фоні',systemPowerSave:'У телефоні ввімкнено системне енергозбереження.',restrictedBackground:'Система обмежила роботу застосунку. Перевір налаштування батареї нижче.'});
+Object.assign(text.en,{lockedFarming:'Farming with the screen locked',backgroundAllowed:'Background access allowed',backgroundLimited:'Android may limit farming during sleep',backgroundPermissionHint:'Allow background access in the system prompt. The screen can stay off.',allowBackground:'Allow background farming',systemPowerSave:'System battery saver is enabled on your phone.',restrictedBackground:'The system restricted this app. Check the battery settings below.'});
 document.documentElement.classList.add('mobile-upgrade');
 Object.assign(text.uk,{accounts:'Акаунти',addAccount:'Додати акаунт',accountHint:'Окремі входи, списки, прогрес та історія. Перемикання не зупиняє фарм інших акаунтів.',mainAccount:'Основний акаунт',newAccount:'Новий акаунт',viewAccount:'Перегляд',selectedAccount:'Обраний',chooseAccount:'Вибрати',accountStartup:'Фарм після перезавантаження',farmingAccounts:'Зараз фармлять',renewing:'Поновлюємо сеанс Twitch…',disconnectAccount:'Відключити акаунт',parallelHint:'Кожен акаунт має окремий вхід і власний фарм. Більше активних акаунтів — більше пам’яті, мережевих запитів і витрат батареї.'});
 Object.assign(text.en,{accounts:'Accounts',addAccount:'Add account',accountHint:'Separate logins, lists, progress and history. Switching keeps other accounts farming.',mainAccount:'Main account',newAccount:'New account',viewAccount:'Viewing',selectedAccount:'Selected',chooseAccount:'Select',accountStartup:'Farm after phone restart',farmingAccounts:'Farming now',renewing:'Renewing Twitch session…',disconnectAccount:'Disconnect account',parallelHint:'Each account has its own login and farming session. More active accounts use more memory, network traffic and battery.'});
@@ -41,7 +43,7 @@ call=async function(action,values={}){
  return result;
 };
 navigate=function(r){accountSelection.clear();if(r!=='accounts')return desktopNavigate(r);historySelection.clear();route=r;clearTimeout(searchTimer);searchSeq++;suggestions=[];render(true);window.scrollTo({top:0,behavior:'instant'});};
-refresh=async function(force=false){const before=model;await desktopRefresh(force);if(route==='accounts'&&JSON.stringify(before?.accounts)!==JSON.stringify(model?.accounts))render();};
+refresh=async function(force=false){const before=model;await desktopRefresh(force);if(route==='accounts'&&JSON.stringify(before?.accounts)!==JSON.stringify(model?.accounts)||route==='settings'&&JSON.stringify(before?.background)!==JSON.stringify(model?.background))render();};
 function accountName(row){return row.account?'@'+row.account:t(row.id==='default'?'mainAccount':'newAccount');}
 function accountsPage(){
  const selecting=accountSelection.size>0,disabled=busy||selecting?'disabled':'';
@@ -133,7 +135,20 @@ render=function(animate=false){
 if(model)render();
 
 const mobileFinalRender=render;
-render=function(animate=false){window.NyxorDropdowns.close();mobileFinalRender(animate);window.NyxorDropdowns.enhance();};
+render=function(animate=false){
+ window.NyxorDropdowns.close();mobileFinalRender(animate);
+ const battery=$('#background-settings'),status=model?.background;
+ if(route==='settings'&&battery&&status){
+  const limited=status.battery_optimized||status.background_restricted;
+  battery.insertAdjacentHTML('beforebegin',`<section class="list-card background-access" aria-label="${e(t('lockedFarming'))}"><h3>${t('lockedFarming')}</h3><p class="${limited?'hint':'positive'}" role="status">${t(limited?'backgroundLimited':'backgroundAllowed')}</p>${status.background_restricted?`<p class="hint">${t('restrictedBackground')}</p>`:''}${status.power_save?`<p class="hint">${t('systemPowerSave')}</p>`:''}${status.battery_optimized?`<p class="hint">${t('backgroundPermissionHint')}</p><button class="secondary" id="allow-background">${icon('settings')}${t('allowBackground')}</button>`:''}</section>`);
+ }
+ window.NyxorDropdowns.enhance();
+};
+document.addEventListener('click',async event=>{
+ const button=event.target.closest('#allow-background');if(!button||button.disabled)return;
+ button.disabled=true;
+ try{await call('allow_background');}catch(error){toast(error.message);}finally{button.disabled=false;}
+});
 const originalBack=window.nyxorBack;
 window.nyxorBack=()=>{if($('#confirm').open)return originalBack();if(accountSelection.size){accountSelection.clear();render();return true;}if(window.NyxorDropdowns.isOpen()){window.NyxorDropdowns.close();return true;}return originalBack();};
 const resourceRefresh=refresh;let lastMobileRefresh=0;

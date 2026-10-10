@@ -50,9 +50,15 @@ public class BackgroundTests {
     }
     public static class FakeService extends MinerService {
         boolean saver;
+        boolean failSnapshot;
+        final java.util.concurrent.atomic.AtomicInteger snapshots = new java.util.concurrent.atomic.AtomicInteger();
         final CountDownLatch stopped = new CountDownLatch(1);
-        @Override protected String engine(String payload) {
+        @Override protected String engine(String payload) throws Exception {
             if (payload.contains("stop")) stopped.countDown();
+            if (payload.contains("snapshot")) {
+                snapshots.incrementAndGet();
+                if (failSnapshot) throw new Exception("Temporary snapshot failure");
+            }
             return "{\"ok\":true,\"data\":{\"running\":true,\"settings\":{\"energy_saver\":" + saver + "},\"notification\":{\"title\":\"NYXOR\",\"text\":\"Rust\"}}}";
         }
     }
@@ -133,23 +139,89 @@ public class BackgroundTests {
             assertEquals(0, web.getPaddingBottom());
         }
     }
-    @Test public void energySaverReleasesWakeLockAndNormalModeReacquiresIt() throws Exception {
-        ServiceController<FakeService> controller = Robolectric.buildService(FakeService.class).create();
-        FakeService service = controller.get();
-        java.lang.reflect.Method refresh = MinerService.class.getDeclaredMethod("refreshStatus");
-        refresh.setAccessible(true);
+    private void drainService() throws Exception {
+        java.lang.reflect.Field executor = MinerService.class.getDeclaredField("executor");
+        executor.setAccessible(true);
+        ((java.util.concurrent.ScheduledExecutorService) executor.get(null)).submit(() -> {}).get(5, TimeUnit.SECONDS);
+    }
+    private android.os.PowerManager.WakeLock lock(MinerService service) throws Exception {
         java.lang.reflect.Field wake = MinerService.class.getDeclaredField("wakeLock");
         wake.setAccessible(true);
+        return (android.os.PowerManager.WakeLock) wake.get(service);
+    }
+    @Test public void energySaverKeepsCpuAwakeUntilServiceStops() throws Exception {
+        ServiceController<FakeService> controller = Robolectric.buildService(FakeService.class).create();
+        FakeService service = controller.get();
+        service.onStartCommand(new Intent(), 0, 1);
+        drainService();
+        java.lang.reflect.Method refresh = MinerService.class.getDeclaredMethod("refreshStatus");
+        refresh.setAccessible(true);
         java.lang.reflect.Field next = MinerService.class.getDeclaredField("nextStatusAt");
         next.setAccessible(true);
-        android.os.PowerManager.WakeLock lock = (android.os.PowerManager.WakeLock) wake.get(service);
+        android.os.PowerManager.WakeLock lock = lock(service);
         refresh.invoke(service);
         assertTrue(lock.isHeld());
         service.saver = true; next.setLong(service, 0); refresh.invoke(service);
-        assertFalse(lock.isHeld());
+        assertTrue(lock.isHeld());
         service.saver = false; next.setLong(service, 0); refresh.invoke(service);
         assertTrue(lock.isHeld());
         destroy(controller);
         assertFalse(lock.isHeld());
+        shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMinutes(11));
+        assertFalse("Destroyed service must never reacquire its lock", lock.isHeld());
+    }
+    @Test public void screenLockAndUnlockRefreshStatusWithoutStoppingEcoFarm() throws Exception {
+        ServiceController<FakeService> controller = Robolectric.buildService(FakeService.class).create();
+        FakeService service = controller.get(); service.saver = true;
+        service.onStartCommand(new Intent(), 0, 1); drainService();
+        for (String action : new String[]{Intent.ACTION_SCREEN_OFF, Intent.ACTION_SCREEN_ON, Intent.ACTION_USER_PRESENT}) {
+            int before = service.snapshots.get();
+            context.sendBroadcast(new Intent(action));
+            shadowOf(android.os.Looper.getMainLooper()).idle(); drainService();
+            assertTrue("Screen changes must force a fresh status", service.snapshots.get() > before);
+            assertTrue(lock(service).isHeld());
+            assertTrue(BackgroundPreferences.wanted(context));
+        }
+        destroy(controller);
+    }
+    @Test public void cpuLeaseRenewalDoesNotDependOnSuccessfulPythonSnapshots() throws Exception {
+        ServiceController<FakeService> controller = Robolectric.buildService(FakeService.class).create();
+        FakeService service = controller.get();
+        service.onStartCommand(new Intent(), 0, 1); drainService();
+        service.failSnapshot = true;
+        java.lang.reflect.Field next = MinerService.class.getDeclaredField("nextStatusAt");
+        next.setAccessible(true); next.setLong(service, 0);
+        java.lang.reflect.Method refresh = MinerService.class.getDeclaredMethod("refreshStatus");
+        refresh.setAccessible(true); int before = service.snapshots.get(); refresh.invoke(service);
+        assertTrue(service.snapshots.get() > before);
+        // Emulate an expired lease while the separate Python/status queue is unavailable.
+        lock(service).release();
+        shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMinutes(1));
+        assertTrue(lock(service).isHeld());
+        assertTrue(BackgroundPreferences.wanted(context));
+        destroy(controller);
+    }
+    @Test public void backgroundStatusDistinguishesDozeExemptionAndSystemRestriction() throws Exception {
+        android.os.PowerManager power = context.getSystemService(android.os.PowerManager.class);
+        shadowOf(power).setIgnoringBatteryOptimizations(context.getPackageName(), false);
+        assertTrue(BackgroundSupport.status(context).getBoolean("battery_optimized"));
+        shadowOf(power).setIgnoringBatteryOptimizations(context.getPackageName(), true);
+        shadowOf(power).setIsPowerSaveMode(true);
+        shadowOf(power).setIsDeviceIdleMode(true);
+        shadowOf(context.getSystemService(android.app.ActivityManager.class)).setBackgroundRestricted(true);
+        JSONObject state = BackgroundSupport.status(context);
+        assertFalse(state.getBoolean("battery_optimized"));
+        assertTrue(state.getBoolean("power_save"));
+        assertTrue(state.getBoolean("device_idle"));
+        assertTrue(state.getBoolean("background_restricted"));
+    }
+    @Test public void backgroundPermissionTargetsThisPackageAndAlreadyAllowedOpensSettings() {
+        android.os.PowerManager power = context.getSystemService(android.os.PowerManager.class);
+        shadowOf(power).setIgnoringBatteryOptimizations(context.getPackageName(), false);
+        Intent request = BackgroundSupport.permissionIntent(context);
+        assertEquals(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, request.getAction());
+        assertEquals("package:" + context.getPackageName(), request.getDataString());
+        shadowOf(power).setIgnoringBatteryOptimizations(context.getPackageName(), true);
+        assertEquals(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, BackgroundSupport.permissionIntent(context).getAction());
     }
 }

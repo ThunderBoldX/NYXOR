@@ -106,7 +106,7 @@ A dark palette, moon accents, rounded cards and smooth transitions. One place fo
 - Twitch game artwork replaces initials on the current-stream card.
 - Hold a watched-channel row to select and delete history entries. Streamer priorities stay unchanged.
 - Activity records each confirmed claim, keeps the latest 500 rewards and filters them by game.
-- Optional **Energy saver** reduces network checks, screen updates and animations. On Android it releases the wake lock, so background farming may pause; turn it off for more consistent farming. Actual battery savings vary by phone and network.
+- Optional **Energy saver** reduces network checks, screen updates and animations. Locally prepared Android 2.4.3 keeps the CPU awake while farming in this mode; earlier Android previews allow background sleep. Actual battery savings vary by phone and network.
 
 ## Installation
 

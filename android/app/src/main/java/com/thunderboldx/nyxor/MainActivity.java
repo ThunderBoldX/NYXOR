@@ -92,6 +92,15 @@ public class MainActivity extends Activity {
                         copy.get(5, TimeUnit.SECONDS);
                         answer = "{\"ok\":true,\"data\":{}}";
                     }
+                    else if (action.equals("allow_background")) {
+                        uiAction(() -> {
+                            try { startActivity(BackgroundSupport.permissionIntent(MainActivity.this)); }
+                            catch (android.content.ActivityNotFoundException unavailable) {
+                                startActivity(BackgroundSupport.appSettings(MainActivity.this));
+                            }
+                        });
+                        answer = "{\"ok\":true,\"data\":{}}";
+                    }
                     else if (action.equals("background_settings") || action.equals("notification_settings")) {
                         uiAction(() -> {
                             Intent settings = action.equals("notification_settings")

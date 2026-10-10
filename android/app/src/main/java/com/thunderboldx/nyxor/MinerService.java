@@ -16,9 +16,37 @@ public class MinerService extends Service {
     private boolean started;
     private Future<?> monitor;
     private volatile long nextStatusAt;
+    private final Handler powerHandler = new Handler(Looper.getMainLooper());
+    // Renew independently of Python: a slow snapshot must not let the CPU lease expire.
+    private final Runnable powerHeartbeat = new Runnable() {
+        @Override public void run() {
+            synchronized (MinerService.this) {
+                if (stopping || !started) return;
+                wakeLock.acquire(10 * 60 * 1000L);
+                powerHandler.postDelayed(this, 60000);
+            }
+        }
+    };
     private final BroadcastReceiver screenReceiver = new BroadcastReceiver() {
         @Override public void onReceive(Context context, Intent intent) {
-            if (!stopping && started) { nextStatusAt = 0; executor.execute(() -> refreshStatus()); }
+            if (!stopping && started) {
+                nextStatusAt = 0;
+                try {
+                    String action = intent.getAction();
+                    String event = Intent.ACTION_SCREEN_OFF.equals(action) ? "screen_off"
+                        : Intent.ACTION_SCREEN_ON.equals(action) ? "screen_on"
+                        : Intent.ACTION_USER_PRESENT.equals(action) ? "unlocked"
+                        : PowerManager.ACTION_DEVICE_IDLE_MODE_CHANGED.equals(action) ? "idle_changed" : "power_changed";
+                    JSONObject command = new JSONObject().put("action", "background_event").put("event", event)
+                        .put("power", BackgroundSupport.status(context).put("cpu_held", wakeLock.isHeld()));
+                    // Capture power state before queuing: it may change again while Python is busy.
+                    executor.execute(() -> {
+                        if (stopping) return;
+                        try { engine(command.toString()); } catch (Exception ignored) {}
+                        refreshStatus();
+                    });
+                } catch (Exception unavailable) { executor.execute(() -> refreshStatus()); }
+            }
         }
     };
 
@@ -46,7 +74,10 @@ public class MinerService extends Service {
         wakeLock = getSystemService(PowerManager.class).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "NYXOR:Miner");
         wakeLock.setReferenceCounted(false);
         IntentFilter screen = new IntentFilter(Intent.ACTION_SCREEN_ON);
+        screen.addAction(Intent.ACTION_SCREEN_OFF);
         screen.addAction(Intent.ACTION_USER_PRESENT);
+        screen.addAction(PowerManager.ACTION_DEVICE_IDLE_MODE_CHANGED);
+        screen.addAction(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED);
         if (Build.VERSION.SDK_INT >= 33) registerReceiver(screenReceiver, screen, Context.RECEIVER_NOT_EXPORTED);
         else registerReceiver(screenReceiver, screen);
     }
@@ -86,6 +117,8 @@ public class MinerService extends Service {
         BackgroundPreferences.setWanted(this, true);
         startForeground(71, notification(new JSONObject()));
         wakeLock.acquire(10 * 60 * 1000L);
+        powerHandler.removeCallbacks(powerHeartbeat);
+        powerHandler.postDelayed(powerHeartbeat, 60000);
         getSystemService(NotificationManager.class).cancel(72);
         executor.execute(() -> {
             if (stopping) return;
@@ -128,8 +161,7 @@ public class MinerService extends Service {
                 JSONObject settings = data.optJSONObject("settings");
                 boolean saver = settings != null && settings.optBoolean("energy_saver");
                 nextStatusAt = SystemClock.elapsedRealtime() + (saver ? 60000 : 15000);
-                if (saver) { if (wakeLock.isHeld()) wakeLock.release(); }
-                else wakeLock.acquire(10 * 60 * 1000L);
+                // Energy saver reduces polling and animations, not background CPU access.
                 JSONObject status = data.optJSONObject("notification");
                 getSystemService(NotificationManager.class).notify(71, notification(status == null ? new JSONObject() : status));
             }
@@ -137,6 +169,7 @@ public class MinerService extends Service {
     }
     @Override public synchronized void onDestroy() {
         stopping = true;
+        powerHandler.removeCallbacks(powerHeartbeat);
         unregisterReceiver(screenReceiver);
         if (monitor != null) monitor.cancel(false);
         // Preserve 'wanted' after system teardown; explicit stop cleared it earlier.

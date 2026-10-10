@@ -72,3 +72,7 @@
 .mobile-upgrade .farming-accounts{margin:12px 0;gap:6px;flex-wrap:wrap}
 .mobile-upgrade .farming-accounts .pill{font-size:10px}
 .mobile-upgrade #confirm-text{white-space:pre-line}
+.mobile-upgrade .background-access{padding:22px;margin:18px 0}
+.mobile-upgrade .background-access h3{margin:0;font-size:16px}
+.mobile-upgrade .background-access .hint{margin:12px 0;overflow-wrap:anywhere}
+.mobile-upgrade .background-access button{max-width:100%;white-space:normal}

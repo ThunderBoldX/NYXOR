@@ -23,6 +23,7 @@ const server=http.createServer((req,res)=>{
    await page.goto(url+'/?demo=1');await page.locator('.hero').waitFor();
    await page.evaluate(language=>{
     demoState.settings.language=language;
+    demoState.background={battery_optimized:false,background_restricted:false,power_save:false,device_idle:false};
     demoState.state.game_art_url='https://static-cdn.jtvnw.net/ttv-boxart/263490-144x192.jpg';
     demoState.watched.push({login:'nightwatch',display_name:'Nightwatch',game:'Warframe',earned:180,balance:4850,last_seen:new Date().toISOString()},
       {login:'duskplays',display_name:'DuskPlays',game:'Rust',earned:90,balance:1290,last_seen:new Date().toISOString()});
@@ -63,6 +64,22 @@ const server=http.createServer((req,res)=>{
    await page.locator('#nav [data-go=settings]').click();await page.locator('[data-setting=energy_saver]').click();
    await page.waitForFunction(()=>document.documentElement.classList.contains('energy-saver'));
    await page.locator('#toast.visible').waitFor({state:'detached'});await capture('settings');
+   await page.evaluate(async()=>{
+    demoState.background.battery_optimized=true;
+    await refresh(true);
+   });
+   await page.locator('#allow-background').waitFor();
+   await page.evaluate(()=>{window.backgroundRequests=0;window.savedBackgroundCall=call;call=async function(action,values){if(action==='allow_background'){window.backgroundRequests++;return {};}return window.savedBackgroundCall(action,values);};});
+   await page.locator('#allow-background').click();assert.equal(await page.evaluate(()=>window.backgroundRequests),1);
+   await page.evaluate(()=>{call=window.savedBackgroundCall;});
+   await page.locator('.background-access').scrollIntoViewIfNeeded();await capture('background-settings');
+   for(const width of [320,390,768]){await page.setViewportSize({width,height:1040});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Background settings overflow');}
+   await page.setViewportSize({width:390,height:1040});
+   await page.evaluate(async()=>{const background=demoState.background;background.battery_optimized=false;background.power_save=true;await refresh(true);});
+   assert.equal(await page.locator('#allow-background').count(),0);
+   assert(await page.locator('.background-access .positive').count());
+   assert(await page.locator('.background-access').innerText().then(s=>s.includes(language==='en'?'System battery saver':'системне енергозбереження')));
+   await page.evaluate(async()=>{demoState.background.power_save=false;await refresh(true);});
    await page.evaluate(async()=>{const sample=structuredClone(demoState);sample.account='moonrunner';sample.queue=['World of Tanks'];sample.state.game='World of Tanks';sample.state.channel='TankStreamer';sample.state.active_drops=[];sample.auto_farm=false;window.NyxorMobileDemo.profiles.set('demo-2',sample);await refresh(true);});
    await page.locator('[data-go=accounts]').click();await capture('accounts');
    await page.locator('[data-account-row=default] h2').click({delay:600});assert.equal(await page.locator('.account-check:checked').count(),1);
@@ -84,6 +101,6 @@ const server=http.createServer((req,res)=>{
    const banner=await browser.newPage({viewport:{width:1280,height:440},deviceScaleFactor:1});
    await banner.goto(url+'/nyxor-banner.svg');await banner.screenshot({path:process.env.BANNER_PREVIEW});
   }
-  console.log('16 Android screenshots; 7 routes at 320/360/390/412/768px; hold selection, cancel, uncheck-last, bulk deletion, empty-profile recovery, independent account lists, reward artwork, game filter, dropdowns and energy mode checks passed.');
+  console.log('18 Android screenshots; 7 routes at 320/360/390/412/768px; background access states and explicit permission action; hold selection, cancel, uncheck-last, bulk deletion, empty-profile recovery, independent account lists, reward artwork, game filter, dropdowns and energy mode checks passed.');
  }finally{await browser.close();server.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;server.close();});

@@ -25,6 +25,32 @@ class AndroidAccountsTests(unittest.IsolatedAsyncioTestCase):
     async def add(self):
         return (await self.manager.dispatch({'action':'account_add'}))['active_account_id']
 
+    async def test_screen_diagnostics_are_validated_and_saved_only_for_running_profiles(self):
+        second = await self.add()
+        for identity in ('default', second):
+            runtime = self.manager.runtime(identity)
+            self.manager.slots[identity][0].load('constants').COOKIES_PATH.touch()
+            await runtime.dispatch({'action':'queue','items':['Rust']})
+            runtime.mine = lambda: asyncio.sleep(100)
+            await self.manager.dispatch({'action':'start','account_id':identity})
+        await asyncio.sleep(0)
+        await self.manager.dispatch({'action':'stop','account_id':second})
+        power = dict(cpu_held=True,battery_optimized=False,background_restricted=False,power_save=False,device_idle=False)
+        await self.manager.dispatch({'action':'background_event','event':'screen_off','power':power})
+        first = self.manager.snapshot('default')['events']
+        event = next(e for e in first if e.get('type') == 'background')
+        self.assertEqual(event['event'], 'screen_off')
+        self.assertEqual(event['power'], power)
+        self.assertIn('процесор активний: так', event['message'])
+        self.assertFalse(any(e.get('type') == 'background' for e in self.manager.snapshot(second)['events']))
+        self.assertTrue(self.manager.snapshot('default')['running'])
+        await self.manager.dispatch({'action':'settings','values':{'language':'en'}})
+        await self.manager.dispatch({'action':'background_event','event':'idle_changed','power':{**power,'device_idle':True}})
+        self.assertTrue(any('Android sleep mode: yes' in e.get('message', '') for e in self.manager.snapshot('default')['events']))
+        for bad in ({'event':'unknown','power':power}, {'event':[],'power':power}, {'event':'screen_off','power':{**power,'cpu_held':'yes'}}):
+            with self.assertRaises(ValueError):
+                await self.manager.dispatch({'action':'background_event',**bad})
+
     async def test_upgrade_preserves_legacy_login_lists_history_and_boot_preferences(self):
         root = self.root/'legacy-upgrade'
         root.mkdir()

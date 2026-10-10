@@ -181,6 +181,31 @@ class AndroidAccounts:
                 return self.snapshot()
             if action == 'account_snapshot':
                 return self.snapshot(data.get('account_id') or self.index['active'])
+            if action == 'background_event':
+                messages = {
+                    'screen_off': ('Екран заблоковано', 'Screen locked'),
+                    'screen_on': ('Екран увімкнено', 'Screen turned on'),
+                    'unlocked': ('Телефон розблоковано', 'Phone unlocked'),
+                    'idle_changed': ('Змінився режим сну Android', 'Android sleep mode changed'),
+                    'power_changed': ('Змінилося системне енергозбереження', 'System battery saver changed'),
+                }
+                event, power = data.get('event'), data.get('power')
+                if not isinstance(event, str) or event not in messages or not isinstance(power, dict) or any(
+                    not isinstance(power.get(key), bool) for key in
+                    ('cpu_held', 'battery_optimized', 'background_restricted', 'power_save', 'device_idle')
+                ):
+                    raise ValueError('Invalid background event')
+                for record in self.index['profiles']:
+                    runtime = self.runtime(record['id'])
+                    if not runtime.snapshot()['running']:
+                        continue
+                    english = self.index['preferences'].get('language') == 'en'
+                    yes, no = ('yes', 'no') if english else ('так', 'ні')
+                    label = ('CPU awake', 'sleep restrictions', 'system battery saver', 'Android sleep mode') if english else ('процесор активний', 'обмеження сну', 'системне енергозбереження', 'режим сну Android')
+                    values = (power['cpu_held'], power['battery_optimized'] or power['background_restricted'], power['power_save'], power['device_idle'])
+                    message = messages[event][int(english)] + ' · ' + ' · '.join(f'{k}: {yes if v else no}' for k, v in zip(label, values))
+                    self.slots[record['id']][0].load('nyxor.worker.runtime').add_event('background', message, event=event, power=power)
+                return self.snapshot()
             if action == 'account_add':
                 if len(self.index['profiles']) >= 20:
                     raise ValueError('Up to 20 accounts are supported')

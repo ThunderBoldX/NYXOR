@@ -135,8 +135,13 @@ render=function(animate=false){
 if(model)render();
 
 const mobileFinalRender=render;
+Object.assign(text.uk,{dropStalled:'Twitch поки не підтверджує нові хвилини дропів. NYXOR оновлює перегляд цього ж каналу.'});
+Object.assign(text.en,{dropStalled:'Twitch has not confirmed new Drop minutes yet. NYXOR is refreshing playback on this channel.'});
 render=function(animate=false){
  window.NyxorDropdowns.close();mobileFinalRender(animate);
+ if(route==='home'&&model.running&&model.state?.mode==='drops'&&model.state.drop_tracking==='stalled'){
+  document.querySelector('.hero')?.insertAdjacentHTML('afterend',`<p class="error-banner" role="status" data-drop-stalled>${t('dropStalled')}</p>`);
+ }
  const battery=$('#background-settings'),status=model?.background;
  if(route==='settings'&&battery&&status){
   const limited=status.battery_optimized||status.background_restricted;

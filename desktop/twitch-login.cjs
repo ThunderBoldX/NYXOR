@@ -79,9 +79,10 @@ class Observation{
  }
 }
 class TwitchLogin{
- constructor(root,engine){
+ constructor(root,engine,renewal=null){
   this.root=path.resolve(root);this.profile=path.join(this.root,'twitch-profile');this.engine=engine;
   this.generation=0;this.accepted=null;this.renewTimer=null;this.failures=0;
+  this.renewal=renewal;this.refreshWork=null;this.retryAt=0;
   try{const saved=JSON.parse(fs.readFileSync(path.join(this.root,'engine/browser-session.json'),'utf8'));if(saved.headers?.['client-id']===WEB_CLIENT&&saved.expires_at>Date.now()/1000+30)this.accepted=saved;}catch{}
  }
  async status(code){return this.engine.request({action:'browser_error',code}).catch(()=>{});}
@@ -190,10 +191,38 @@ class TwitchLogin{
   if(!this.accepted){
    try{this.accepted=JSON.parse(fs.readFileSync(path.join(this.root,'engine/browser-session.json'),'utf8'));}catch{}
   }
-  if(this.accepted?.headers?.['client-id']===WEB_CLIENT&&this.accepted.expires_at>Date.now()/1000+30)return;
-  await this.status('browser_expired');throw failure('browser_expired');
+ if(this.accepted?.headers?.['client-id']!==WEB_CLIENT){await this.status('browser_invalid');throw failure('browser_invalid');}
+ if(this.accepted.expires_at>Date.now()/1000+(this.renewal?120:30))return;
+ if(!this.renewal){await this.status('browser_expired');throw failure('browser_expired');}
+ if(this.refreshWork)return this.refreshWork;
+ if(this.work)return;
+ if(this.retryAt>Date.now())throw failure('connection');
+ const generation=this.generation,previous=this.accepted;
+ this.refreshWork=(async()=>{
+  await this.engine.request({action:'browser_renewing'});
+  try{
+   const context=await this.renewal.renew(previous);
+   if(generation!==this.generation)throw failure('browser_closed');
+   const response=await this.engine.request({action:'browser_import',context,renewal:true});
+   if(!response.ok)throw failure(response.error_code||'browser_rejected');
+   if(generation!==this.generation)throw failure('browser_closed');
+   this.accepted=context;this.retryAt=0;this.failures=0;
+  }catch(error){
+   if(generation!==this.generation)return;
+   this.retryAt=Date.now()+60000;this.failures++;
+   const code=error.code||'connection';await this.status(code);
+   if(['browser_timeout','connection','dns','timeout','tls','browser_closed'].includes(code)){
+    if(previous.expires_at>Date.now()/1000+30)return;
+    throw failure('connection');
+   }
+   throw error;
+  }
+ })().finally(()=>{this.refreshWork=null;});
+ return this.refreshWork;
  }
+ cancelRenewal(){if(this.refreshWork){++this.generation;this.renewal?.cancel();}}
  async close(preserveContext=false){
+  this.renewal?.cancel();
   ++this.generation;clearTimeout(this.renewTimer);if(!preserveContext)this.accepted=null;this.retryAt=0;this.failures=0;
   const protocol=this.protocol,child=this.child;this.protocol=null;this.child=null;
   if(protocol&&!protocol.closed){await protocol.command('Browser.close').catch(()=>{});protocol.close();}
@@ -205,6 +234,7 @@ class TwitchLogin{
  }
  async logout(){
   await this.close();
+  await this.renewal?.clear();
   if(fs.existsSync(this.profile))fs.writeFileSync(path.join(this.profile,'logout-required'),'1');
   await this.clearProfile();
  }

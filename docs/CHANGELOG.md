@@ -1,3 +1,14 @@
+## Android and Windows 2.4.4 preview — shared playback and saved access
+
+- Package the same verified campaign selection, equal-coverage channel retention and 20-second full-window HLS playback for both platforms. Retain Android CPU/background support, account isolation, reward artwork and history controls.
+- Add the confirmed-progress stall message to Android. Keep saving modes' reduced discovery/UI refresh without slowing required playback.
+- Renew desktop web proof proactively through a bounded hidden in-app page, with a separate nonpersistent memory session per profile. Close and clear it immediately; never open external Chrome for renewal.
+- Validate the same account and protected catalog before atomically replacing saved proof. Preserve the existing cookie file. Deduplicate renewal, reject identity changes, discard cancelled/late responses and retain login during transient network/rate-limit/server failures.
+- Stop/sign-out/deletion/Quit cancel renewal. Revoked access or an interactive Twitch check can still require reconnecting.
+- Bump Android versionCode to 13 with the existing certificate; keep desktop administrator setup and normal-user app execution.
+
+Validation: 114 Python tests, 27 desktop tests, 53 regressions loaded from the frozen Windows engine; Android package tests for selection (28), accounts (6), playback (10) and progress (6), 14 Android lifecycle tests and zero lint errors. Real packaged desktop modules and frozen identity/catalog validation renewed access for the existing account without copying credentials to disk or modifying the installed profile. Short playback credit was already confirmed on WorldofTanks; overnight renewal and physical-phone screen-off credit remain unverified. Prepared locally; public Windows remains 2.4.2 and Android 2.4.0 until publication.
+
 ## Windows 2.4.3 preview — restore confirmed Drops progress
 
 - Keep playback on a 20-second cadence in minimal-resource and energy-saver modes. Discovery and interface updates remain reduced.

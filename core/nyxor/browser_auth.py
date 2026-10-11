@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import asyncio
 import math
 import os
 import re
@@ -74,7 +75,14 @@ def stored_client():
     return ClientType.ANDROID_APP
 
 
-async def import_context(data, *, renewal=False):
+def check_response(status):
+    if status == 429 or status >= 500:
+        raise BrowserAuthError('connection')
+    if status != 200:
+        raise BrowserAuthError('browser_rejected')
+
+
+async def _verify_context(data, *, renewal=False):
     """Validate both identity and real protected catalog before replacing a login."""
     from constants import COOKIES_PATH, ClientType, GQL_QUERIES
     from nyxor.network import client_session
@@ -83,8 +91,7 @@ async def import_context(data, *, renewal=False):
     # A dummy jar makes validation independent of the currently saved account.
     async with client_session(cookie_jar=aiohttp.DummyCookieJar(), timeout=aiohttp.ClientTimeout(total=20)) as session:
         async with session.get("https://id.twitch.tv/oauth2/validate", headers={"Authorization": f"OAuth {token}"}, allow_redirects=False) as response:
-            if response.status != 200:
-                raise BrowserAuthError("browser_rejected")
+            check_response(response.status)
             account = await response.json()
         if account.get("client_id") != ClientType.WEB.CLIENT_ID or not re.fullmatch(r"[0-9]+", str(account.get("user_id", ""))):
             raise BrowserAuthError("browser_rejected")
@@ -96,8 +103,7 @@ async def import_context(data, *, renewal=False):
                     or not cookies.get("auth-token") or cookies["auth-token"].value != token):
                 raise BrowserAuthError("browser_account_changed")
         async with session.post("https://gql.twitch.tv/gql", json=GQL_QUERIES["Campaigns"], headers=request_headers(data), allow_redirects=False) as response:
-            if response.status != 200:
-                raise BrowserAuthError("browser_rejected")
+            check_response(response.status)
             result = await response.json()
         if isinstance(result, list) and len(result) == 1:
             result = result[0]
@@ -106,6 +112,18 @@ async def import_context(data, *, renewal=False):
         user = (result.get("data") or {}).get("currentUser") or {}
         if not isinstance(user.get("dropCampaigns"), list):
             raise BrowserAuthError("browser_catalog")
+    return account
+
+
+async def import_context(data, *, renewal=False):
+    from constants import COOKIES_PATH, ClientType
+    data = validate_context(data)
+    try:
+        account = await _verify_context(data, renewal=renewal)
+    except (aiohttp.ClientError, asyncio.TimeoutError) as error:
+        from nyxor.network import error_code
+        raise BrowserAuthError(error_code(error) or 'connection') from None
+    token = data['headers']['authorization'][6:]
     # Persist the context first: on failure the previous cookie file survives.
     previous = context_path().read_bytes() if context_path().exists() else None
     atomic_save(context_path(), data)

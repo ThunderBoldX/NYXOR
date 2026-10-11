@@ -51,6 +51,11 @@ const server=http.createServer((req,res)=>{
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
    }
    await page.setViewportSize({width:390,height:1040});await capture('overview');
+   await page.evaluate(async()=>{demoState.state.mode='drops';demoState.state.drop_tracking='stalled';await refresh(true);});
+   assert.equal(await page.locator('[data-drop-stalled]').count(),1);
+   assert((await page.locator('[data-drop-stalled]').textContent()).includes(language==='uk'?'не підтверджує':'not confirmed'));
+   await page.evaluate(async()=>{demoState.state.drop_tracking='waiting';await refresh(true);});
+   assert.equal(await page.locator('[data-drop-stalled]').count(),0);
    await page.locator('.shop-grid').evaluate(el=>window.scrollTo(0,el.previousElementSibling.previousElementSibling.getBoundingClientRect().top+scrollY-24));
    await capture('rewards');
    await page.locator('#nav [data-go=pointsPage]').click();await select('points-order','quiet');

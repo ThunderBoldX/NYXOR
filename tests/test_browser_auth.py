@@ -81,6 +81,35 @@ class BrowserAuthTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(json.loads(browser_auth.context_path().read_text()),previous)
         self.assertEqual(constants.COOKIES_PATH.read_bytes(),b'previous-session')
 
+    async def test_temporary_twitch_error_and_network_failure_preserve_login(self):
+        previous=context()
+        browser_auth.atomic_save(browser_auth.context_path(),previous)
+        constants.COOKIES_PATH.write_bytes(b'previous-session')
+        for status in (429, 500, 503):
+            manager=self.session({'data':{'currentUser':{'dropCampaigns':[]}}})
+            manager.__aenter__.return_value.get.return_value=response(status,{})
+            with patch.object(network,'client_session',return_value=manager):
+                with self.assertRaises(browser_auth.BrowserAuthError) as caught:
+                    await browser_auth.import_context(context())
+            self.assertEqual(caught.exception.code,'connection')
+        with patch.object(browser_auth,'_verify_context',side_effect=aiohttp.ClientConnectionError('offline fixturetoken')):
+            with self.assertRaises(browser_auth.BrowserAuthError) as caught:
+                await browser_auth.import_context(context())
+        self.assertEqual(caught.exception.code,'connection')
+        self.assertNotIn('fixturetoken',str(caught.exception))
+        self.assertEqual(json.loads(browser_auth.context_path().read_text()),previous)
+        self.assertEqual(constants.COOKIES_PATH.read_bytes(),b'previous-session')
+
+    async def test_revoked_token_requires_reconnection_without_erasing_saved_profile(self):
+        constants.COOKIES_PATH.write_bytes(b'previous-session')
+        manager=self.session({})
+        manager.__aenter__.return_value.get.return_value=response(401,{})
+        with patch.object(network,'client_session',return_value=manager):
+            with self.assertRaises(browser_auth.BrowserAuthError) as caught:
+                await browser_auth.import_context(context())
+        self.assertEqual(caught.exception.code,'browser_rejected')
+        self.assertEqual(constants.COOKIES_PATH.read_bytes(),b'previous-session')
+
     async def test_renewal_refreshes_proof_without_replacing_the_cookie_jar(self):
         catalog={'data':{'currentUser':{'dropCampaigns':[]}}}
         with patch.object(network,'client_session',return_value=self.session(catalog)):

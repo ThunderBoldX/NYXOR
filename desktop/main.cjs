@@ -1,9 +1,10 @@
 'use strict';
-const {app,BrowserWindow,ipcMain,protocol,net,Menu,Tray,nativeImage,shell,clipboard,powerSaveBlocker,screen}=require('electron');
+const {app,BrowserWindow,session,ipcMain,protocol,net,Menu,Tray,nativeImage,shell,clipboard,powerSaveBlocker,screen}=require('electron');
 const path=require('node:path'),fs=require('node:fs'),{pathToFileURL}=require('node:url');
 const os=require('node:os');
 const {Engine,validate,twitchURL}=require('./bridge.cjs');
 const {TwitchLogin}=require('./twitch-login.cjs');
+const {createRenewal}=require('./session-renewal.cjs');
 const {Accounts}=require('./accounts.cjs');
 const {displayBounds,shouldStartFarming}=require('./window-options.cjs');
 const smokeArg=process.argv.find(arg=>arg.startsWith('--smoke-dir='));
@@ -55,6 +56,7 @@ async function request(data){
 }
 async function requestFor(slot,data){
  const {engine,login}=slot;
+ if(data.action==='stop')login.cancelRenewal();
  if(data.action==='auth'){
   await login.start(true);return engine.request({action:'snapshot'});
  }
@@ -213,7 +215,7 @@ else{
   accounts=new Accounts(app.getPath('userData'),root=>({
    engine:app.isPackaged?new Engine(path.join(process.resourcesPath,'engine/nyxor-engine.exe'),[path.join(root,'engine')],{env:{...process.env,PYTHONUTF8:'1'}})
     :new Engine(process.env.NYXOR_PYTHON||'python',[path.join(__dirname,'backend.py'),path.join(root,'engine')],{env:{...process.env,PYTHONUTF8:'1'}}),
-   createLogin:engine=>new TwitchLogin(root,engine)
+   createLogin:engine=>new TwitchLogin(root,engine,createRenewal(root,{BrowserWindow,session}))
   }));
   await accounts.initialize();engine=accounts.index.active?accounts.get().engine:null;login=accounts.index.active?accounts.get().login:null;
   ipcMain.handle('nyxor:request',async(event,payload)=>{

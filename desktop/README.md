@@ -2,11 +2,19 @@
 
 [Project](../README.md) · [Українська](README_UK.md)
 
-The same moon, colors, cards, animations and farming engine as Android, adapted to a desktop window with a sidebar. This is the **2.4.3 Windows preview**, for **Windows 10/11 x64**. Other desktop operating systems are not packaged or tested.
+The same moon, colors, cards, animations and farming engine as Android, adapted to a desktop window with a sidebar. This is the **2.4.4 Windows preview**, for **Windows 10/11 x64**. Other desktop operating systems are not packaged or tested.
 
 ![Windows overview, sample data](../docs/screenshots/windows/en/overview.png)
 
 Screenshots show the actual interface in demo mode; channels, balances and rewards are fictional examples. The installed app starts with an empty account and your own lists.
+
+## Saved login and shared farming in 2.4.4
+
+Saved Twitch access now renews before its short web proof expires. A hidden, muted Twitch page inside NYXOR runs for at most 25 seconds, uses a separate in-memory session for that account, and closes immediately after verified capture. No external Chrome window opens for renewal. The backend validates the identity and protected Drops catalog before atomically saving the new proof; the account cookie file is retained. Network failures keep the login and retry path. Stop, sign-out, account deletion and Quit cancel pending renewal.
+
+Both Windows and Android use the same channel selection and playback: prefer a verified streamer covering more eligible campaigns, keep the current stream on equal coverage, refresh the live segment window every 20 seconds even in saving modes, and show only Twitch-confirmed minutes. Each account keeps its own eligibility and progress; minutes are never pooled between accounts.
+
+A live test of the packaged native modules and frozen Python verification confirmed refreshed same-account access to the protected catalog, without copying credentials to test files or changing the installed profile. Persistence, cancellation and isolation are covered by fixture tests. Long-running overnight renewal remains unverified. This preview is prepared locally; the public download below remains 2.4.2 until publication.
 
 ## Drops progress in 2.4.3
 
@@ -27,7 +35,7 @@ Current Drops and claimed rewards display the benefit images returned by Twitch,
 
 ## Install and use
 
-1. Run `NYXOR-Windows-2.4.3-preview-Setup.exe`, approve the Windows administrator prompt and choose your installation directory. Python and Node.js are bundled. **Google Chrome must be installed for Twitch login.**
+1. Run `NYXOR-Windows-2.4.4-preview-Setup.exe`, approve the Windows administrator prompt and choose your installation directory. Python and Node.js are bundled. **Google Chrome must be installed for Twitch login.**
 2. Open NYXOR from Start or the desktop shortcut. In **Settings → Connect Twitch**, sign in on Twitch in the separate Chrome window. NYXOR verifies the account and protected Drops catalog before saving the session. Enter your password only on Twitch's website.
 3. Add Drops categories in **Games**, channels in **Streamers**, or categories in **Points → Games for points**. Press **Start farming** on Overview.
 4. Closing the window hides it in the system tray. Minimizing also hides it in the tray. Single-click the moon to reopen it; right-click for start, stop and quit.
@@ -64,7 +72,7 @@ For automatic farming after Windows login, enable **Start with Windows → Start
 - **Energy saver** uses the shared engine's slower network checks and screen updates and reduces animations. It also allows Windows to sleep. Savings depend on the hardware and network.
 - Hover over the tray icon for active accounts, games and channels. Tray start/stop controls the selected account. Selecting **Quit NYXOR** stops all engines and exits.
 
-Chrome opens only after you explicitly choose Connect Twitch and closes after the account and catalog are verified. Farming and startup reuse the saved session without a running browser. The separate profile is saved in `%APPDATA%\nyxor-desktop\twitch-profile`; your personal browser profile is never used. Signing out clears the owned profile. If the saved Twitch context expires, that account pauses and asks you to reconnect. Chrome never reopens automatically.
+Chrome opens only after an explicit Connect Twitch action and closes after the account and catalog are verified. Automatic proof renewal uses the short-lived hidden NYXOR page described above. The separate Chrome profile is saved in `%APPDATA%\nyxor-desktop\twitch-profile`; your personal browser profile is never used. Signing out clears the owned profile and saved access. If Twitch revokes access or requires an interactive check, the account can still require reconnection.
 
 The original account keeps `%APPDATA%\nyxor-desktop\engine` and its existing Chrome profile. Additional profiles store their data under `%APPDATA%\nyxor-desktop\accounts\<profile-id>\engine`, with a separate `twitch-profile` beside each engine folder. The private `accounts.json` index stores selection, startup preferences and public identity; it does not contain OAuth tokens. Windows and Android accounts/settings are independent; no automatic synchronization is implemented.
 
@@ -99,7 +107,7 @@ After packaging, set `NYXOR_NSIS_COMPILER` to the downloaded `makensis.exe` and 
 
 To check the frozen engine too, set `NYXOR_TEST_ENGINE` to the absolute path of `desktop/engine/nyxor-engine/nyxor-engine.exe` and rerun `test_desktop_backend.py`. The tests use temporary data without Twitch credentials.
 
-Run `python desktop/tests/frozen-playback.py` with the build environment's Python to exercise playback, confirmed progress and channel selection directly from the built engine's PYZ archive. Core imports cannot fall back to source files.
+Run `python desktop/tests/frozen-playback.py` with the build environment's Python to exercise playback, confirmed progress, channel selection and saved-login validation directly from the built engine's PYZ archive. Core imports cannot fall back to source files.
 
 The packaged executable accepts `--smoke-dir=ABSOLUTE_PATH` for an isolated integration check. It writes a result and screenshots, makes no Windows startup changes, and exits. This checks the native bridge, embedded engine, saved lists/settings and window layout, without connecting a real account.
 

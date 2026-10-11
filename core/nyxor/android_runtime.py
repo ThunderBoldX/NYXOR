@@ -56,11 +56,11 @@ def request(payload: str) -> str:
         return json.dumps({"ok": True, "data": result}, ensure_ascii=False, default=str)
     except concurrent.futures.TimeoutError:
         future.cancel()
-        return json.dumps({"ok": False, "error": "Connection timed out. Please retry."})
+        return json.dumps({"ok": False, "error": "Connection timed out. Please retry.", "error_code": "timeout"})
     except Exception as error:
         code = getattr(error, "code", "")
         result = {"ok": False, "error": str(error)[:240]}
-        if code in {"auth_missing", "auth_invalid", "rate_limited", "network", "twitch_error", "unknown", "browser_account_changed", "browser_expired", "browser_invalid", "browser_catalog", "browser_rejected"}:
+        if code in {"auth_missing", "auth_invalid", "rate_limited", "network", "twitch_error", "unknown", "browser_account_changed", "browser_expired", "browser_invalid", "browser_catalog", "browser_rejected", "connection", "dns", "timeout", "tls"}:
             result["error_code"] = code
         return json.dumps(result, ensure_ascii=False)
 

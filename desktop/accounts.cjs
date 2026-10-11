@@ -127,7 +127,11 @@ class Accounts{
  async maintain(){
   if(this.deletion)return;
   for(const slot of this.slots.values())if(slot.data?.running&&slot.data.auth_mode==='browser'){
-   try{await slot.login.ensure();}catch{await slot.engine.request({action:'stop'});await slot.login.status('browser_expired');}
+   try{await slot.login.ensure();}catch(error){
+    // Network/proof renewal delays preserve the login and automatic retry.
+    if(['connection','dns','timeout','tls','browser_timeout','browser_closed'].includes(error.code))continue;
+    await slot.engine.request({action:'stop'});await slot.login.status(error.code||'browser_expired');
+   }
   }
  }
  async stopAll(){await Promise.all([...this.slots.values()].map(async slot=>{await slot.login.close();await slot.engine.stop();}));}

@@ -48,7 +48,7 @@ loader = FrozenCore()
 sys.meta_path.insert(0, loader)
 sys.path.insert(0, str(ROOT / 'tests'))
 suite = unittest.defaultTestLoader.loadTestsFromNames([
-    'test_playback', 'test_drop_progress', 'test_drop_selection',
+    'test_playback', 'test_drop_progress', 'test_drop_selection', 'test_browser_auth',
 ])
 result = unittest.TextTestRunner(verbosity=2).run(suite)
 assert {'nyxor_player', 'nyxor.drop_progress', 'nyxor.drop_selection', 'nyxor_core'} <= loader.loaded

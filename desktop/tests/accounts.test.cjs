@@ -15,6 +15,19 @@ function fixture(){
 }
 const execute=(slot,p)=>slot.engine.request(p);
 
+test('Temporary session renewal failure preserves farming; revoked access pauses only that profile',async()=>{
+ const f=fixture();try{
+  await f.manager.initialize();const slot=f.manager.get(),errors=[];
+  f.made[0].state.auth_mode='browser';f.made[0].state.running=true;await f.manager.snapshot();
+  slot.login.status=async code=>errors.push(code);
+  slot.login.ensure=async()=>{throw Object.assign(new Error('offline'),{code:'connection'});};
+  await f.manager.maintain();assert(f.made[0].state.running);assert.deepEqual(errors,[]);
+  slot.login.ensure=async()=>{throw Object.assign(new Error('revoked'),{code:'browser_rejected'});};
+  await f.manager.maintain();assert(!f.made[0].state.running);assert.deepEqual(errors,['browser_rejected']);
+  assert(fs.existsSync(path.join(f.root,'engine/private.json')));
+ }finally{f.cleanup();}
+});
+
 test('Bulk deletion stops only selected farms and preserves the surviving account and global root',async()=>{
  const f=fixture();try{
   await f.manager.initialize();const second=(await f.manager.route({action:'account_add'},execute)).data.active_account_id;

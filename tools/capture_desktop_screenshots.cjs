@@ -42,6 +42,11 @@ const server=http.createServer((request,response)=>{
     await page.screenshot({path:path.join(output,name+'.png'),fullPage:name==='settings'});
    }
    await capture('overview');
+   await page.evaluate(async()=>{demoState.state.mode='drops';demoState.state.drop_tracking='stalled';await refresh(true);});
+   assert.equal(await page.locator('[data-drop-stalled]').count(),1);
+   assert((await page.locator('[data-drop-stalled]').textContent()).includes(language==='uk'?'не підтверджує':'not confirmed'));
+   await page.evaluate(async()=>{demoState.state.drop_tracking='progressing';await refresh(true);});
+   assert.equal(await page.locator('[data-drop-stalled]').count(),0);
    await page.evaluate(async()=>{demoState.running=false;await refresh(true);});await capture('overview-paused');
    await page.evaluate(async()=>{demoState.running=true;await refresh(true);});
    await page.locator('[data-go=pointsPage]').click();await select('points-order','quiet');
@@ -97,13 +102,16 @@ const server=http.createServer((request,response)=>{
      assert.equal(await page.locator('#account-button').count(),1);
     }
     for(const running of [true,false]){
-     await page.evaluate(async running=>{demoState.running=running;await refresh(true);navigate('home');},running);
+     await page.evaluate(async running=>{demoState.running=running;demoState.state.mode='drops';demoState.state.drop_tracking='stalled';await refresh(true);navigate('home');},running);
+     assert.equal(await page.locator('[data-drop-stalled]').count(),running?1:0);
+     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Stall message overflow '+width);
      const separate=await page.evaluate(()=>{const a=document.querySelector('#account-button').getBoundingClientRect(),s=document.querySelector('.page-head .status').getBoundingClientRect();return s.right+12<=a.left&&a.right<=innerWidth;});
      assert(separate,'Status/settings overlap at '+width+'px, running='+running);
     }
     await page.locator('#account-button').click();await page.locator('[data-dropdown-for=startup-mode]').waitFor();
     const centered=await page.locator('#account-button').evaluate(button=>{const b=button.getBoundingClientRect(),i=button.querySelector('svg').getBoundingClientRect();return Math.abs(b.top+b.height/2-i.top-i.height/2)<1&&Math.abs(b.left+b.width/2-i.left-i.width/2)<1;});assert(centered);
    }
+   await page.evaluate(async()=>{demoState.state.drop_tracking='waiting';await refresh(true);});
    await page.setViewportSize({width:1440,height:1060});
    await page.evaluate(()=>navigate('accounts'));await page.locator('#select-accounts').click();
    await page.locator('[data-account-row="demo-3"] .account-check').click();

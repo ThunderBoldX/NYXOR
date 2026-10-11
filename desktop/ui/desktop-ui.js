@@ -7,7 +7,7 @@ Object.assign(text.uk,{
  lockHint:'Статус гри й каналу доступний при наведенні на значок у треї. Фарм працює із заблокованим екраном, поки ПК увімкнений і підключений до інтернету.',
  forceStopHint:'Вимкнений або приспаний комп’ютер не фармить. Звичайний режим запобігає автоматичному сну під час фарму, але дозволяє вимкнення екрана.',
  energyHint:'Менше мережевих перевірок, оновлень екрана та анімацій. У цьому режимі Windows може приспати ПК, що призупинить фарм. Вимкни його для безперервної роботи.',
- batterySettings:'Налаштування живлення Windows',notificationSettings:'Сповіщення Windows',nativeOnlyText:'Цей інтерфейс підключається до ядра, вбудованого у Windows-застосунок.',about:'NYXOR 2.4.2 · Windows preview',
+ batterySettings:'Налаштування живлення Windows',notificationSettings:'Сповіщення Windows',nativeOnlyText:'Цей інтерфейс підключається до ядра, вбудованого у Windows-застосунок.',about:'NYXOR 2.4.3 · Windows preview',
  net_offline:'Немає з’єднання. Перевір Wi-Fi або Ethernet.',net_dns:'Не вдалося знайти адресу Twitch. Перевір мережу, VPN та DNS.',net_tls:'Не вдалося перевірити з’єднання. Перевір час Windows та VPN.',net_connection:'Не вдалося підключитися до Twitch. Перевір мережу та доступ програми до інтернету.'
 });
 Object.assign(text.en,{
@@ -18,7 +18,7 @@ Object.assign(text.en,{
  lockHint:'Hover over the tray icon for the current game and channel. Farming continues with a locked screen while your PC is awake and online.',
  forceStopHint:'Farming pauses when the PC sleeps or shuts down. Normal mode prevents automatic sleep while farming, while allowing the display to turn off.',
  energyHint:'Fewer network checks, screen updates and animations. Windows may put your PC to sleep in this mode, pausing farming. Turn it off for continuous operation.',
- batterySettings:'Windows power settings',notificationSettings:'Windows notifications',nativeOnlyText:'This interface connects to the engine built into the Windows app.',about:'NYXOR 2.4.2 · Windows preview',
+ batterySettings:'Windows power settings',notificationSettings:'Windows notifications',nativeOnlyText:'This interface connects to the engine built into the Windows app.',about:'NYXOR 2.4.3 · Windows preview',
  net_offline:'No connection. Check Wi-Fi or Ethernet.',net_dns:'Could not resolve Twitch’s address. Check your network, VPN and DNS.',net_tls:'Could not verify the connection. Check the Windows clock and VPN.',net_connection:'Could not connect to Twitch. Check your network and internet access for NYXOR.'
 });
 Object.assign(text.uk,{
@@ -166,8 +166,8 @@ document.addEventListener('click',event=>{
 });
 if(model)render();
 
-Object.assign(text.uk,{performance:'Продуктивність',lowResource:'Мінімальне навантаження',lowResourceHint:'Менше фонових перевірок, оновлення інтерфейсу раз на 15 секунд, спрощені анімації та нижчий пріоритет процесів фарму. У треї екран не оновлюється. Прогрес може з’являтися із затримкою; сам цей режим не дозволяє ПК заснути.'});
-Object.assign(text.en,{performance:'Performance',lowResource:'Minimal resource use',lowResourceHint:'Fewer background checks, interface updates every 15 seconds, reduced animations and lower farming process priority. No screen updates in the tray. Progress may appear later; this mode alone does not allow the PC to sleep.'});
+Object.assign(text.uk,{performance:'Продуктивність',lowResource:'Мінімальне навантаження',lowResourceHint:'Менше фонових перевірок, оновлення інтерфейсу раз на 15 секунд, спрощені анімації та нижчий пріоритет процесів фарму. У треї екран не оновлюється. Перегляд дропів залишається активним раз на 20 секунд. Прогрес може з’являтися із затримкою; сам цей режим не дозволяє ПК заснути.'});
+Object.assign(text.en,{performance:'Performance',lowResource:'Minimal resource use',lowResourceHint:'Fewer background checks, interface updates every 15 seconds, reduced animations and lower farming process priority. No screen updates in the tray. Drop playback stays active every 20 seconds. Progress may appear later; this mode alone does not allow the PC to sleep.'});
 const performanceRender=render;
 render=function(animate=false){
  window.NyxorDropdowns.close();performanceRender(animate);if(!model)return;
@@ -237,5 +237,10 @@ render=function(animate=false){
  const ids=new Set((model?.accounts||[]).map(row=>row.id));for(const id of accountSelection)if(!ids.has(id))accountSelection.delete(id);
  artworkRender(animate);
  if(route==='home')document.querySelectorAll('.reward-grid>.reward').forEach((card,i)=>{const row=model.state?.active_drops?.[i];if(row?.benefits?.length)card.insertAdjacentHTML('afterbegin',dropGallery(row));});
+ if(route==='home'&&model.running&&model.state?.mode==='drops'&&model.state.drop_tracking==='stalled'){
+  document.querySelector('.hero')?.insertAdjacentHTML('afterend',`<p class="error-banner" role="status" data-drop-stalled>${t('dropStalled')}</p>`);
+ }
 };
+Object.assign(text.uk,{dropStalled:'Twitch поки не підтверджує нові хвилини дропів. NYXOR оновлює перегляд цього ж каналу.'});
+Object.assign(text.en,{dropStalled:'Twitch has not confirmed new Drop minutes yet. NYXOR is refreshing playback on this channel.'});
 if(model)render();

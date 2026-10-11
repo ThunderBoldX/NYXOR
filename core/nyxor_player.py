@@ -17,6 +17,20 @@ PLAYBACK_ACCESS_TOKEN_HASH = (
 )
 USHER_URL = "https://usher.ttvnw.net/api/v2/channel/hls/{login}.m3u8"
 DEFAULT_PULSE_INTERVAL = 20.0
+PLAYLIST_LEASE_SECONDS = 300.0
+MAX_MEDIA_SEGMENTS = 30
+
+
+@dataclass(slots=True)
+class PlaybackLease:
+    login: str = ""
+    url: str = ""
+    quality: str = "—"
+    updated_monotonic: float = 0.0
+
+    def clear(self) -> None:
+        self.url = ""
+        self.updated_monotonic = 0.0
 
 
 @dataclass(slots=True, frozen=True)
@@ -27,6 +41,8 @@ class PlaybackStatus:
     http_status: int | None = None
     detail: str = "очікування"
     updated_monotonic: float = 0.0
+    segments_checked: int = 0
+    segments_total: int = 0
 
     @property
     def age(self) -> float:
@@ -147,6 +163,45 @@ def parse_media_playlist(text: str, base_url: str) -> str:
     return segments[-1]
 
 
+def parse_media_segments(text: str, base_url: str) -> list[str]:
+    """Read the bounded live segment window, not a single newest fragment."""
+    lines = _clean_playlist_lines(text)
+    if not lines or lines[0] != "#EXTM3U" or "#EXT-X-ENDLIST" in lines:
+        raise RuntimeError("media playlist не є активним HLS-стрімом")
+    result = []
+    awaiting_segment = False
+    for line in lines:
+        if line.startswith("#EXTINF:"):
+            awaiting_segment = True
+        elif not line.startswith("#") and awaiting_segment:
+            uri = urljoin(base_url, line)
+            if not uri.startswith(("https://", "http://")):
+                raise RuntimeError("media playlist містить непідтримувану адресу")
+            result.append(uri)
+            awaiting_segment = False
+    if not result:
+        raise RuntimeError("media playlist не містить сегментів")
+    return list(dict.fromkeys(result[-MAX_MEDIA_SEGMENTS:]))
+
+
+async def _touch_segment(session, segment_url, request_headers) -> int:
+    status = 0
+    try:
+        async with session.head(segment_url, headers=request_headers, allow_redirects=True,
+                                timeout=aiohttp.ClientTimeout(total=12)) as response:
+            status = response.status
+    except (aiohttp.ClientError, asyncio.TimeoutError):
+        pass
+    if status == 200:
+        return status
+    # HEAD-unsupported edges get a bounded fallback; never download a full video.
+    headers = {**request_headers, "Range": "bytes=0-1023"}
+    async with session.get(segment_url, headers=headers, allow_redirects=True,
+                           timeout=aiohttp.ClientTimeout(total=12)) as response:
+        await response.content.read(1024)
+        return response.status
+
+
 async def _read_text_response(response: aiohttp.ClientResponse) -> str:
     raw = await response.read()
     return raw.decode(response.charset or "utf-8", errors="replace")
@@ -183,32 +238,14 @@ async def touch_hls_stream(
     login: str,
     *,
     user_agent: str,
+    lease: PlaybackLease | None = None,
 ) -> PlaybackStatus:
     login = login.strip().lower()
     if not login:
         return PlaybackStatus()
 
     try:
-        signature, token = await fetch_playback_token(
-            session,
-            gql_headers,
-            login,
-        )
-
-        master_url = USHER_URL.format(login=login)
-        master_params = {
-            "sig": signature,
-            "token": token,
-            "platform": "web",
-            "allow_source": "true",
-            "allow_audio_only": "false",
-            "fast_bread": "true",
-            "p": str(random.randint(1, 9_999_999)),
-            "player_backend": "mediaplayer",
-            "playlist_include_framerate": "true",
-            "reassignments_supported": "true",
-            "supported_codecs": "h264",
-        }
+        lease = lease if lease is not None else PlaybackLease()
         request_headers = {
             "User-Agent": user_agent,
             "Accept": "application/vnd.apple.mpegurl, application/x-mpegURL, */*",
@@ -216,26 +253,30 @@ async def touch_hls_stream(
             "Referer": f"https://www.twitch.tv/{login}",
         }
 
+        if lease.login != login or not lease.url or time.monotonic() - lease.updated_monotonic >= PLAYLIST_LEASE_SECONDS:
+            signature, token = await fetch_playback_token(session, gql_headers, login)
+            master_url = USHER_URL.format(login=login)
+            master_params = {
+                "sig": signature, "token": token, "platform": "web",
+                "allow_source": "true", "allow_audio_only": "false",
+                "p": str(random.randint(1, 9_999_999)), "player_backend": "mediaplayer",
+                "playlist_include_framerate": "true", "reassignments_supported": "true",
+                "supported_codecs": "h264",
+            }
+            async with session.get(master_url, params=master_params, headers=request_headers,
+                                   timeout=aiohttp.ClientTimeout(total=20)) as response:
+                master_status = response.status
+                master_text = await _read_text_response(response)
+                master_base = str(response.url)
+            if master_status != 200:
+                raise RuntimeError(f"master playlist HTTP {master_status}")
+            variant_url, quality = parse_master_playlist(master_text, master_base)
+            lease.login, lease.url, lease.quality = login, variant_url, quality
+            lease.updated_monotonic = time.monotonic()
+
         async with session.get(
-            master_url,
-            params=master_params,
-            headers=request_headers,
-            timeout=aiohttp.ClientTimeout(total=20),
-        ) as response:
-            master_status = response.status
-            master_text = await _read_text_response(response)
-
-        if master_status != 200:
-            raise RuntimeError(f"master playlist HTTP {master_status}")
-
-        variant_url, quality = parse_master_playlist(
-            master_text,
-            str(response.url),
-        )
-
-        async with session.get(
-            variant_url,
-            headers=request_headers,
+            lease.url,
+            headers={**request_headers, "Connection": "close"},
             timeout=aiohttp.ClientTimeout(total=20),
         ) as response:
             media_status = response.status
@@ -243,46 +284,31 @@ async def touch_hls_stream(
             media_url = str(response.url)
 
         if media_status != 200:
+            lease.clear()
             raise RuntimeError(f"media playlist HTTP {media_status}")
 
-        segment_url = parse_media_playlist(media_text, media_url)
-
-        segment_status = 0
-        try:
-            async with session.head(
-                segment_url,
-                headers=request_headers,
-                allow_redirects=True,
-                timeout=aiohttp.ClientTimeout(total=20),
-            ) as response:
-                segment_status = response.status
-                await response.read()
-        except (aiohttp.ClientError, asyncio.TimeoutError):
-            segment_status = 0
-
-        # Some Twitch CDN edges reject HEAD. Fall back to a tiny ranged GET.
-        if segment_status not in range(200, 400):
-            range_headers = dict(request_headers)
-            range_headers["Range"] = "bytes=0-65535"
-            async with session.get(
-                segment_url,
-                headers=range_headers,
-                allow_redirects=True,
-                timeout=aiohttp.ClientTimeout(total=20),
-            ) as response:
-                segment_status = response.status
-                await response.content.read(65_536)
-
-        if segment_status not in range(200, 400):
-            raise RuntimeError(f"відеосегмент HTTP {segment_status}")
+        segments = parse_media_segments(media_text, media_url)
+        statuses = []
+        for offset in range(0, len(segments), 3):
+            statuses.extend(await asyncio.gather(*[
+                _touch_segment(session, uri, request_headers) for uri in segments[offset:offset + 3]
+            ]))
+        checked = sum(status in (200, 206) for status in statuses)
+        if checked != len(segments):
+            failed = next(status for status in statuses if status not in (200, 206))
+            lease.clear()
+            return PlaybackStatus(login=login, detail=f"відеосегмент HTTP {failed}", http_status=failed,
+                updated_monotonic=time.monotonic(), segments_checked=checked, segments_total=len(segments))
 
         return PlaybackStatus(
             login=login,
             active=True,
-            quality=quality,
-            http_status=segment_status,
+            quality=lease.quality,
+            http_status=statuses[-1],
             detail="active",
             updated_monotonic=time.monotonic(),
+            segments_checked=checked,
+            segments_total=len(segments),
         )
 
     except asyncio.CancelledError:
@@ -319,9 +345,13 @@ class TwitchHLSPlayer:
         self._changed = asyncio.Event()
         self._stopping = False
         self._task: asyncio.Task[None] | None = None
+        self._lease = PlaybackLease()
+        self._revision = 0
+        self._broadcast_id = ""
 
     def set_power_saver(self, enabled: bool) -> None:
-        interval = 60.0 if enabled else DEFAULT_PULSE_INTERVAL
+        # Watch credit is core work. Reduce discovery/UI load, not playback coverage.
+        interval = DEFAULT_PULSE_INTERVAL
         if interval != self._pulse_interval:
             self._pulse_interval = interval
             self._changed.set()
@@ -350,12 +380,18 @@ class TwitchHLSPlayer:
             except asyncio.CancelledError:
                 pass
 
-    async def set_channel(self, login: str) -> None:
+    async def set_channel(self, login: str, broadcast_id: str = "") -> None:
         normalized = login.strip().lower()
-        if normalized == self._login:
+        if normalized == self._login and broadcast_id == self._broadcast_id:
             return
         self._login = normalized
-        self._status = PlaybackStatus(login=normalized)
+        self._broadcast_id = broadcast_id
+        self.invalidate()
+
+    def invalidate(self) -> None:
+        self._revision += 1
+        self._lease = PlaybackLease()
+        self._status = PlaybackStatus(login=self._login)
         self._changed.set()
 
     async def clear(self) -> None:
@@ -367,8 +403,9 @@ class TwitchHLSPlayer:
         *,
         timeout: float = 30.0,
         max_age: float = 45.0,
+        broadcast_id: str = "",
     ) -> PlaybackStatus:
-        await self.set_channel(login)
+        await self.set_channel(login, broadcast_id)
         current = self.status
         if (
             current.login == self._login
@@ -397,6 +434,8 @@ class TwitchHLSPlayer:
         while not self._stopping:
             self._changed.clear()
             login = self._login
+            revision = self._revision
+            pulse_started = time.monotonic()
 
             if not login:
                 try:
@@ -410,14 +449,15 @@ class TwitchHLSPlayer:
                 self._gql_headers,
                 login,
                 user_agent=self._user_agent,
+                lease=self._lease,
             )
-            if login == self._login:
+            if login == self._login and revision == self._revision:
                 self._status = result
 
             try:
                 await asyncio.wait_for(
                     self._changed.wait(),
-                    timeout=self._pulse_interval,
+                    timeout=max(0.01, self._pulse_interval - (time.monotonic() - pulse_started)),
                 )
             except asyncio.TimeoutError:
                 pass

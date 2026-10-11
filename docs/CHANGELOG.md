@@ -1,3 +1,13 @@
+## Windows 2.4.3 preview — restore confirmed Drops progress
+
+- Keep playback on a 20-second cadence in minimal-resource and energy-saver modes. Discovery and interface updates remain reduced.
+- Refresh the complete bounded live segment window, instead of touching only its newest segment. Use HEAD requests and a tiny range fallback, without decoding or downloading full video.
+- Cache the selected low-quality playlist for up to five minutes; invalidate it after failed requests, channel changes or broadcast restarts. Avoid fetching a new access token and master playlist on every pulse.
+- Read Twitch's current Drop session for the exact channel/reward. Show only Twitch-confirmed minutes, never local estimates or HTTP 204 as proof of reward credit.
+- If fresh reward snapshots show no new minutes for three minutes, refresh playback on the same channel with a bounded retry and display a status message. Retain the confirmed campaign selection and stable-channel fixes from the Android updates.
+
+Live check: with the browser stream and normal NYXOR farm closed, the fixed playback component raised three World of Tanks Drops on WorldofTanks from 1 to 2 minutes in Twitch's inventory. This was a short single-channel check; it does not establish overnight reliability or every campaign's behavior. Prepared locally; public Windows download remains 2.4.2 until publication. The existing Android APK is unchanged.
+
 ## Android 2.4.3 preview — screen-off farming
 
 - Keep the partial CPU wake lock while any account farms, including in energy saver. Energy saver still reduces network polling, interface refresh and animations.

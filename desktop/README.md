@@ -2,11 +2,19 @@
 
 [Project](../README.md) · [Українська](README_UK.md)
 
-The same moon, colors, cards, animations and farming engine as Android, adapted to a desktop window with a sidebar. This is the **2.4.2 Windows preview**, for **Windows 10/11 x64**. Other desktop operating systems are not packaged or tested.
+The same moon, colors, cards, animations and farming engine as Android, adapted to a desktop window with a sidebar. This is the **2.4.3 Windows preview**, for **Windows 10/11 x64**. Other desktop operating systems are not packaged or tested.
 
 ![Windows overview, sample data](../docs/screenshots/windows/en/overview.png)
 
 Screenshots show the actual interface in demo mode; channels, balances and rewards are fictional examples. The installed app starts with an empty account and your own lists.
+
+## Drops progress in 2.4.3
+
+Playback now refreshes the full live segment window every 20 seconds, including in minimal-resource mode. The low-quality playlist is cached to avoid repeated access-token requests; full video is not downloaded or decoded. Interface and discovery checks can still run less often.
+
+Overview warns if Twitch stops confirming new minutes for three minutes. NYXOR refreshes playback on the same channel and keeps progress based on Twitch responses. A short isolated live test on WorldofTanks raised three rewards from 1 to 2 minutes with the browser stream and normal farm closed.
+
+This update is prepared locally. The public Windows download below remains 2.4.2 until publication.
 
 ## Account selection and reward artwork in 2.4.2
 
@@ -19,7 +27,7 @@ Current Drops and claimed rewards display the benefit images returned by Twitch,
 
 ## Install and use
 
-1. Run `NYXOR-Windows-2.4.2-preview-Setup.exe`, approve the Windows administrator prompt and choose your installation directory. Python and Node.js are bundled. **Google Chrome must be installed for Twitch login.**
+1. Run `NYXOR-Windows-2.4.3-preview-Setup.exe`, approve the Windows administrator prompt and choose your installation directory. Python and Node.js are bundled. **Google Chrome must be installed for Twitch login.**
 2. Open NYXOR from Start or the desktop shortcut. In **Settings → Connect Twitch**, sign in on Twitch in the separate Chrome window. NYXOR verifies the account and protected Drops catalog before saving the session. Enter your password only on Twitch's website.
 3. Add Drops categories in **Games**, channels in **Streamers**, or categories in **Points → Games for points**. Press **Start farming** on Overview.
 4. Closing the window hides it in the system tray. Minimizing also hides it in the tray. Single-click the moon to reopen it; right-click for start, stop and quit.
@@ -90,6 +98,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File desktop/tests/installer-path
 After packaging, set `NYXOR_NSIS_COMPILER` to the downloaded `makensis.exe` and run `node desktop/tests/installer-integration.cjs` on Windows. It checks graceful update shutdown and runs the compiled NSIS process-check macro against temporary orphan/unrelated processes in `.local/installer-tests/`; no application installation, registry or shortcut changes are made.
 
 To check the frozen engine too, set `NYXOR_TEST_ENGINE` to the absolute path of `desktop/engine/nyxor-engine/nyxor-engine.exe` and rerun `test_desktop_backend.py`. The tests use temporary data without Twitch credentials.
+
+Run `python desktop/tests/frozen-playback.py` with the build environment's Python to exercise playback, confirmed progress and channel selection directly from the built engine's PYZ archive. Core imports cannot fall back to source files.
 
 The packaged executable accepts `--smoke-dir=ABSOLUTE_PATH` for an isolated integration check. It writes a result and screenshots, makes no Windows startup changes, and exits. This checks the native bridge, embedded engine, saved lists/settings and window layout, without connecting a real account.
 

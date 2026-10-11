@@ -34,6 +34,7 @@ from nyxor.points_selection import point_games, pick_points_target, channel_allo
 from nyxor.channel_history import ChannelHistory, history_path
 from nyxor.drop_history import record_claim, pending_claim, enrich_claim
 from nyxor.drop_art import benefits as drop_benefits
+from nyxor.drop_progress import current_session, apply_current_session, ProgressWatch
 from nyxor.game_art import game_art
 from nyxor_player import TwitchHLSPlayer
 from nyxor_rewards import TwitchRewardsEngine
@@ -1262,6 +1263,8 @@ async def main() -> None:
         states: dict[str, dict[str, Any]] = {}
         raid_override_login = ""
         raid_override_misses = 0
+        progress_watch = ProgressWatch()
+        next_progress_check = 0.0
         player = TwitchHLSPlayer(
             session,
             gql_headers,
@@ -1278,6 +1281,7 @@ async def main() -> None:
             ) as live:
                 while True:
                     cycle_started = time.monotonic()
+                    fresh_drop_snapshot = False
                     settings = load_settings()
                     priority_games = load_priority_games(settings)
                     streamer_logins = load_streamer_channels(settings)
@@ -1333,6 +1337,7 @@ async def main() -> None:
                                     inventory_drops,
                                     claimed_benefits,
                                 )
+                                fresh_drop_snapshot = True
                             else:
                                 states = {}
 
@@ -1407,6 +1412,7 @@ async def main() -> None:
                         target = (current_mode, current_game, current_channel) if allowed else None
 
                     if target is None:
+                        progress_watch.reset()
                         channel_history.end()
                         state["points_rewards"] = []
                         state["channel_login"] = ""
@@ -1494,6 +1500,14 @@ async def main() -> None:
                         if current_mode == "drops"
                         else None
                     )
+                    if current_mode == "drops" and (changed or time.monotonic() >= next_progress_check):
+                        next_progress_check = time.monotonic() + 60
+                        try:
+                            confirmed = await current_session(session, gql_headers, current_channel["channel_id"])
+                            apply_current_session(current_state, current_channel, confirmed)
+                        except Exception:
+                            # Inventory still provides confirmed progress when CurrentDrop is unavailable.
+                            pass
                     state["queue"] = queue_text(
                         priority_games,
                         states,
@@ -1501,6 +1515,12 @@ async def main() -> None:
                     )
                     state["mode"] = current_mode
                     state["active_drops"] = progress_snapshot(current_state, current_channel)
+                    progress = progress_watch.observe(current_channel, state["active_drops"], fresh=fresh_drop_snapshot)
+                    state["drop_tracking"] = progress["status"] if current_mode == "drops" else ""
+                    state["drop_stalled_seconds"] = progress["stalled_seconds"]
+                    if progress["recover"]:
+                        logger.warning("Twitch не підтверджує нові хвилини Drops уже %s с на @%s. Оновлюю HLS-сесію без зміни каналу; HTTP 204 не підтверджує прогрес.", progress["stalled_seconds"], current_channel.get("login"))
+                        player.invalidate()
                     state["game"] = current_game
                     state["game_art_url"] = await game_art(session, gql_headers, current_game)
                     state["channel"] = str(
@@ -1521,9 +1541,12 @@ async def main() -> None:
                         channel_login,
                         timeout=30,
                         max_age=90 if energy_saver else 45,
+                        broadcast_id=str(current_channel.get("stream_id") or ""),
                     )
                     state["player"] = playback.display_text()
                     state["player_http_status"] = playback.http_status
+                    state["player_segments_checked"] = playback.segments_checked
+                    state["player_segments_total"] = playback.segments_total
 
                     if current_mode == "drops":
                         state["drop"] = active_drop_text(current_state, current_channel)
@@ -1590,7 +1613,8 @@ async def main() -> None:
                     apply_rewards_snapshot(state, rewards.snapshot())
 
                     if playback.active and success:
-                        state["message"] = "HLS активний; пакет прийнято Twitch"
+                        state["message"] = ("Twitch поки не зараховує нові хвилини Drops" if state["drop_tracking"] == "stalled"
+                                            else "HLS активний; пакет прийнято Twitch")
                     elif success:
                         state["message"] = (
                             "Пакет прийнято, але HLS ще не активний"

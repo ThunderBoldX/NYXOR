@@ -7,7 +7,7 @@
 - Stop/sign-out/deletion/Quit cancel renewal. Revoked access or an interactive Twitch check can still require reconnecting.
 - Bump Android versionCode to 13 with the existing certificate; keep desktop administrator setup and normal-user app execution.
 
-Validation: 114 Python tests, 27 desktop tests, 53 regressions loaded from the frozen Windows engine; Android package tests for selection (28), accounts (6), playback (10) and progress (6), 14 Android lifecycle tests and zero lint errors. Real packaged desktop modules and frozen identity/catalog validation renewed access for the existing account without copying credentials to disk or modifying the installed profile. Short playback credit was already confirmed on WorldofTanks; overnight renewal and physical-phone screen-off credit remain unverified. Prepared locally; public Windows remains 2.4.2 and Android 2.4.0 until publication.
+Validation: 114 Python tests, 27 desktop tests, 53 regressions loaded from the frozen Windows engine; Android package tests for selection (28), accounts (6), playback (10) and progress (6), 14 Android lifecycle tests and zero lint errors. Real packaged desktop modules and frozen identity/catalog validation renewed access for the existing account without copying credentials to disk or modifying the installed profile. Short playback credit was already confirmed on WorldofTanks; overnight renewal and physical-phone screen-off credit remain unverified. Published together as 2.4.4-preview.
 
 ## Windows 2.4.3 preview — restore confirmed Drops progress
 

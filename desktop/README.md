@@ -14,7 +14,7 @@ Saved Twitch access now renews before its short web proof expires. A hidden, mut
 
 Both Windows and Android use the same channel selection and playback: prefer a verified streamer covering more eligible campaigns, keep the current stream on equal coverage, refresh the live segment window every 20 seconds even in saving modes, and show only Twitch-confirmed minutes. Each account keeps its own eligibility and progress; minutes are never pooled between accounts.
 
-A live test of the packaged native modules and frozen Python verification confirmed refreshed same-account access to the protected catalog, without copying credentials to test files or changing the installed profile. Persistence, cancellation and isolation are covered by fixture tests. Long-running overnight renewal remains unverified. This preview is prepared locally; the public download below remains 2.4.2 until publication.
+A live test of the packaged native modules and frozen Python verification confirmed refreshed same-account access to the protected catalog, without copying credentials to test files or changing the installed profile. Persistence, cancellation and isolation are covered by fixture tests. Long-running overnight renewal remains unverified. Available in the combined Android and Windows 2.4.4 release linked below.
 
 ## Drops progress in 2.4.3
 
@@ -22,7 +22,7 @@ Playback now refreshes the full live segment window every 20 seconds, including 
 
 Overview warns if Twitch stops confirming new minutes for three minutes. NYXOR refreshes playback on the same channel and keeps progress based on Twitch responses. A short isolated live test on WorldofTanks raised three rewards from 1 to 2 minutes with the browser stream and normal farm closed.
 
-This update is prepared locally. The public Windows download below remains 2.4.2 until publication.
+Included in Windows 2.4.4.
 
 ## Account selection and reward artwork in 2.4.2
 
@@ -40,7 +40,7 @@ Current Drops and claimed rewards display the benefit images returned by Twitch,
 3. Add Drops categories in **Games**, channels in **Streamers**, or categories in **Points → Games for points**. Press **Start farming** on Overview.
 4. Closing the window hides it in the system tray. Minimizing also hides it in the tray. Single-click the moon to reopen it; right-click for start, stop and quit.
 
-[Download the 2.4.2 preview installer](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.2-windows-preview). The installer is unsigned; Windows may display an unknown-publisher confirmation.
+[Download the 2.4.4 preview installer](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.4-preview). The installer is unsigned; Windows may display an unknown-publisher confirmation.
 
 **2.4.2 setup:** the installer requests administrator permission at launch and installs for all users. It checks selected and previous installation folders before updating, including older per-user installations under Program Files. The app itself runs without administrator privileges. Existing account data remains in its separate user directory.
 

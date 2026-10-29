@@ -44,6 +44,7 @@ jobs:
           set -o pipefail
           xcodebuild -project ios/NYXOR.xcodeproj -scheme NYXOR -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ios/build/simulator CODE_SIGNING_ALLOWED=NO ARCHS=arm64 build | tee ios/build-simulator.log
       - name: Simulator launch smoke test
+        timeout-minutes: 12
         run: python ios/smoke_test.py
       - name: Upload IPA for local signing and simulator screenshot
         uses: actions/upload-artifact@v4
@@ -64,3 +65,4 @@ jobs:
             ios/build-*.log
             ios/build/*/Logs
             ios/build/ios-smoke.png
+            ios/build/ios-*.log

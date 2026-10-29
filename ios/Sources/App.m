@@ -133,16 +133,34 @@
 @end
 
 @interface AppDelegate : UIResponder <UIApplicationDelegate>
-@property(nonatomic, strong) UIWindow *window;
 @property(nonatomic, strong) MinerController *miner;
 @end
 @implementation AppDelegate
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)options {
-    self.window = [[UIWindow alloc] initWithFrame:UIScreen.mainScreen.bounds];
-    self.miner = [MinerController new]; [self.miner loadViewIfNeeded]; self.window.rootViewController = self.miner;
-    [self.window makeKeyAndVisible]; return YES;
+    // Register native background handlers before application launch completes.
+    // The scene owns its window and receives foreground/background events.
+    self.miner = [MinerController new];
+    [self.miner loadViewIfNeeded];
+    return YES;
 }
-- (void)applicationDidEnterBackground:(UIApplication *)application { [self.miner suspend]; }
-- (void)applicationWillEnterForeground:(UIApplication *)application { [self.miner resume]; }
+@end
+
+@interface SceneDelegate : UIResponder <UIWindowSceneDelegate>
+@property(nonatomic, strong) UIWindow *window;
+@property(nonatomic, strong) MinerController *miner;
+@end
+@implementation SceneDelegate
+- (void)scene:(UIScene *)scene willConnectToSession:(UISceneSession *)session options:(UISceneConnectionOptions *)options {
+    if (![scene isKindOfClass:UIWindowScene.class]) return;
+    self.miner = ((AppDelegate *)UIApplication.sharedApplication.delegate).miner;
+    self.window = [[UIWindow alloc] initWithWindowScene:(UIWindowScene *)scene];
+    self.window.rootViewController = self.miner;
+    [self.window makeKeyAndVisible];
+}
+- (void)sceneDidEnterBackground:(UIScene *)scene { [self.miner suspend]; }
+- (void)sceneWillEnterForeground:(UIScene *)scene { [self.miner resume]; }
+- (void)sceneDidDisconnect:(UIScene *)scene {
+    if (self.miner.active) [self.miner suspend];
+}
 @end
 int main(int argc, char *argv[]) { @autoreleasepool { return UIApplicationMain(argc, argv, nil, NSStringFromClass(AppDelegate.class)); } }

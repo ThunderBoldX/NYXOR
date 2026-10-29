@@ -12,10 +12,19 @@
   <key>UIBackgroundModes</key><array><string>processing</string></array>
   <key>BGTaskSchedulerPermittedIdentifiers</key><array><string>com.thunderboldx.nyxor.drop.*</string></array>
   <key>LSRequiresIPhoneOS</key><true/>
+  <key>UIApplicationSceneManifest</key><dict>
+    <key>UIApplicationSupportsMultipleScenes</key><false/>
+    <key>UISceneConfigurations</key><dict>
+      <key>UIWindowSceneSessionRoleApplication</key><array><dict>
+        <key>UISceneConfigurationName</key><string>Default</string>
+        <key>UISceneDelegateClassName</key><string>SceneDelegate</string>
+      </dict></array>
+    </dict>
+  </dict>
   <key>UILaunchScreen</key><dict><key>UIColorName</key><string>LaunchBackground</string></dict>
   <key>UIUserInterfaceStyle</key><string>Dark</string>
   <key>NSSupportsLiveActivities</key><true/>
-  <key>UISupportedInterfaceOrientations</key><array><string>UIInterfaceOrientationPortrait</string><string>UIInterfaceOrientationLandscapeLeft</string><string>UIInterfaceOrientationLandscapeRight</string></array>
+  <key>UISupportedInterfaceOrientations</key><array><string>UIInterfaceOrientationPortrait</string><string>UIInterfaceOrientationPortraitUpsideDown</string><string>UIInterfaceOrientationLandscapeLeft</string><string>UIInterfaceOrientationLandscapeRight</string></array>
   <key>NSAppTransportSecurity</key><dict><key>NSAllowsArbitraryLoads</key><false/></dict>
   <key>ITSAppUsesNonExemptEncryption</key><false/>
 </dict></plist>

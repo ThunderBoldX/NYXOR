@@ -62,3 +62,13 @@ node_modules/
 desktop/generated/
 desktop/build/
 desktop/engine/
+
+# iOS generated files and private signing material
+ios/Support/
+ios/Resources/
+ios/build/
+ios/*.xcodeproj/
+*.ipa
+*.p12
+*.p8
+*.mobileprovision

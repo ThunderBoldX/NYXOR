@@ -1,0 +1,66 @@
+name: iOS preview (unsigned)
+on:
+  workflow_dispatch:
+  push:
+    branches: [ios-preview]
+    paths: ['ios/**', 'core/**', 'android/app/src/main/assets/frontend/**', '.github/workflows/ios-preview.yml']
+permissions:
+  contents: read
+concurrency:
+  group: ios-preview-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: xcode-27
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Check Apple SDK and install tools
+        run: |
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+          brew install xcodegen
+          python -m pip install Pillow==11.3.0
+      - name: Prepare shared UI and embedded Python
+        run: python ios/prepare.py
+      - name: Verify bundled core and session logic
+        run: |
+          PYTHONPATH=ios/Resources/core:ios/Resources/vendor python -m unittest discover -s tests -p 'test_ios_sessions.py' -v
+      - name: Generate Xcode project
+        run: cd ios && xcodegen generate
+      - name: Build iPhone app for personal sideloading
+        run: |
+          set -o pipefail
+          xcodebuild -project ios/NYXOR.xcodeproj -scheme NYXOR -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath ios/build/device CODE_SIGNING_ALLOWED=NO ARCHS=arm64 build | tee ios/build-device.log
+          mkdir -p ios/build/package/Payload
+          cp -R ios/build/device/Build/Products/Release-iphoneos/NYXOR.app ios/build/package/Payload/
+          cd ios/build/package
+          zip -qry ../NYXOR-iOS-2.5.0-EXPERIMENTAL-UNSIGNED.ipa Payload
+      - name: Build simulator app
+        run: |
+          set -o pipefail
+          xcodebuild -project ios/NYXOR.xcodeproj -scheme NYXOR -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ios/build/simulator CODE_SIGNING_ALLOWED=NO ARCHS=arm64 build | tee ios/build-simulator.log
+      - name: Simulator launch smoke test
+        run: python ios/smoke_test.py
+      - name: Upload IPA for local signing and simulator screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: NYXOR-iOS-2.5.0-EXPERIMENTAL-UNSIGNED
+          retention-days: 7
+          path: |
+            ios/build/NYXOR-iOS-2.5.0-EXPERIMENTAL-UNSIGNED.ipa
+            ios/build/ios-smoke.png
+          if-no-files-found: error
+      - name: Upload diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: iOS-build-diagnostics
+          retention-days: 7
+          path: |
+            ios/build-*.log
+            ios/build/*/Logs
+            ios/build/ios-smoke.png

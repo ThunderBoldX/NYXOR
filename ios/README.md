@@ -3,9 +3,12 @@
 Shared Android/Windows 2.4.4 frontend and farming core, with UIKit, WKWebView
 and embedded Python 3.13. Minimum iOS 26. First target: iPhone 16 Pro, iOS 27.0.1.
 
-**Status: locally checked sources, not a compiled or install-ready IPA.**
-Xcode compilation, simulator startup, free signing and real Twitch credit on
-an iPhone still require verification. The local workspace runs Windows.
+**Status: experimental unsigned IPA compiled and launched on the iOS simulator.**
+The [verified macOS build](https://github.com/ThunderBoldX/NYXOR/actions/runs/40906153565)
+passed device/simulator compilation, nine bundled session tests and the
+embedded-core startup check. Free signing, real Twitch credit and background
+sessions still need verification on a physical iPhone. The app uses the scene
+lifecycle required by iOS 27. The local workspace runs Windows.
 
 ## Finite background sessions
 
@@ -24,11 +27,11 @@ or simulated audio/location is promised. No GPU entitlement is requested.
 
 ## Free installation from Windows
 
-1. A macOS runner must compile and pass simulator smoke tests. The prepared
-   `.github/workflows/ios-preview.yml` uses the standard `xcode-27` image and
-   runs only on an `ios-preview` branch push or manual dispatch. No push or
-   cloud build has been performed as part of local preparation.
-2. Download its artifact and extract
+1. Open the [verified build artifact](https://github.com/ThunderBoldX/NYXOR/actions/runs/40906153565/artifacts/12912236847).
+   GitHub may require sign-in. This Actions artifact expires after seven days;
+   it is not a public stable release. The workflow runs on `ios-preview`
+   pushes or manual dispatch, using the standard `xcode-27` macOS runner.
+2. Download the artifact ZIP and extract
    `NYXOR-iOS-2.5.0-EXPERIMENTAL-UNSIGNED.ipa`.
 3. Follow the official [AltStore Classic Windows guide](https://faq.altstore.io/altstore-classic/how-to-install-altstore-windows).
    Install AltServer, connect and trust the iPhone, install AltStore Classic,

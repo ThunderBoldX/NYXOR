@@ -21,10 +21,11 @@ _error = ""
 _account = ""
 _last_request_error = ""
 _accounts = None
+_phone_link = None
 
 
 def initialize(directory: str, network=None) -> None:
-    global _loop, _thread, _accounts
+    global _loop, _thread, _accounts, _phone_link
     with _init_lock:
         if _loop is not None:
             return
@@ -42,6 +43,14 @@ def initialize(directory: str, network=None) -> None:
         _loop = asyncio.new_event_loop()
         _thread = threading.Thread(target=_loop.run_forever, name="NYXOR", daemon=True)
         _thread.start()
+        if network is not None and _accounts is not None:
+            from nyxor.device_link import PhoneLink
+
+            async def selected_snapshot():
+                return await _accounts.dispatch({"action": "snapshot"})
+
+            _phone_link = PhoneLink(root, selected_snapshot)
+            asyncio.run_coroutine_threadsafe(_phone_link.heartbeat(), _loop)
 
 
 def request(payload: str) -> str:
@@ -51,7 +60,11 @@ def request(payload: str) -> str:
         data = json.loads(payload)
         if not isinstance(data, dict):
             raise ValueError("Invalid request")
-        future = asyncio.run_coroutine_threadsafe(_accounts.dispatch(data) if _accounts is not None else dispatch(data), _loop)
+        if _phone_link is not None and data.get("action") in {"device_pair", "device_status", "device_unlink"}:
+            operation = _phone_link.handle(data)
+        else:
+            operation = _accounts.dispatch(data) if _accounts is not None else dispatch(data)
+        future = asyncio.run_coroutine_threadsafe(operation, _loop)
         result = future.result(timeout=35)
         return json.dumps({"ok": True, "data": result}, ensure_ascii=False, default=str)
     except concurrent.futures.TimeoutError:
@@ -329,6 +342,24 @@ async def dispatch(data: dict):
             save_settings(settings)
         else:
             (save_queue if action == "queue" else save_streamers)(items)
+    elif action == "profile_import":
+        from nyxor.device_link import BOOLEAN_OPTIONS, POINT_OPTIONS, preferences
+
+        profile = preferences(data.get("profile"))
+        settings = load_settings()
+        settings["priority_games"] = profile["queue"]
+        if profile["queue"]:
+            settings["priority_game"] = profile["queue"][0]
+        else:
+            settings.pop("priority_game", None)
+        settings.pop("preferred_channel", None)
+        settings["streamer_channels"] = profile["streamers"]
+        settings["points_games"] = profile["points_games"]
+        settings["points_order"] = profile["points_order"]
+        for key in BOOLEAN_OPTIONS:
+            settings[key] = profile[key]
+        settings.setdefault("channel_points", {}).update({key: profile[key] for key in POINT_OPTIONS})
+        save_settings(settings)
     elif action == "settings":
         settings = load_settings()
         changes = data.get("values")
@@ -369,7 +400,7 @@ async def dispatch(data: dict):
         return [{"id": item.id, "name": item.name, "box_art_url": item.box_art_url} for item in await search_game_categories(query)]
     else:
         raise ValueError("Unknown action")
-    if action in {"queue", "streamers", "points_games", "settings"} and _miner is not None and not _miner.done():
+    if action in {"queue", "streamers", "points_games", "settings", "profile_import"} and _miner is not None and not _miner.done():
         from nyxor_core import settings_changed
         settings_changed()
     return snapshot()

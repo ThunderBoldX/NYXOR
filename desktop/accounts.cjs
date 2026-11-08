@@ -113,16 +113,26 @@ class Accounts{
     this.save();
    }
  }
- async autostart(args,execute){
-  const failures=[];
-  for(const record of this.index.profiles){
-   if(!record.auto_farm)continue;
-   const slot=this.get(record.id);await slot.engine.request({action:'settings',values:{low_resource:this.index.preferences.low_resource===true}});await slot.engine.request({action:'snapshot'});
-   if(shouldStartFarming(args,{...slot.data,settings:{...slot.data.settings,...this.index.preferences}})){
-    try{const result=await this.route({action:'start',account_id:record.id},execute);if(!result.ok)throw new Error(result.error);}catch{failures.push(record.id);}
-   }
+ async autostart(args,execute,retryIds){
+  const result={started:[],failed:[],retry:[]};
+  const prefs=this.index.preferences;
+  if(!args.includes('--autostart')||!prefs?.launch_on_boot||prefs.startup_mode==='app')return result;
+  const optedIn=this.index.profiles.filter(record=>record.auto_farm);
+  const targets=optedIn.length?optedIn:this.index.profiles.filter(record=>record.id===this.index.active);
+  const transient=new Set(['connection','dns','timeout','tls','network','browser_timeout','rate_limited']);
+  for(const record of targets){
+   if(retryIds&&!retryIds.includes(record.id))continue;
+   try{
+    const slot=this.get(record.id);
+    const status=await slot.engine.request({action:'snapshot'});
+    if(!status.ok)throw Object.assign(new Error(status.error),{code:status.error_code});
+    if(slot.data?.running||!shouldStartFarming(args,{...slot.data,settings:{...slot.data.settings,...prefs}}))continue;
+    const response=await this.route({action:'start',account_id:record.id},execute);
+    if(!response.ok)throw Object.assign(new Error(response.error),{code:response.error_code});
+    result.started.push(record.id);
+   }catch(error){(transient.has(error.code)?result.retry:result.failed).push(record.id);}
   }
-  return failures;
+  return result;
  }
  async maintain(){
   if(this.deletion)return;

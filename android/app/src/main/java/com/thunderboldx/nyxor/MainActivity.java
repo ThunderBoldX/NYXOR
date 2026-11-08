@@ -57,6 +57,28 @@ public class MainActivity extends Activity {
         if ("https".equals(uri.getScheme()) && ("www.twitch.tv".equals(uri.getHost()) || "twitch.tv".equals(uri.getHost())))
             runOnUiThread(() -> { try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); } catch (Exception ignored) {} });
     }
+    private JSONObject fetchUpdate() throws Exception {
+        java.net.HttpURLConnection connection = (java.net.HttpURLConnection) new java.net.URL(
+            "https://api.github.com/repos/ThunderBoldX/NYXOR/releases/latest").openConnection();
+        connection.setInstanceFollowRedirects(false);
+        connection.setConnectTimeout(6000);
+        connection.setReadTimeout(6000);
+        connection.setRequestProperty("Accept", "application/vnd.github+json");
+        connection.setRequestProperty("User-Agent", "NYXOR-Android");
+        try (InputStream input = connection.getInputStream();
+             ByteArrayOutputStream body = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[8192];
+            for (int length; (length = input.read(buffer)) != -1;) {
+                if (body.size() + length > 1024 * 1024) throw new IOException("Update response too large");
+                body.write(buffer, 0, length);
+            }
+            return new JSONObject().put("release", new JSONObject(body.toString("UTF-8")))
+                .put("installed", getPackageManager().getPackageInfo(getPackageName(), 0).versionName);
+        } finally {
+            connection.disconnect();
+        }
+    }
+
     private void uiAction(Runnable action) throws Exception {
         FutureTask<Void> task = new FutureTask<>(action, null);
         runOnUiThread(task);
@@ -71,6 +93,18 @@ public class MainActivity extends Activity {
                     JSONObject data = new JSONObject(payload);
                     String action = data.optString("action");
                     if (action.equals("open")) { openTwitch(data.optString("url")); answer = "{\"ok\":true,\"data\":{}}"; }
+                    else if (action.equals("update_check")) {
+                        answer = new JSONObject().put("ok", true).put("data", fetchUpdate()).toString();
+                    }
+                    else if (action.equals("update_install")) {
+                        String version = data.optString("version");
+                        if (!version.matches("[0-9]{1,6}[.][0-9]{1,6}[.][0-9]{1,6}"))
+                            throw new IllegalArgumentException("Invalid update version");
+                        Uri apk = Uri.parse("https://github.com/ThunderBoldX/NYXOR/releases/download/v"
+                            + version + "/NYXOR-Android-" + version + ".apk");
+                        uiAction(() -> startActivity(new Intent(Intent.ACTION_VIEW, apk)));
+                        answer = new JSONObject().put("ok", true).put("data", new JSONObject()).toString();
+                    }
                     else if (action.equals("copy_code")) {
                         JSONObject state = new JSONObject(Engine.request(MainActivity.this, "{\"action\":\"snapshot\"}")).getJSONObject("data");
                         JSONObject auth = state.getJSONObject("auth");

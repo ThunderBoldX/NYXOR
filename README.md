@@ -7,7 +7,7 @@ Choose your games and channels, track rewards, and let NYXOR work in the backgro
 
 ![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-b6ebd5?style=flat-square&logo=android&logoColor=b6ebd5&labelColor=201c29)
 ![Windows 10/11 x64](https://img.shields.io/badge/Windows-10%20%2F%2011%20x64-b6ebd5?style=flat-square&labelColor=201c29)
-![Preview 2.4.4](https://img.shields.io/badge/preview-2.4.4-c3a6f5?style=flat-square&labelColor=201c29)
+![Release 2.4.5](https://img.shields.io/badge/release-2.4.5-c3a6f5?style=flat-square&labelColor=201c29)
 ![Ukrainian and English](https://img.shields.io/badge/languages-UK%20%2F%20EN-c3a6f5?style=flat-square&labelColor=201c29)
 [![MIT License](https://img.shields.io/badge/license-MIT-b6ebd5?style=flat-square&labelColor=201c29)](LICENSE)
 
@@ -15,7 +15,7 @@ Choose your games and channels, track rewards, and let NYXOR work in the backgro
 [Releases & APK](https://github.com/ThunderBoldX/NYXOR/releases) · [Install](#installation) · [Screenshots](#take-a-look) · [Android guide](android/README.md)
 
 
-**[Download Android 2.4.4 preview](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.4-preview)** · **[Download Windows 2.4.4 preview](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.4-preview)**
+**[Download Android 2.4.5](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.5)** · **[Download Windows 2.4.5](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.5)**
 
 </div>
 
@@ -23,7 +23,7 @@ Choose your games and channels, track rewards, and let NYXOR work in the backgro
 
 ### Windows preview
 
-The same style and farming engine in a desktop window, with sidebar navigation, system tray controls and optional startup after Windows login. Requires **Windows 10/11 x64** and **Google Chrome for Twitch login**. [Download the Windows 2.4.4 preview installer](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.4-preview).
+The same style and farming engine in a desktop window, with sidebar navigation, system tray controls and optional startup after Windows login. Requires **Windows 10/11 x64** and **Google Chrome for Twitch login**. [Download the Windows 2.4.5 installer](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.5).
 
 The window opens maximized within the current display's work area. Startup can open only NYXOR or also start farming. Game search uses Twitch's public catalog, with matching artwork and live channels for points.
 
@@ -96,7 +96,7 @@ A dark palette, moon accents, rounded cards and smooth transitions. One place fo
 - Full live segment checks every 20 seconds, including in saving modes.
 - Improved Android screen-off farming and a warning when Twitch stops confirming minutes.
 
-Both installers are in the same [release Assets](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.4-preview).
+Both installers are in the same [release Assets](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.5).
 
 ## New in Android 2.4.0
 
@@ -105,7 +105,7 @@ Both installers are in the same [release Assets](https://github.com/ThunderBoldX
 - Twitch reward images in active Drops and a claimed-reward inventory with a game filter.
 - Rounded animated mobile dropdowns and reduced screen polling in energy saver.
 
-[Download the Android 2.4.4 preview APK](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.4-preview). Install it over the previous version without uninstalling; the signing certificate is unchanged.
+[Download the Android 2.4.5 APK](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.5). Install it over the previous version without uninstalling; the signing certificate is unchanged.
 
 [Account selection screenshot](docs/screenshots/en/accounts-selection.png) · [Android account guide](android/README.md)
 

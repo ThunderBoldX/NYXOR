@@ -13,7 +13,7 @@ if not getattr(sys, "frozen", False):
     sys.path.insert(0, str(CORE))
 
 ACTIONS = {"snapshot", "check_connection", "start", "stop", "auth", "logout", "delete_history",
-           "queue", "streamers", "points_games", "settings", "directory", "search",
+           "profile_import", "queue", "streamers", "points_games", "settings", "directory", "search",
            "browser_begin", "browser_import", "browser_error", "browser_cancel", "browser_renewing"}
 
 

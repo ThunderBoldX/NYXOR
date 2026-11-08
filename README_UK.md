@@ -7,7 +7,7 @@
 
 ![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-b6ebd5?style=flat-square&logo=android&logoColor=b6ebd5&labelColor=201c29)
 ![Windows 10/11 x64](https://img.shields.io/badge/Windows-10%20%2F%2011%20x64-b6ebd5?style=flat-square&labelColor=201c29)
-![Preview 2.4.4](https://img.shields.io/badge/preview-2.4.4-c3a6f5?style=flat-square&labelColor=201c29)
+![Release 2.4.5](https://img.shields.io/badge/release-2.4.5-c3a6f5?style=flat-square&labelColor=201c29)
 ![Українська та English](https://img.shields.io/badge/languages-UK%20%2F%20EN-c3a6f5?style=flat-square&labelColor=201c29)
 [![MIT License](https://img.shields.io/badge/license-MIT-b6ebd5?style=flat-square&labelColor=201c29)](LICENSE)
 
@@ -15,7 +15,7 @@
 [Релізи та APK](https://github.com/ThunderBoldX/NYXOR/releases) · [Встановлення](#встановлення) · [Скріншоти](#зазирни-всередину) · [Збірка APK](android/README.md#збірка-з-вихідного-коду)
 
 
-**[Завантажити Android 2.4.4 preview](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.4-preview)** · **[Завантажити Windows 2.4.4 preview](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.4-preview)**
+**[Завантажити Android 2.4.5](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.5)** · **[Завантажити Windows 2.4.5](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.5)**
 
 </div>
 
@@ -23,7 +23,7 @@
 
 ### Windows preview
 
-Той самий стиль і ядро у вікні для ПК: бічне меню, керування з трея та автозапуск після входу у Windows. Потрібна **Windows 10/11 x64** та **Google Chrome для входу Twitch**. [Завантажити інсталятор Windows 2.4.4 preview](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.4-preview).
+Той самий стиль і ядро у вікні для ПК: бічне меню, керування з трея та автозапуск після входу у Windows. Потрібна **Windows 10/11 x64** та **Google Chrome для входу Twitch**. [Завантажити інсталятор Windows 2.4.5](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.5).
 
 Вікно відкривається розгорнутим у межах робочої області поточного монітора. Для автозапуску можна вибрати лише відкриття NYXOR або ще й запуск фарму. Пошук ігор використовує публічний каталог Twitch, з обкладинками та активними каналами для поїнтів.
 
@@ -96,7 +96,7 @@
 - Перевірка поточних фрагментів раз на 20 секунд навіть в енергозбереженні.
 - Покращений фарм із заблокованим екраном на Android і повідомлення про зупинені хвилини.
 
-Обидва інсталятори — в [Assets одного релізу](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.4-preview).
+Обидва інсталятори — в [Assets одного релізу](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.5).
 
 ## Нове в Android 2.4.0
 
@@ -105,7 +105,7 @@
 - Картинки предметів із Twitch у поточних дропах та інвентар отриманих нагород із фільтром гри.
 - Округлі анімовані дропдауни та рідші оновлення екрана в енергозбереженні.
 
-[Завантажити Android 2.4.4 preview APK](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.4-preview). Встановлюй поверх попередньої версії без видалення: сертифікат підпису не змінився.
+[Завантажити Android 2.4.5 APK](https://github.com/ThunderBoldX/NYXOR/releases/tag/v2.4.5). Встановлюй поверх попередньої версії без видалення: сертифікат підпису не змінився.
 
 [Скриншот вибору акаунтів](docs/screenshots/accounts-selection.png) · [Інструкція акаунтів Android](android/README.md)
 

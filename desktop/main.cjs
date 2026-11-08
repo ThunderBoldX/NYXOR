@@ -6,19 +6,23 @@ const {Engine,validate,twitchURL}=require('./bridge.cjs');
 const {TwitchLogin}=require('./twitch-login.cjs');
 const {createRenewal}=require('./session-renewal.cjs');
 const {Accounts}=require('./accounts.cjs');
+const updater=require('./updater.cjs').createUpdater({app,net,shell});
 const {displayBounds,shouldStartFarming}=require('./window-options.cjs');
 const smokeArg=process.argv.find(arg=>arg.startsWith('--smoke-dir='));
 const smokeDir=smokeArg?path.resolve(smokeArg.slice('--smoke-dir='.length)):null;
 if(smokeDir){fs.mkdirSync(smokeDir,{recursive:true});app.setPath('userData',path.join(smokeDir,'user-data'));}
 protocol.registerSchemesAsPrivileged([{scheme:'nyxor',privileges:{standard:true,secure:true,supportFetchAPI:true}}]);
-let window,tray,engine,login,accounts,quitting=false,powerId,refreshTimer,lastSnapshot;
+let window,tray,engine,login,accounts,deviceLink,quitting=false,powerId,refreshTimer,lastSnapshot,lastTrayKey,lastSnapshotAt=0,bootGeneration=0;
 const ui=path.join(__dirname,'generated/ui');
 function show(){if(!window.isVisible())window.maximize();if(window.isMinimized())window.restore();window.show();window.focus();}
 function syncStatus(data){
  if(!data?.settings)return;
- lastSnapshot=data;
+ lastSnapshot=data;lastSnapshotAt=Date.now();
  const low=data.settings.low_resource===true;
- window?.webContents.setImageAnimationPolicy(low?'noAnimation':'animate');
+ if(window&&window.resourceMode!==low){
+  window.webContents.setImageAnimationPolicy(low?'noAnimation':'animate');
+  window.resourceMode=low;
+ }
  for(const slot of accounts?.slots.values()||[])if(slot.priorityLow!==low&&slot.engine.child?.pid){
   try{os.setPriority(slot.engine.child.pid,low?os.constants.priority.PRIORITY_BELOW_NORMAL:os.constants.priority.PRIORITY_NORMAL);slot.priorityLow=low;}catch{}
  }
@@ -30,6 +34,9 @@ function syncStatus(data){
  const game=data.state?.game,channel=data.state?.channel;
  const detail=[game,channel].filter(value=>value&&value!=='—').join(' · ');
  const others=(data.accounts||[]).filter(row=>row.running).map(row=>'@'+(row.account||row.id.slice(0,8))+': '+[row.game,row.channel].filter(v=>v&&v!=='—').join(' · '));
+ const trayKey=JSON.stringify([uk,data.running,detail,others]);
+ if(lastTrayKey===trayKey)return;
+ lastTrayKey=trayKey;
  tray.setToolTip((others.length?('NYXOR · '+others.join(' | ')):('NYXOR · '+(data.running?(uk?'Працює':'Running'):(uk?'На паузі':'Paused'))+(detail?'\n'+detail:''))).slice(0,127));
  tray.setContextMenu(Menu.buildFromTemplate([
   {label:uk?'Відкрити NYXOR':'Open NYXOR',click:show},
@@ -74,7 +81,7 @@ async function requestFor(slot,data){
  if(['start','restart'].includes(data.action)){
   const state=await engine.request({action:'snapshot'});
   if(state.data?.auth_mode==='browser'){
-   try{await login.ensure();}catch{throw new Error(state.data.settings.language==='uk'?'Не вдалося відновити вхід Twitch. Підключи Twitch заново у налаштуваннях.':'Could not restore Twitch login. Connect Twitch again in Settings.');}
+   try{await login.ensure();}catch(cause){throw Object.assign(new Error(state.data.settings.language==='uk'?'Не вдалося відновити вхід Twitch. Підключи Twitch заново у налаштуваннях.':'Could not restore Twitch login. Connect Twitch again in Settings.'),{code:cause.code});}
   }
  }
  if(data.action==='stop')await login.close();
@@ -149,6 +156,15 @@ async function smoke(){
    await request({action:'queue',items:[]});await request({action:'points_games',items:[]});
   }
   await window.webContents.executeJavaScript("refresh(true).then(()=>navigate('settings'))");
+  const updateGap=await window.webContents.executeJavaScript(`(()=>{
+   const button=document.querySelector('#nyxor-check-updates');
+   const devices=document.querySelector('#nyxor-devices');
+   const layout=document.querySelector('.settings-layout');
+   if(!button||!devices||!layout)return null;
+   return [button.getBoundingClientRect().top-layout.getBoundingClientRect().bottom,
+           devices.getBoundingClientRect().top-button.getBoundingClientRect().bottom];
+  })()`);
+  if(!updateGap||updateGap.some(gap=>Math.round(gap)<16))throw new Error('Update button spacing: '+JSON.stringify(updateGap));
   await new Promise(resolve=>setTimeout(resolve,600));
   fs.writeFileSync(path.join(smokeDir,'first-launch.png'),(await window.webContents.capturePage()).toPNG());
   if(process.argv.includes('--smoke-login')){
@@ -197,7 +213,7 @@ async function smoke(){
   const fresh=await request({action:'account_add'});
   if(!fresh.ok||fresh.data.accounts.length!==1||fresh.data.queue.length||fresh.data.authenticated)throw new Error('New account after deletion reused private data');
   if(errors.length)throw new Error('Renderer errors: '+errors.join('; '));
-  fs.writeFileSync(path.join(smokeDir,'result.json'),JSON.stringify({ok:true,layout,errors,window:{workArea:nativeArea,content},engine:status.data.platform,accountProcesses,checks:['bulk deletion preserves surviving account process and private data','last-account deletion and fresh account creation','window content fits selected display work area','startup modes persist','persistent queue','energy setting','unauthenticated start blocked','seven sections','independent account processes and queues','account cards','centered moon','status/settings controls separated','no horizontal overflow','tray status','minimize to tray and single-click restore','resource mode lowers and restores engine priority','close to tray keeps engine alive','normal power blocker and eco release',...(process.argv.includes('--smoke-login')?['native Chrome login pending','cancel login closes owned Chrome','logout removes owned profile']:[]),...(process.argv.includes('--smoke-catalog')?['live World of Tanks search and add in Games and Points without an account']:[])]},null,2));
+  fs.writeFileSync(path.join(smokeDir,'result.json'),JSON.stringify({ok:true,layout,errors,updateGap,window:{workArea:nativeArea,content},engine:status.data.platform,accountProcesses,checks:['bulk deletion preserves surviving account process and private data','last-account deletion and fresh account creation','window content fits selected display work area','startup modes persist','persistent queue','energy setting','unauthenticated start blocked','seven sections','independent account processes and queues','account cards','centered moon','status/settings controls separated','no horizontal overflow','tray status','minimize to tray and single-click restore','resource mode lowers and restores engine priority','close to tray keeps engine alive','normal power blocker and eco release',...(process.argv.includes('--smoke-login')?['native Chrome login pending','cancel login closes owned Chrome','logout removes owned profile']:[]),...(process.argv.includes('--smoke-catalog')?['live World of Tanks search and add in Games and Points without an account']:[])]},null,2));
  }catch(error){fs.writeFileSync(path.join(smokeDir,'result.json'),JSON.stringify({ok:false,error:error.stack,errors},null,2));process.exitCode=1;}
  finally{app.quit();}
 }
@@ -209,7 +225,7 @@ else{
  app.whenReady().then(async()=>{
   protocol.handle('nyxor',incoming=>{
    const url=new URL(incoming.url),name=decodeURIComponent(url.pathname).replace(/^\//,'');
-   if(url.host!=='app'||!['index.html','style.css','app.js','desktop.css','desktop-ui.js','dropdowns.js'].includes(name))return new Response('',{status:404});
+   if(url.host!=='app'||!['index.html','style.css','app.js','desktop.css','desktop-ui.js','dropdowns.js','release.js','release-ui.js','device-ui.js'].includes(name))return new Response('',{status:404});
    return net.fetch(pathToFileURL(path.join(ui,name)).href);
   });
   accounts=new Accounts(app.getPath('userData'),root=>({
@@ -218,10 +234,23 @@ else{
    createLogin:engine=>new TwitchLogin(root,engine,createRenewal(root,{BrowserWindow,session}))
   }));
   await accounts.initialize();engine=accounts.index.active?accounts.get().engine:null;login=accounts.index.active?accounts.get().login:null;
+  deviceLink=require('./device-link.cjs').createDeviceLink(app.getPath('userData'),()=>lastSnapshot);
+  if(!smokeDir)await deviceLink.restore();
   ipcMain.handle('nyxor:request',async(event,payload)=>{
    try{
     if(event.sender!==window.webContents||event.senderFrame!==window.webContents.mainFrame||!event.senderFrame.url.startsWith('nyxor://app/index.html'))throw new Error('Untrusted request');
-    return await request(validate(payload));
+    const data=validate(payload);
+    if(['device_status','device_offer','device_unlink'].includes(data.action))
+     return {ok:true,data:await deviceLink.handle(data)};
+    if(data.action==='update_check')return {ok:true,data:{update:await updater.check()}};
+    if(data.action==='update_install'){
+     await updater.install(data.version);
+     return {ok:true,data:{}};
+    }
+    if(['stop','logout','restart','start','account_delete'].includes(data.action))bootGeneration++;
+    if(data.action==='snapshot'&&lastSnapshot?.settings?.low_resource&&Date.now()-lastSnapshotAt<10000)
+     return {ok:true,data:lastSnapshot};
+    return await request(data);
    }catch(error){return {ok:false,error:error.message};}
   });
   const area=screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
@@ -235,12 +264,25 @@ else{
   syncStatus({running:false,settings:{language:'uk'}});
   await window.loadURL('nyxor://app/index.html');
   const initial=await request({action:'snapshot'}).catch(()=>null);
+  const boot=process.argv.includes('--autostart');
+  async function startAtLogin() {
+   const generation=bootGeneration;
+   let retryIds;
+   for(let attempt=0;attempt<4&&!quitting&&generation===bootGeneration;attempt++){
+    const result=await accounts.autostart(process.argv,requestFor,retryIds);
+    retryIds=result.retry;
+    if(result.failed.length||result.started.length)show();
+    if(!result.retry.length)return;
+    await new Promise(resolve=>{const timer=setTimeout(resolve,15000*(attempt+1));timer.unref();});
+   }
+   if(!quitting)show();
+  }
   if(initial?.ok){
    syncStatus(initial.data);
    // Reconcile persisted preference with the actual installed Windows application.
    try{startup(initial.data.settings.launch_on_boot===true);}catch{}
-   if((await accounts.autostart(process.argv,requestFor)).length)show();
   }
+  if(boot&&!smokeDir)void startAtLogin().catch(()=>{if(!quitting)show();});
   if(smokeDir&&process.argv.includes('--wait-for-update'))fs.writeFileSync(path.join(smokeDir,'ready.json'),JSON.stringify({pid:process.pid,engine:engine.child.pid}));
   else if(smokeDir)await smoke();
   else{
@@ -258,7 +300,7 @@ else{
   if(quitting)return;
   event.preventDefault();quitting=true;clearInterval(refreshTimer);
   if(powerId!==undefined)powerSaveBlocker.stop(powerId);
-  (async()=>{await accounts?.stopAll();})().finally(()=>{tray?.destroy();app.quit();});
+  (async()=>{await deviceLink?.close();await accounts?.stopAll();})().finally(()=>{tray?.destroy();app.quit();});
  });
  app.on('window-all-closed',()=>{if(quitting)app.quit();});
  app.on('activate',()=>{if(window)show();});

@@ -26,7 +26,7 @@ def execution_level(executable: Path) -> str:
 if __name__ == '__main__':
     desktop = Path(__file__).resolve().parents[1]
     version = json.loads((desktop / 'package.json').read_text())['version']
-    setup = desktop / 'dist' / f'NYXOR-Windows-{version}-preview-Setup.exe'
+    setup = desktop / 'dist' / f'NYXOR-Windows-{version}.exe'
     app = desktop / 'dist' / 'win-unpacked' / 'NYXOR.exe'
     result = {'installer': execution_level(setup), 'application': execution_level(app)}
     assert result == {'installer': 'requireAdministrator', 'application': 'asInvoker'}, result

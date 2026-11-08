@@ -113,3 +113,16 @@ test('Index cannot select arbitrary paths and summaries exclude private backend 
   fs.writeFileSync(path.join(f.root,'accounts.json'),JSON.stringify({version:1,active:'default',profiles:[{id:'default'},{id:'../elsewhere'}]}));assert.throws(()=>new Accounts(f.root,()=>{}),/Invalid/);
  }finally{f.cleanup();}
 });
+test('Windows farm mode starts the selected profile when no account has a startup override',async()=>{
+ const f=fixture();try{
+  await f.manager.initialize();
+  const id=(await f.manager.route({action:'account_add'},execute)).data.active_account_id;
+  Object.assign(f.made[1].state,{authenticated:true,account_user_id:'2',queue:['Rust']});
+  await f.manager.route({action:'account_autostart',account_id:'default',enabled:false},execute);
+  await f.manager.route({action:'settings',values:{launch_on_boot:true,startup_mode:'farm'}},execute);
+  const result=await f.manager.autostart(['--autostart'],execute);
+  assert.deepEqual(result.started,[id]);
+  assert(f.made[1].state.running);
+  assert(!f.made[0].state.running);
+ }finally{f.cleanup();}
+});
